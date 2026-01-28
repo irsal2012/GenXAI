@@ -6,6 +6,11 @@
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
+  color-scheme: dark;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 * {
@@ -19,6 +24,10 @@ body {
   min-width: 320px;
   min-height: 100vh;
   overflow-x: hidden;
+  background: radial-gradient(circle at top, rgba(124, 58, 237, 0.18), transparent 55%),
+    radial-gradient(circle at 30% 20%, rgba(59, 130, 246, 0.12), transparent 45%),
+    #0b1020;
+  color: #e2e8f0;
 }
 
 #root {
@@ -32,16 +41,16 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(15, 23, 42, 0.5);
+  background: rgba(15, 23, 42, 0.7);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(139, 92, 246, 0.5);
+  background: rgba(139, 92, 246, 0.6);
   border-radius: 5px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(139, 92, 246, 0.7);
+  background: rgba(139, 92, 246, 0.85);
 }
 
 /* Smooth transitions */
@@ -49,6 +58,87 @@ body {
   transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   transition-duration: 150ms;
+}
+
+::selection {
+  background: rgba(168, 85, 247, 0.35);
+  color: #f8fafc;
+}
+
+.glass-panel {
+  background: rgba(15, 23, 42, 0.65);
+  border: 1px solid rgba(148, 163, 184, 0.15);
+  box-shadow: 0 20px 60px rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(18px);
+}
+
+.card-elevated {
+  background: rgba(30, 41, 59, 0.55);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.35);
+}
+
+.card-hover {
+  transition: transform 200ms ease, box-shadow 200ms ease, border-color 200ms ease;
+}
+
+.card-hover:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 24px 50px rgba(88, 28, 135, 0.35);
+  border-color: rgba(168, 85, 247, 0.6);
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #7c3aed, #ec4899);
+  color: #fff;
+  font-weight: 600;
+  box-shadow: 0 10px 24px rgba(124, 58, 237, 0.35);
+}
+
+.btn-primary:hover {
+  filter: brightness(1.05);
+}
+
+.btn-secondary {
+  background: rgba(30, 41, 59, 0.8);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  color: #e2e8f0;
+}
+
+.btn-secondary:hover {
+  border-color: rgba(148, 163, 184, 0.45);
+  background: rgba(51, 65, 85, 0.9);
+}
+
+.btn-ghost {
+  background: rgba(148, 163, 184, 0.1);
+  color: #e2e8f0;
+  border: 1px solid transparent;
+}
+
+.btn-ghost:hover {
+  border-color: rgba(148, 163, 184, 0.4);
+  background: rgba(148, 163, 184, 0.18);
+}
+
+.input-field {
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  color: #e2e8f0;
+  border-radius: 0.75rem;
+}
+
+.input-field:focus {
+  outline: none;
+  border-color: rgba(168, 85, 247, 0.7);
+  box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.2);
+}
+
+.badge-pill {
+  border-radius: 9999px;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 600;
 }
 
 /* Animation utilities */

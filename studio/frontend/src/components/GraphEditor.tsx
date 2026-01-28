@@ -79,16 +79,16 @@ export default function GraphEditor() {
   }
 
   return (
-    <div className="h-full flex">
+    <div className="h-full flex text-slate-200">
       {/* Sidebar - Node Palette */}
-      <div className="w-64 bg-slate-800/50 border-r border-purple-500/20 p-4 overflow-y-auto">
+      <div className="w-72 bg-slate-900/60 border-r border-white/10 p-5 overflow-y-auto">
         <h3 className="text-lg font-semibold text-white mb-4">Node Palette</h3>
         <div className="space-y-2">
           {nodeTypes.map((nodeType) => (
             <button
               key={nodeType.type}
               onClick={() => addNode(nodeType.type)}
-              className={`w-full bg-gradient-to-r ${nodeType.color} hover:opacity-80 text-white font-medium py-3 px-4 rounded-lg transition flex items-center justify-between`}
+              className={`w-full bg-gradient-to-r ${nodeType.color} hover:opacity-90 text-white font-semibold py-3 px-4 rounded-xl transition flex items-center justify-between shadow-lg shadow-black/30`}
             >
               <span>{nodeType.label}</span>
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -98,21 +98,21 @@ export default function GraphEditor() {
           ))}
         </div>
 
-        <div className="mt-6 pt-6 border-t border-purple-500/20">
+        <div className="mt-6 pt-6 border-t border-white/10">
           <h3 className="text-lg font-semibold text-white mb-4">Actions</h3>
-          <button className="w-full bg-purple-600 hover:bg-purple-700 text-white font-medium py-2 px-4 rounded-lg transition mb-2">
+          <button className="w-full btn-primary py-2.5 px-4 rounded-xl transition mb-2">
             Save Workflow
           </button>
-          <button className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg transition mb-2">
+          <button className="w-full bg-emerald-500/90 hover:bg-emerald-500 text-white font-semibold py-2.5 px-4 rounded-xl transition mb-2 shadow-lg shadow-emerald-500/20">
             Run Workflow
           </button>
-          <button className="w-full bg-slate-700 hover:bg-slate-600 text-white font-medium py-2 px-4 rounded-lg transition">
+          <button className="w-full btn-secondary py-2.5 px-4 rounded-xl transition">
             Clear Canvas
           </button>
         </div>
 
         {selectedNode && (
-          <div className="mt-6 pt-6 border-t border-purple-500/20">
+          <div className="mt-6 pt-6 border-t border-white/10">
             <h3 className="text-lg font-semibold text-white mb-4">Node Properties</h3>
             <div className="space-y-3">
               <div>
@@ -121,7 +121,7 @@ export default function GraphEditor() {
                   type="text"
                   value={selectedNode}
                   disabled
-                  className="w-full bg-slate-700 border border-purple-500/30 rounded px-3 py-2 text-white text-sm"
+                  className="w-full input-field px-3 py-2 text-sm"
                 />
               </div>
               <div>
@@ -132,12 +132,12 @@ export default function GraphEditor() {
                   onChange={(e) => {
                     setNodes(nodes.map(n => n.id === selectedNode ? { ...n, label: e.target.value } : n))
                   }}
-                  className="w-full bg-slate-700 border border-purple-500/30 rounded px-3 py-2 text-white text-sm"
+                  className="w-full input-field px-3 py-2 text-sm"
                 />
               </div>
               <button
                 onClick={() => deleteNode(selectedNode)}
-                className="w-full bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg transition"
+                className="w-full bg-rose-500/90 hover:bg-rose-500 text-white font-semibold py-2.5 px-4 rounded-xl transition shadow-lg shadow-rose-500/20"
               >
                 Delete Node
               </button>
@@ -147,8 +147,8 @@ export default function GraphEditor() {
       </div>
 
       {/* Canvas */}
-      <div className="flex-1 relative bg-slate-900/50 overflow-hidden">
-        <div className="absolute inset-0" style={{ backgroundImage: 'radial-gradient(circle, rgba(139, 92, 246, 0.1) 1px, transparent 1px)', backgroundSize: '20px 20px' }}>
+      <div className="flex-1 relative bg-slate-950/40 overflow-hidden">
+        <div className="absolute inset-0" style={{ backgroundImage: 'radial-gradient(circle, rgba(148, 163, 184, 0.12) 1px, transparent 1px)', backgroundSize: '22px 22px' }}>
           <svg className="absolute inset-0 w-full h-full pointer-events-none">
             {connections.map((conn, idx) => {
               const fromNode = nodes.find(n => n.id === conn.from)
@@ -161,8 +161,8 @@ export default function GraphEditor() {
                   y1={fromNode.y + 30}
                   x2={toNode.x}
                   y2={toNode.y + 30}
-                  stroke="rgba(139, 92, 246, 0.5)"
-                  strokeWidth="2"
+                  stroke="rgba(99, 102, 241, 0.6)"
+                  strokeWidth="2.5"
                   markerEnd="url(#arrowhead)"
                 />
               )
@@ -176,7 +176,7 @@ export default function GraphEditor() {
                 refY="3"
                 orient="auto"
               >
-                <polygon points="0 0, 10 3, 0 6" fill="rgba(139, 92, 246, 0.5)" />
+                <polygon points="0 0, 10 3, 0 6" fill="rgba(99, 102, 241, 0.6)" />
               </marker>
             </defs>
           </svg>
@@ -184,7 +184,7 @@ export default function GraphEditor() {
           {nodes.map((node) => (
             <div
               key={node.id}
-              className={`absolute cursor-move ${selectedNode === node.id ? 'ring-2 ring-purple-500' : ''}`}
+              className={`absolute cursor-move ${selectedNode === node.id ? 'ring-2 ring-purple-400 shadow-2xl shadow-purple-500/40' : ''}`}
               style={{ left: node.x, top: node.y }}
               onMouseDown={() => {
                 setSelectedNode(node.id)
@@ -193,9 +193,9 @@ export default function GraphEditor() {
               onMouseMove={(e) => handleNodeDrag(node.id, e)}
               onMouseUp={handleNodeDragEnd}
             >
-              <div className={`bg-gradient-to-r ${getNodeColor(node.type)} rounded-lg p-4 shadow-lg min-w-[120px] border border-white/20`}>
+              <div className={`bg-gradient-to-r ${getNodeColor(node.type)} rounded-2xl p-4 shadow-xl min-w-[140px] border border-white/30`}>
                 <div className="text-white font-semibold text-sm text-center">{node.label}</div>
-                <div className="text-white/70 text-xs text-center mt-1">{node.type}</div>
+                <div className="text-white/80 text-xs text-center mt-1 capitalize">{node.type}</div>
               </div>
             </div>
           ))}
@@ -204,11 +204,11 @@ export default function GraphEditor() {
         {nodes.length === 0 && (
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="text-center">
-              <svg className="w-16 h-16 text-purple-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-16 h-16 text-purple-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
               </svg>
               <h3 className="text-xl font-semibold text-white mb-2">Empty Canvas</h3>
-              <p className="text-gray-400">Add nodes from the palette to start building your workflow</p>
+              <p className="text-slate-400">Add nodes from the palette to start building your workflow</p>
             </div>
           </div>
         )}

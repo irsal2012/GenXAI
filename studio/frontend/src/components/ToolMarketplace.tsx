@@ -171,9 +171,9 @@ export default function ToolMarketplace() {
   }
 
   return (
-    <div className="h-full flex">
+    <div className="h-full flex text-slate-200">
       {/* Sidebar - Filters */}
-      <div className="w-64 bg-slate-800/50 border-r border-purple-500/20 p-4 overflow-y-auto">
+      <div className="w-64 bg-slate-900/60 border-r border-white/10 p-5 overflow-y-auto">
         <h3 className="text-lg font-semibold text-white mb-4">Categories</h3>
         <div className="space-y-1">
           {categories.map((category) => (
@@ -182,8 +182,8 @@ export default function ToolMarketplace() {
               onClick={() => setSelectedCategory(category)}
               className={`w-full text-left px-3 py-2 rounded-lg transition ${
                 selectedCategory === category
-                  ? 'bg-purple-600 text-white'
-                  : 'text-gray-300 hover:bg-slate-700'
+                  ? 'bg-white/15 text-white shadow-md shadow-purple-500/20'
+                  : 'text-gray-300 hover:bg-slate-800'
               }`}
             >
               {category}
@@ -196,16 +196,16 @@ export default function ToolMarketplace() {
           ))}
         </div>
 
-        <div className="mt-6 pt-6 border-t border-purple-500/20">
+        <div className="mt-6 pt-6 border-t border-white/10">
           <h3 className="text-lg font-semibold text-white mb-4">Filter</h3>
           <div className="space-y-2">
-            <button className="w-full text-left px-3 py-2 rounded-lg text-gray-300 hover:bg-slate-700 transition">
+            <button className="w-full text-left px-3 py-2 rounded-lg text-gray-300 hover:bg-slate-800 transition">
               Installed ({tools.filter(t => t.installed).length})
             </button>
-            <button className="w-full text-left px-3 py-2 rounded-lg text-gray-300 hover:bg-slate-700 transition">
+            <button className="w-full text-left px-3 py-2 rounded-lg text-gray-300 hover:bg-slate-800 transition">
               Not Installed ({tools.filter(t => !t.installed).length})
             </button>
-            <button className="w-full text-left px-3 py-2 rounded-lg text-gray-300 hover:bg-slate-700 transition">
+            <button className="w-full text-left px-3 py-2 rounded-lg text-gray-300 hover:bg-slate-800 transition">
               Top Rated
             </button>
           </div>
@@ -215,14 +215,14 @@ export default function ToolMarketplace() {
       {/* Main Content */}
       <div className="flex-1 flex flex-col">
         {/* Search Bar */}
-        <div className="p-6 bg-slate-800/30 border-b border-purple-500/20">
+        <div className="p-6 bg-slate-900/40 border-b border-white/10">
           <div className="relative">
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search tools..."
-              className="w-full bg-slate-700 border border-purple-500/30 rounded-lg pl-12 pr-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-purple-500"
+              className="w-full input-field pl-12 pr-4 py-3"
             />
             <svg className="absolute left-4 top-3.5 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -237,10 +237,10 @@ export default function ToolMarketplace() {
               <div
                 key={tool.id}
                 onClick={() => setSelectedTool(tool.id)}
-                className={`bg-slate-800/50 rounded-lg p-5 border cursor-pointer transition-all hover:shadow-xl ${
+                className={`card-elevated card-hover rounded-2xl p-5 border cursor-pointer transition-all ${
                   selectedTool === tool.id
-                    ? 'border-purple-500 shadow-lg shadow-purple-500/20'
-                    : 'border-purple-500/20 hover:border-purple-500/40'
+                    ? 'border-purple-500/80 shadow-lg shadow-purple-500/20'
+                    : 'border-white/10'
                 }`}
               >
                 <div className="flex items-start justify-between mb-3">
@@ -250,7 +250,7 @@ export default function ToolMarketplace() {
                     </svg>
                   </div>
                   {tool.installed && (
-                    <span className="px-2 py-1 bg-green-500/20 text-green-400 text-xs rounded-full">
+                    <span className="badge-pill bg-green-500/20 text-green-400">
                       Installed
                     </span>
                   )}
@@ -275,10 +275,10 @@ export default function ToolMarketplace() {
                     e.stopPropagation()
                     toggleInstall(tool.id)
                   }}
-                  className={`w-full mt-4 py-2 rounded-lg font-medium transition ${
+                  className={`w-full mt-4 py-2.5 rounded-xl font-semibold transition ${
                     tool.installed
-                      ? 'bg-red-600 hover:bg-red-700 text-white'
-                      : 'bg-purple-600 hover:bg-purple-700 text-white'
+                      ? 'bg-rose-500/90 hover:bg-rose-500 text-white shadow-lg shadow-rose-500/20'
+                      : 'btn-primary'
                   }`}
                 >
                   {tool.installed ? 'Uninstall' : 'Install'}
@@ -290,11 +290,11 @@ export default function ToolMarketplace() {
           {filteredTools.length === 0 && (
             <div className="flex items-center justify-center h-full">
               <div className="text-center">
-                <svg className="w-16 h-16 text-purple-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-16 h-16 text-purple-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
                 <h3 className="text-xl font-semibold text-white mb-2">No Tools Found</h3>
-                <p className="text-gray-400">Try adjusting your search or filters</p>
+                <p className="text-slate-400">Try adjusting your search or filters</p>
               </div>
             </div>
           )}
@@ -303,7 +303,7 @@ export default function ToolMarketplace() {
 
       {/* Tool Details Panel */}
       {selectedToolData && (
-        <div className="w-96 bg-slate-800/50 border-l border-purple-500/20 p-6 overflow-y-auto">
+        <div className="w-96 bg-slate-900/60 border-l border-white/10 p-6 overflow-y-auto">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-xl font-bold text-white">Tool Details</h3>
             <button
@@ -362,16 +362,16 @@ export default function ToolMarketplace() {
 
           <button
             onClick={() => toggleInstall(selectedToolData.id)}
-            className={`w-full py-3 rounded-lg font-bold transition mb-3 ${
+            className={`w-full py-3 rounded-xl font-semibold transition mb-3 ${
               selectedToolData.installed
-                ? 'bg-red-600 hover:bg-red-700 text-white'
-                : 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white'
+                ? 'bg-rose-500/90 hover:bg-rose-500 text-white shadow-lg shadow-rose-500/20'
+                : 'btn-primary'
             }`}
           >
             {selectedToolData.installed ? 'Uninstall Tool' : 'Install Tool'}
           </button>
 
-          <button className="w-full py-3 rounded-lg font-bold bg-slate-700 hover:bg-slate-600 text-white transition">
+          <button className="w-full py-3 rounded-xl font-semibold btn-secondary transition">
             View Documentation
           </button>
         </div>

@@ -106,14 +106,14 @@ export default function AgentDesigner() {
   const selectedAgentData = agents.find(a => a.id === selectedAgent)
 
   return (
-    <div className="h-full flex">
+    <div className="h-full flex text-slate-200">
       {/* Agent List */}
-      <div className="w-80 bg-slate-800/50 border-r border-purple-500/20 p-4 overflow-y-auto">
+      <div className="w-80 bg-slate-900/60 border-r border-white/10 p-5 overflow-y-auto">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold text-white">Agents</h3>
           <button
             onClick={() => setIsCreating(true)}
-            className="bg-purple-600 hover:bg-purple-700 text-white p-2 rounded-lg transition"
+            className="btn-primary p-2.5 rounded-xl transition"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -128,13 +128,13 @@ export default function AgentDesigner() {
               onClick={() => setSelectedAgent(agent.id)}
               className={`p-4 rounded-lg cursor-pointer transition ${
                 selectedAgent === agent.id
-                  ? 'bg-purple-600/30 border border-purple-500'
-                  : 'bg-slate-700/50 border border-transparent hover:border-purple-500/50'
+                  ? 'bg-white/10 border border-purple-400/60 shadow-lg shadow-purple-500/20'
+                  : 'bg-slate-800/60 border border-transparent hover:border-white/10'
               }`}
             >
               <div className="flex items-center justify-between mb-2">
                 <h4 className="font-semibold text-white">{agent.name}</h4>
-                <span className={`px-2 py-1 text-xs rounded-full ${getStatusColor(agent.status)}`}>
+                <span className={`badge-pill ${getStatusColor(agent.status)}`}>
                   {agent.status}
                 </span>
               </div>
@@ -151,11 +151,11 @@ export default function AgentDesigner() {
       </div>
 
       {/* Agent Details / Editor */}
-      <div className="flex-1 p-6 overflow-y-auto">
+      <div className="flex-1 p-8 overflow-y-auto">
         {isCreating ? (
           <div className="max-w-3xl mx-auto">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold text-white">Create New Agent</h2>
+              <h2 className="text-2xl font-semibold text-white">Create New Agent</h2>
               <button
                 onClick={() => setIsCreating(false)}
                 className="text-gray-400 hover:text-white"
@@ -166,14 +166,14 @@ export default function AgentDesigner() {
               </button>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-4 card-elevated rounded-2xl p-6">
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">Agent Name *</label>
                 <input
                   type="text"
                   value={newAgent.name}
                   onChange={(e) => setNewAgent({ ...newAgent, name: e.target.value })}
-                  className="w-full bg-slate-700 border border-purple-500/30 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-purple-500"
+                  className="w-full input-field px-4 py-3"
                   placeholder="e.g., Research Agent"
                 />
               </div>
@@ -184,7 +184,7 @@ export default function AgentDesigner() {
                   type="text"
                   value={newAgent.role}
                   onChange={(e) => setNewAgent({ ...newAgent, role: e.target.value })}
-                  className="w-full bg-slate-700 border border-purple-500/30 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-purple-500"
+                  className="w-full input-field px-4 py-3"
                   placeholder="e.g., Research Specialist"
                 />
               </div>
@@ -194,7 +194,7 @@ export default function AgentDesigner() {
                 <textarea
                   value={newAgent.goal}
                   onChange={(e) => setNewAgent({ ...newAgent, goal: e.target.value })}
-                  className="w-full bg-slate-700 border border-purple-500/30 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-purple-500 h-24"
+                  className="w-full input-field px-4 py-3 h-24"
                   placeholder="What is the agent's primary objective?"
                 />
               </div>
@@ -204,7 +204,7 @@ export default function AgentDesigner() {
                 <textarea
                   value={newAgent.backstory}
                   onChange={(e) => setNewAgent({ ...newAgent, backstory: e.target.value })}
-                  className="w-full bg-slate-700 border border-purple-500/30 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-purple-500 h-32"
+                  className="w-full input-field px-4 py-3 h-32"
                   placeholder="Provide context and background for the agent"
                 />
               </div>
@@ -212,13 +212,13 @@ export default function AgentDesigner() {
               <div className="flex space-x-4">
                 <button
                   onClick={createAgent}
-                  className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold py-3 px-6 rounded-lg transition"
+                  className="flex-1 btn-primary py-3 px-6 rounded-xl"
                 >
                   Create Agent
                 </button>
                 <button
                   onClick={() => setIsCreating(false)}
-                  className="flex-1 bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 px-6 rounded-lg transition"
+                  className="flex-1 btn-secondary py-3 px-6 rounded-xl"
                 >
                   Cancel
                 </button>
@@ -229,14 +229,14 @@ export default function AgentDesigner() {
           <div className="max-w-3xl mx-auto">
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h2 className="text-2xl font-bold text-white">{selectedAgentData.name}</h2>
-                <p className="text-gray-400 mt-1">{selectedAgentData.role}</p>
+                <h2 className="text-2xl font-semibold text-white">{selectedAgentData.name}</h2>
+                <p className="text-slate-400 mt-1">{selectedAgentData.role}</p>
               </div>
               <div className="flex space-x-2">
                 <select
                   value={selectedAgentData.status}
                   onChange={(e) => updateAgent(selectedAgentData.id, { status: e.target.value as Agent['status'] })}
-                  className="bg-slate-700 border border-purple-500/30 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-purple-500"
+                  className="input-field px-4 py-2"
                 >
                   <option value="draft">Draft</option>
                   <option value="active">Active</option>
@@ -244,7 +244,7 @@ export default function AgentDesigner() {
                 </select>
                 <button
                   onClick={() => deleteAgent(selectedAgentData.id)}
-                  className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition"
+                  className="bg-rose-500/90 hover:bg-rose-500 text-white px-4 py-2 rounded-xl transition shadow-lg shadow-rose-500/20"
                 >
                   Delete
                 </button>
@@ -252,7 +252,7 @@ export default function AgentDesigner() {
             </div>
 
             <div className="space-y-6">
-              <div className="bg-slate-800/50 rounded-lg p-6 border border-purple-500/20">
+              <div className="card-elevated rounded-2xl p-6">
                 <h3 className="text-lg font-semibold text-white mb-4">Configuration</h3>
                 <div className="space-y-4">
                   <div>
@@ -260,7 +260,7 @@ export default function AgentDesigner() {
                     <textarea
                       value={selectedAgentData.goal}
                       onChange={(e) => updateAgent(selectedAgentData.id, { goal: e.target.value })}
-                      className="w-full bg-slate-700 border border-purple-500/30 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-purple-500 h-24"
+                      className="w-full input-field px-4 py-3 h-24"
                     />
                   </div>
 
@@ -269,13 +269,13 @@ export default function AgentDesigner() {
                     <textarea
                       value={selectedAgentData.backstory}
                       onChange={(e) => updateAgent(selectedAgentData.id, { backstory: e.target.value })}
-                      className="w-full bg-slate-700 border border-purple-500/30 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-purple-500 h-32"
+                      className="w-full input-field px-4 py-3 h-32"
                     />
                   </div>
                 </div>
               </div>
 
-              <div className="bg-slate-800/50 rounded-lg p-6 border border-purple-500/20">
+              <div className="card-elevated rounded-2xl p-6">
                 <h3 className="text-lg font-semibold text-white mb-4">Tools</h3>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                   {availableTools.map((tool) => (
@@ -284,8 +284,8 @@ export default function AgentDesigner() {
                       onClick={() => toggleTool(selectedAgentData.id, tool)}
                       className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
                         selectedAgentData.tools.includes(tool)
-                          ? 'bg-purple-600 text-white'
-                          : 'bg-slate-700 text-gray-300 hover:bg-slate-600'
+                          ? 'bg-purple-500 text-white shadow-lg shadow-purple-500/30'
+                          : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
                       }`}
                     >
                       {tool.replace('_', ' ')}
@@ -294,16 +294,16 @@ export default function AgentDesigner() {
                 </div>
               </div>
 
-              <div className="bg-slate-800/50 rounded-lg p-6 border border-purple-500/20">
+              <div className="card-elevated rounded-2xl p-6">
                 <h3 className="text-lg font-semibold text-white mb-4">Actions</h3>
                 <div className="flex space-x-4">
-                  <button className="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg transition">
+                  <button className="flex-1 bg-emerald-500/90 hover:bg-emerald-500 text-white font-semibold py-3 px-6 rounded-xl transition shadow-lg shadow-emerald-500/20">
                     Deploy Agent
                   </button>
-                  <button className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition">
+                  <button className="flex-1 bg-blue-500/90 hover:bg-blue-500 text-white font-semibold py-3 px-6 rounded-xl transition shadow-lg shadow-blue-500/20">
                     Test Agent
                   </button>
-                  <button className="flex-1 bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-lg transition">
+                  <button className="flex-1 btn-primary py-3 px-6 rounded-xl">
                     Export Config
                   </button>
                 </div>
@@ -313,14 +313,14 @@ export default function AgentDesigner() {
         ) : (
           <div className="flex items-center justify-center h-full">
             <div className="text-center">
-              <svg className="w-16 h-16 text-purple-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-16 h-16 text-purple-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
               </svg>
               <h3 className="text-xl font-semibold text-white mb-2">No Agent Selected</h3>
-              <p className="text-gray-400 mb-6">Select an agent from the list or create a new one</p>
+              <p className="text-slate-400 mb-6">Select an agent from the list or create a new one</p>
               <button
                 onClick={() => setIsCreating(true)}
-                className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold py-3 px-8 rounded-lg transition"
+                className="btn-primary py-3 px-8 rounded-xl"
               >
                 Create New Agent
               </button>

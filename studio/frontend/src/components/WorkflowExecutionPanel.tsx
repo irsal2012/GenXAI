@@ -41,10 +41,10 @@ export default function WorkflowExecutionPanel({ executionId, onClose }: Props) 
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'running': return 'text-blue-400 bg-blue-500/20'
-      case 'completed': return 'text-green-400 bg-green-500/20'
-      case 'failed': return 'text-red-400 bg-red-500/20'
-      default: return 'text-gray-400 bg-gray-500/20'
+      case 'running': return 'text-blue-200 bg-blue-500/20'
+      case 'completed': return 'text-emerald-200 bg-emerald-500/20'
+      case 'failed': return 'text-rose-200 bg-rose-500/20'
+      default: return 'text-gray-300 bg-gray-500/20'
     }
   }
 
@@ -74,14 +74,14 @@ export default function WorkflowExecutionPanel({ executionId, onClose }: Props) 
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-      <div className="bg-slate-800 rounded-xl border border-purple-500/20 w-full max-w-4xl max-h-[80vh] flex flex-col">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50">
+      <div className="glass-panel rounded-3xl border border-white/10 w-full max-w-4xl max-h-[80vh] flex flex-col shadow-2xl">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-purple-500/20">
+        <div className="flex items-center justify-between p-6 border-b border-white/10">
           <div className="flex items-center space-x-4">
             <h2 className="text-2xl font-bold text-white">Workflow Execution</h2>
             {execution && (
-              <span className={`px-3 py-1 rounded-full text-sm font-medium flex items-center space-x-2 ${getStatusColor(execution.status)}`}>
+              <span className={`badge-pill flex items-center space-x-2 ${getStatusColor(execution.status)}`}>
                 {getStatusIcon(execution.status)}
                 <span className="capitalize">{execution.status}</span>
               </span>
@@ -102,7 +102,7 @@ export default function WorkflowExecutionPanel({ executionId, onClose }: Props) 
           {loading && !execution ? (
             <div className="flex items-center justify-center h-full">
               <div className="text-center">
-                <svg className="w-12 h-12 text-purple-400 mx-auto mb-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-12 h-12 text-purple-300 mx-auto mb-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                 </svg>
                 <p className="text-gray-400">Loading execution details...</p>
@@ -111,7 +111,7 @@ export default function WorkflowExecutionPanel({ executionId, onClose }: Props) 
           ) : execution ? (
             <div className="space-y-6">
               {/* Execution Info */}
-              <div className="bg-slate-700/50 rounded-lg p-4 border border-purple-500/20">
+              <div className="card-elevated rounded-2xl p-5">
                 <h3 className="text-lg font-semibold text-white mb-3">Execution Details</h3>
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
@@ -136,9 +136,9 @@ export default function WorkflowExecutionPanel({ executionId, onClose }: Props) 
               </div>
 
               {/* Logs */}
-              <div className="bg-slate-700/50 rounded-lg p-4 border border-purple-500/20">
+              <div className="card-elevated rounded-2xl p-5">
                 <h3 className="text-lg font-semibold text-white mb-3">Execution Logs</h3>
-                <div className="bg-black/50 rounded p-4 max-h-96 overflow-y-auto font-mono text-sm">
+                <div className="bg-slate-950/70 rounded-xl p-4 max-h-96 overflow-y-auto font-mono text-sm border border-white/10">
                   {execution.logs && execution.logs.length > 0 ? (
                     execution.logs.map((log, idx) => (
                       <div key={idx} className="text-gray-300 mb-1">
@@ -158,9 +158,9 @@ export default function WorkflowExecutionPanel({ executionId, onClose }: Props) 
 
               {/* Result */}
               {execution.result && (
-                <div className="bg-slate-700/50 rounded-lg p-4 border border-purple-500/20">
+                <div className="card-elevated rounded-2xl p-5">
                   <h3 className="text-lg font-semibold text-white mb-3">Execution Result</h3>
-                  <pre className="bg-black/50 rounded p-4 overflow-x-auto text-sm text-gray-300">
+                  <pre className="bg-slate-950/70 rounded-xl p-4 overflow-x-auto text-sm text-gray-300 border border-white/10">
                     {JSON.stringify(execution.result, null, 2)}
                   </pre>
                 </div>
@@ -168,7 +168,7 @@ export default function WorkflowExecutionPanel({ executionId, onClose }: Props) 
 
               {/* Progress Indicator */}
               {execution.status === 'running' && (
-                <div className="bg-slate-700/50 rounded-lg p-4 border border-purple-500/20">
+                <div className="card-elevated rounded-2xl p-5">
                   <div className="flex items-center space-x-3">
                     <svg className="w-6 h-6 text-blue-400 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -184,26 +184,26 @@ export default function WorkflowExecutionPanel({ executionId, onClose }: Props) 
           ) : (
             <div className="flex items-center justify-center h-full">
               <div className="text-center">
-                <svg className="w-16 h-16 text-red-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-16 h-16 text-rose-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 <h3 className="text-xl font-semibold text-white mb-2">Execution Not Found</h3>
-                <p className="text-gray-400">Unable to load execution details</p>
+                <p className="text-slate-400">Unable to load execution details</p>
               </div>
             </div>
           )}
         </div>
 
         {/* Footer */}
-        <div className="p-6 border-t border-purple-500/20 flex justify-end space-x-4">
+        <div className="p-6 border-t border-white/10 flex justify-end space-x-4">
           {execution?.status === 'running' && (
-            <button className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-lg transition">
+            <button className="bg-rose-500/90 hover:bg-rose-500 text-white font-semibold py-2.5 px-6 rounded-xl transition shadow-lg shadow-rose-500/20">
               Stop Execution
             </button>
           )}
           <button
             onClick={onClose}
-            className="bg-slate-700 hover:bg-slate-600 text-white font-bold py-2 px-6 rounded-lg transition"
+            className="btn-secondary py-2.5 px-6 rounded-xl transition"
           >
             Close
           </button>
