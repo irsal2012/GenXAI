@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from typing import Dict, Any
 import logging
 
-from studio.backend.api import workflows, agents, tools
+from api import workflows, agents, tools
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
