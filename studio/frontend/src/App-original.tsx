@@ -8,7 +8,7 @@ function App() {
   const [activeTab, setActiveTab] = useState('home')
 
   return (
-    <div className="min-h-screen" style={{ background: '#0f172a' }}>
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-indigo-950/80 to-slate-950">
       {/* Navigation */}
       <nav className="sticky top-0 z-40 bg-slate-950/70 backdrop-blur-xl border-b border-white/10">
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
@@ -87,8 +87,8 @@ function App() {
           <div className="space-y-8">
             {/* Hero Section */}
             <div className="text-center space-y-5 glass-panel rounded-3xl px-8 py-12 relative overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 via-transparent to-pink-500/10" style={{ zIndex: 0 }} />
-              <div className="relative" style={{ zIndex: 1 }}>
+              <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 via-transparent to-pink-500/10" />
+              <div className="relative z-10">
                 <span className="inline-flex items-center px-4 py-1.5 rounded-full bg-white/10 text-sm text-purple-200 border border-white/10">
                   Launching GenXAI Studio v1.0
                 </span>
@@ -99,7 +99,7 @@ function App() {
                   Design, connect, and deploy intelligent agents with a modern visual builder. No code required—just craft, test, and scale.
                 </p>
               </div>
-              <div className="relative" style={{ zIndex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem', marginTop: '2rem' }}>
+              <div className="relative z-10 flex flex-col sm:flex-row justify-center items-center gap-4 mt-8">
                 <button
                   onClick={() => setActiveTab('workflows')}
                   className="btn-primary px-8 py-3 rounded-full text-sm sm:text-base"

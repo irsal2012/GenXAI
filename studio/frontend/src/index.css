@@ -24,9 +24,7 @@ body {
   min-width: 320px;
   min-height: 100vh;
   overflow-x: hidden;
-  background: radial-gradient(circle at top, rgba(124, 58, 237, 0.18), transparent 55%),
-    radial-gradient(circle at 30% 20%, rgba(59, 130, 246, 0.12), transparent 45%),
-    #0b1020;
+  background: #0b1020;
   color: #e2e8f0;
 }
 
