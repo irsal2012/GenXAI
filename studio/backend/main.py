@@ -6,6 +6,7 @@ from typing import Dict, Any
 import logging
 
 from api import workflows, agents, tools
+from services.db import init_db
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -43,10 +44,14 @@ async def health_check() -> Dict[str, str]:
     return {"status": "healthy"}
 
 
+# Initialize database
+init_db()
+
 # Include routers
 app.include_router(workflows.router, prefix="/api/workflows", tags=["workflows"])
 app.include_router(agents.router, prefix="/api/agents", tags=["agents"])
 app.include_router(tools.router, prefix="/api/tools", tags=["tools"])
+app.include_router(workflows.executions_router, prefix="/api/executions", tags=["executions"])
 
 
 if __name__ == "__main__":

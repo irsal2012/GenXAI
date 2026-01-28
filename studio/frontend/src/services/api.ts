@@ -4,12 +4,12 @@ const API_BASE_URL = 'http://localhost:8000'
 
 export interface Agent {
   id: string
-  name: string
   role: string
   goal: string
   backstory: string
+  llm_model: string
   tools: string[]
-  status: 'active' | 'draft' | 'inactive'
+  metadata: Record<string, any>
 }
 
 export interface Workflow {
@@ -17,20 +17,16 @@ export interface Workflow {
   name: string
   description: string
   nodes: any[]
-  connections: any[]
-  status: 'draft' | 'active' | 'running' | 'completed' | 'failed'
-  created_at: string
-  updated_at: string
+  edges: any[]
+  metadata: Record<string, any>
 }
 
 export interface Tool {
-  id: string
   name: string
   category: string
   description: string
-  version: string
-  author: string
-  installed: boolean
+  tags?: string[]
+  schema?: Record<string, any>
 }
 
 export interface WorkflowExecution {
@@ -124,7 +120,9 @@ class ApiService {
 
   async executeWorkflow(id: string): Promise<WorkflowExecution> {
     const response = await fetch(`${API_BASE_URL}/api/workflows/${id}/execute`, {
-      method: 'POST'
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({})
     })
     if (!response.ok) throw new Error('Failed to execute workflow')
     return await response.json()
@@ -146,20 +144,6 @@ class ApiService {
       console.error('Error fetching tools:', error)
       return []
     }
-  }
-
-  async installTool(toolId: string): Promise<void> {
-    const response = await fetch(`${API_BASE_URL}/api/tools/${toolId}/install`, {
-      method: 'POST'
-    })
-    if (!response.ok) throw new Error('Failed to install tool')
-  }
-
-  async uninstallTool(toolId: string): Promise<void> {
-    const response = await fetch(`${API_BASE_URL}/api/tools/${toolId}/uninstall`, {
-      method: 'POST'
-    })
-    if (!response.ok) throw new Error('Failed to uninstall tool')
   }
 
   // Health check

@@ -1,56 +1,21 @@
-import { useState } from 'react'
-
-interface Agent {
-  id: string
-  name: string
-  role: string
-  goal: string
-  backstory: string
-  tools: string[]
-  status: 'active' | 'draft' | 'inactive'
-}
+import { useEffect, useState } from 'react'
+import { apiService, Agent } from '../services/api'
 
 export default function AgentDesigner() {
-  const [agents, setAgents] = useState<Agent[]>([
-    {
-      id: '1',
-      name: 'Research Agent',
-      role: 'Research Specialist',
-      goal: 'Gather and analyze information from various sources',
-      backstory: 'Expert in web research and data gathering with years of experience',
-      tools: ['web_search', 'file_reader', 'data_analyzer'],
-      status: 'active'
-    },
-    {
-      id: '2',
-      name: 'Writer Agent',
-      role: 'Content Creator',
-      goal: 'Create high-quality content based on research',
-      backstory: 'Professional writer with expertise in various content formats',
-      tools: ['text_generator', 'grammar_checker', 'style_analyzer'],
-      status: 'draft'
-    },
-    {
-      id: '3',
-      name: 'Code Agent',
-      role: 'Software Developer',
-      goal: 'Write, review, and optimize code',
-      backstory: 'Senior developer with full-stack expertise',
-      tools: ['code_generator', 'code_analyzer', 'debugger'],
-      status: 'active'
-    }
-  ])
+  const [agents, setAgents] = useState<Agent[]>([])
 
   const [selectedAgent, setSelectedAgent] = useState<string | null>(null)
   const [isCreating, setIsCreating] = useState(false)
   const [newAgent, setNewAgent] = useState<Partial<Agent>>({
-    name: '',
     role: '',
     goal: '',
     backstory: '',
+    llm_model: 'gpt-4',
     tools: [],
-    status: 'draft'
+    metadata: {}
   })
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const availableTools = [
     'web_search', 'file_reader', 'calculator', 'email_sender',
@@ -58,30 +23,60 @@ export default function AgentDesigner() {
     'data_transformer', 'code_generator', 'grammar_checker', 'debugger'
   ]
 
-  const createAgent = () => {
-    if (newAgent.name && newAgent.role) {
-      const agent: Agent = {
-        id: Date.now().toString(),
-        name: newAgent.name,
-        role: newAgent.role,
-        goal: newAgent.goal || '',
-        backstory: newAgent.backstory || '',
-        tools: newAgent.tools || [],
-        status: 'draft'
+  useEffect(() => {
+    const loadAgents = async () => {
+      setIsLoading(true)
+      setError(null)
+      try {
+        const data = await apiService.getAgents()
+        setAgents(data)
+      } catch (err) {
+        setError('Unable to load agents')
+      } finally {
+        setIsLoading(false)
       }
-      setAgents([...agents, agent])
-      setNewAgent({ name: '', role: '', goal: '', backstory: '', tools: [], status: 'draft' })
-      setIsCreating(false)
+    }
+
+    loadAgents()
+  }, [])
+
+  const createAgent = async () => {
+    if (newAgent.role && newAgent.goal) {
+      try {
+        const created = await apiService.createAgent({
+          role: newAgent.role,
+          goal: newAgent.goal,
+          backstory: newAgent.backstory || '',
+          llm_model: newAgent.llm_model || 'gpt-4',
+          tools: newAgent.tools || [],
+          metadata: newAgent.metadata || {},
+        } as Omit<Agent, 'id'>)
+        setAgents(prev => [...prev, created])
+        setNewAgent({ role: '', goal: '', backstory: '', llm_model: 'gpt-4', tools: [], metadata: {} })
+        setIsCreating(false)
+      } catch (err) {
+        setError('Unable to create agent')
+      }
     }
   }
 
-  const deleteAgent = (id: string) => {
-    setAgents(agents.filter(a => a.id !== id))
-    setSelectedAgent(null)
+  const deleteAgent = async (id: string) => {
+    try {
+      await apiService.deleteAgent(id)
+      setAgents(agents.filter(a => a.id !== id))
+      setSelectedAgent(null)
+    } catch (err) {
+      setError('Unable to delete agent')
+    }
   }
 
-  const updateAgent = (id: string, updates: Partial<Agent>) => {
-    setAgents(agents.map(a => a.id === id ? { ...a, ...updates } : a))
+  const updateAgent = async (id: string, updates: Partial<Agent>) => {
+    try {
+      const updated = await apiService.updateAgent(id, updates)
+      setAgents(agents.map(a => a.id === id ? updated : a))
+    } catch (err) {
+      setError('Unable to update agent')
+    }
   }
 
   const toggleTool = (agentId: string, tool: string) => {
@@ -91,15 +86,6 @@ export default function AgentDesigner() {
         ? agent.tools.filter(t => t !== tool)
         : [...agent.tools, tool]
       updateAgent(agentId, { tools })
-    }
-  }
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'active': return 'bg-green-500/20 text-green-400'
-      case 'draft': return 'bg-yellow-500/20 text-yellow-400'
-      case 'inactive': return 'bg-gray-500/20 text-gray-400'
-      default: return 'bg-gray-500/20 text-gray-400'
     }
   }
 
@@ -133,12 +119,12 @@ export default function AgentDesigner() {
               }`}
             >
               <div className="flex items-center justify-between mb-2">
-                <h4 className="font-semibold text-white">{agent.name}</h4>
-                <span className={`badge-pill ${getStatusColor(agent.status)}`}>
-                  {agent.status}
+                <h4 className="font-semibold text-white">{agent.role}</h4>
+                <span className="badge-pill bg-purple-500/20 text-purple-200">
+                  {agent.llm_model}
                 </span>
               </div>
-              <p className="text-sm text-gray-400">{agent.role}</p>
+              <p className="text-sm text-gray-400">{agent.goal}</p>
               <div className="flex items-center mt-2 text-xs text-gray-500">
                 <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
@@ -168,17 +154,6 @@ export default function AgentDesigner() {
 
             <div className="space-y-4 card-elevated rounded-2xl p-6">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Agent Name *</label>
-                <input
-                  type="text"
-                  value={newAgent.name}
-                  onChange={(e) => setNewAgent({ ...newAgent, name: e.target.value })}
-                  className="w-full input-field px-4 py-3"
-                  placeholder="e.g., Research Agent"
-                />
-              </div>
-
-              <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">Role *</label>
                 <input
                   type="text"
@@ -190,12 +165,23 @@ export default function AgentDesigner() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Goal</label>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Goal *</label>
                 <textarea
                   value={newAgent.goal}
                   onChange={(e) => setNewAgent({ ...newAgent, goal: e.target.value })}
                   className="w-full input-field px-4 py-3 h-24"
                   placeholder="What is the agent's primary objective?"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">LLM Model</label>
+                <input
+                  type="text"
+                  value={newAgent.llm_model}
+                  onChange={(e) => setNewAgent({ ...newAgent, llm_model: e.target.value })}
+                  className="w-full input-field px-4 py-3"
+                  placeholder="e.g., gpt-4"
                 />
               </div>
 
@@ -229,19 +215,13 @@ export default function AgentDesigner() {
           <div className="max-w-3xl mx-auto">
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h2 className="text-2xl font-semibold text-white">{selectedAgentData.name}</h2>
-                <p className="text-slate-400 mt-1">{selectedAgentData.role}</p>
+                <h2 className="text-2xl font-semibold text-white">{selectedAgentData.role}</h2>
+                <p className="text-slate-400 mt-1">{selectedAgentData.goal}</p>
               </div>
               <div className="flex space-x-2">
-                <select
-                  value={selectedAgentData.status}
-                  onChange={(e) => updateAgent(selectedAgentData.id, { status: e.target.value as Agent['status'] })}
-                  className="input-field px-4 py-2"
-                >
-                  <option value="draft">Draft</option>
-                  <option value="active">Active</option>
-                  <option value="inactive">Inactive</option>
-                </select>
+                <span className="badge-pill bg-purple-500/20 text-purple-200">
+                  {selectedAgentData.llm_model}
+                </span>
                 <button
                   onClick={() => deleteAgent(selectedAgentData.id)}
                   className="bg-rose-500/90 hover:bg-rose-500 text-white px-4 py-2 rounded-xl transition shadow-lg shadow-rose-500/20"

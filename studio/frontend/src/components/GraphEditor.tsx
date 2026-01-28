@@ -1,4 +1,5 @@
-import { useState, useCallback } from 'react'
+import { useEffect, useState, useCallback } from 'react'
+import { apiService, Workflow } from '../services/api'
 
 interface Node {
   id: string
@@ -14,19 +15,13 @@ interface Connection {
 }
 
 export default function GraphEditor() {
-  const [nodes, setNodes] = useState<Node[]>([
-    { id: '1', type: 'start', label: 'Start', x: 100, y: 100 },
-    { id: '2', type: 'agent', label: 'Research Agent', x: 300, y: 100 },
-    { id: '3', type: 'agent', label: 'Writer Agent', x: 500, y: 100 },
-    { id: '4', type: 'end', label: 'End', x: 700, y: 100 },
-  ])
-  const [connections, setConnections] = useState<Connection[]>([
-    { from: '1', to: '2' },
-    { from: '2', to: '3' },
-    { from: '3', to: '4' },
-  ])
+  const [nodes, setNodes] = useState<Node[]>([])
+  const [connections, setConnections] = useState<Connection[]>([])
   const [selectedNode, setSelectedNode] = useState<string | null>(null)
   const [draggedNode, setDraggedNode] = useState<string | null>(null)
+  const [workflow, setWorkflow] = useState<Workflow | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const nodeTypes = [
     { type: 'start', label: 'Start Node', color: 'from-green-500 to-emerald-500' },
@@ -73,6 +68,61 @@ export default function GraphEditor() {
     setDraggedNode(null)
   }
 
+  useEffect(() => {
+    const loadWorkflow = async () => {
+      setIsLoading(true)
+      setError(null)
+      try {
+        const workflows = await apiService.getWorkflows()
+        if (workflows.length > 0) {
+          const latest = workflows[0]
+          setWorkflow(latest)
+          setNodes((latest.nodes || []) as Node[])
+          setConnections((latest.edges || []) as Connection[])
+        }
+      } catch (err) {
+        setError('Unable to load workflows')
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    loadWorkflow()
+  }, [])
+
+  const saveWorkflow = async () => {
+    const payload = {
+      name: workflow?.name || 'Untitled Workflow',
+      description: workflow?.description || '',
+      nodes,
+      edges: connections,
+      metadata: workflow?.metadata || {},
+    }
+    try {
+      if (workflow) {
+        const updated = await apiService.updateWorkflow(workflow.id, payload)
+        setWorkflow(updated)
+      } else {
+        const created = await apiService.createWorkflow(payload)
+        setWorkflow(created)
+      }
+    } catch (err) {
+      setError('Unable to save workflow')
+    }
+  }
+
+  const runWorkflow = async () => {
+    if (!workflow) {
+      setError('Please save the workflow before running')
+      return
+    }
+    try {
+      await apiService.executeWorkflow(workflow.id)
+    } catch (err) {
+      setError('Unable to execute workflow')
+    }
+  }
+
   const getNodeColor = (type: string) => {
     const nodeType = nodeTypes.find(nt => nt.type === type)
     return nodeType?.color || 'from-gray-500 to-gray-600'
@@ -100,16 +150,28 @@ export default function GraphEditor() {
 
         <div className="mt-6 pt-6 border-t border-white/10">
           <h3 className="text-lg font-semibold text-white mb-4">Actions</h3>
-          <button className="w-full btn-primary py-2.5 px-4 rounded-xl transition mb-2">
+          <button
+            onClick={saveWorkflow}
+            className="w-full btn-primary py-2.5 px-4 rounded-xl transition mb-2"
+          >
             Save Workflow
           </button>
-          <button className="w-full bg-emerald-500/90 hover:bg-emerald-500 text-white font-semibold py-2.5 px-4 rounded-xl transition mb-2 shadow-lg shadow-emerald-500/20">
+          <button
+            onClick={runWorkflow}
+            className="w-full bg-emerald-500/90 hover:bg-emerald-500 text-white font-semibold py-2.5 px-4 rounded-xl transition mb-2 shadow-lg shadow-emerald-500/20"
+          >
             Run Workflow
           </button>
           <button className="w-full btn-secondary py-2.5 px-4 rounded-xl transition">
             Clear Canvas
           </button>
         </div>
+
+        {(isLoading || error) && (
+          <div className="mt-4 text-xs text-slate-400">
+            {isLoading ? 'Loading workflows...' : error}
+          </div>
+        )}
 
         {selectedNode && (
           <div className="mt-6 pt-6 border-t border-white/10">
