@@ -1,6 +1,4 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
 :root {
   font-family: "Inter", system-ui, sans-serif;
@@ -24,5 +22,6 @@ a {
 }
 
 .card {
-  @apply rounded-2xl bg-white shadow-card border border-slate-100;
+  @apply rounded-2xl bg-white border border-slate-100;
+  box-shadow: 0 12px 24px -16px rgba(15, 23, 42, 0.4);
 }
