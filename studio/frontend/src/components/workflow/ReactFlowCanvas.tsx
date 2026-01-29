@@ -34,6 +34,8 @@ interface ReactFlowCanvasProps {
   edges: ReactFlowEdge[]
   onNodesChange?: (nodes: Node[]) => void
   onEdgesChange?: (edges: Edge[]) => void
+  onNodeClick?: (node: Node) => void
+  onNodeDoubleClick?: (node: Node) => void
 }
 
 // Auto-layout using dagre
@@ -110,7 +112,7 @@ const nodeTypes = {
   default: CustomNode,
 }
 
-const ReactFlowCanvas = ({ nodes: initialNodes, edges: initialEdges, onNodesChange, onEdgesChange }: ReactFlowCanvasProps) => {
+const ReactFlowCanvas = ({ nodes: initialNodes, edges: initialEdges, onNodesChange, onEdgesChange, onNodeClick, onNodeDoubleClick }: ReactFlowCanvasProps) => {
   const reactFlowWrapper = useRef<HTMLDivElement>(null)
   const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | null>(null)
   
@@ -291,6 +293,8 @@ const ReactFlowCanvas = ({ nodes: initialNodes, edges: initialEdges, onNodesChan
         onInit={setReactFlowInstance}
         onDrop={onDrop}
         onDragOver={onDragOver}
+        onNodeClick={(_, node) => onNodeClick?.(node)}
+        onNodeDoubleClick={(_, node) => onNodeDoubleClick?.(node)}
         deleteKeyCode={['Backspace', 'Delete']}
         fitView
         attributionPosition="bottom-left"

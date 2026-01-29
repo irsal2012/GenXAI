@@ -7,7 +7,9 @@ import LoadingState from '../components/LoadingState'
 import ReactFlowCanvas from '../components/workflow/ReactFlowCanvas'
 import NodePalette from '../components/workflow/NodePalette'
 import AgentConfigModal from '../components/workflow/AgentConfigModal'
+import AgentDetailsPanel from '../components/workflow/AgentDetailsPanel'
 import { convertToReactFlow } from '../utils/workflowConverter'
+import type { Node } from '@xyflow/react'
 
 const WorkflowBuilderPage = () => {
   const { workflowId } = useParams<{ workflowId: string }>()
@@ -41,6 +43,9 @@ const WorkflowBuilderPage = () => {
   }, [workflowQuery.data])
 
   const [viewMode, setViewMode] = useState<'visual' | 'json'>('visual')
+  const [selectedNode, setSelectedNode] = useState<Node | null>(null)
+  const [configModalOpen, setConfigModalOpen] = useState(false)
+  const [configModalNode, setConfigModalNode] = useState<any>(null)
 
   const handleSave = async () => {
     if (!workflowQuery.data || !workflowId) return
@@ -123,11 +128,33 @@ const WorkflowBuilderPage = () => {
           </div>
 
           {viewMode === 'visual' ? (
-            <div className="h-[700px] flex">
+            <div className="h-[700px] flex gap-4">
               <NodePalette />
               <div className="flex-1">
-                <ReactFlowCanvas nodes={visualWorkflow.nodes} edges={visualWorkflow.edges} />
+                <ReactFlowCanvas 
+                  nodes={visualWorkflow.nodes} 
+                  edges={visualWorkflow.edges}
+                  onNodeClick={(node) => setSelectedNode(node)}
+                  onNodeDoubleClick={(node) => {
+                    if (node.type === 'agent') {
+                      setConfigModalNode(node)
+                      setConfigModalOpen(true)
+                    }
+                  }}
+                />
               </div>
+              {selectedNode && selectedNode.type === 'agent' && (
+                <div className="w-80 h-full">
+                  <AgentDetailsPanel
+                    selectedNode={selectedNode}
+                    onClose={() => setSelectedNode(null)}
+                    onConfigure={(node) => {
+                      setConfigModalNode(node)
+                      setConfigModalOpen(true)
+                    }}
+                  />
+                </div>
+              )}
             </div>
           ) : (
             <>
@@ -176,6 +203,29 @@ const WorkflowBuilderPage = () => {
           </div>
         </div>
       </div>
+
+      {/* Agent Configuration Modal */}
+      {configModalOpen && configModalNode && (
+        <AgentConfigModal
+          isOpen={configModalOpen}
+          onClose={() => {
+            setConfigModalOpen(false)
+            setConfigModalNode(null)
+          }}
+          agentData={{
+            id: configModalNode.id,
+            label: configModalNode.data.label || 'Agent',
+            config: configModalNode.data.config || {},
+          }}
+          onSave={(updatedConfig) => {
+            // Update the node's config in the workflow
+            console.log('Updated config:', updatedConfig)
+            // TODO: Implement actual node update logic
+            setConfigModalOpen(false)
+            setConfigModalNode(null)
+          }}
+        />
+      )}
     </div>
   )
 }

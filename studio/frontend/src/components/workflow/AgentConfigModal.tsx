@@ -15,8 +15,16 @@ interface AgentConfigModalProps {
     config?: {
       role?: string
       goal?: string
+      backstory?: string
+      llm_model?: string
       tools?: string[]
       description?: string
+      temperature?: number
+      max_tokens?: number
+      max_iterations?: number
+      allow_delegation?: boolean
+      verbose?: boolean
+      metadata?: Record<string, unknown>
     }
   }
   onSave: (updatedConfig: any) => void
