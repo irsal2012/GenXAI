@@ -48,17 +48,9 @@ const AgentsPage = () => {
     setIsCreateModalOpen(false)
   }
 
-  if (agentsQuery.isLoading) {
-    return <LoadingState message="Loading agents..." />
-  }
-
-  if (agentsQuery.isError) {
-    return <ErrorState message="Unable to load agents." />
-  }
-
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-lg font-semibold">Agent Catalog</h2>
           <p className="text-sm text-slate-500">Define reusable agents for workflows.</p>
@@ -70,35 +62,42 @@ const AgentsPage = () => {
           Create agent
         </button>
       </div>
-      <div className="grid gap-4">
-        {agentsQuery.data?.map((agent) => (
-          <div key={agent.id} className="card flex items-center justify-between p-5">
-            <div>
-              <p className="text-base font-semibold text-slate-900">{agent.role}</p>
-              <p className="text-sm text-slate-500">{agent.goal}</p>
-              <p className="mt-1 text-xs text-slate-400">Model: {agent.llm_model}</p>
+
+      {agentsQuery.isLoading ? (
+        <LoadingState message="Loading agents..." />
+      ) : agentsQuery.isError ? (
+        <ErrorState message="Unable to load agents." />
+      ) : (
+        <div className="grid gap-4">
+          {agentsQuery.data?.map((agent) => (
+            <div key={agent.id} className="card flex items-center justify-between p-5">
+              <div>
+                <p className="text-base font-semibold text-slate-900">{agent.role}</p>
+                <p className="text-sm text-slate-500">{agent.goal}</p>
+                <p className="mt-1 text-xs text-slate-400">Model: {agent.llm_model}</p>
+              </div>
+              <div className="flex items-center gap-3">
+                <button
+                  className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                  onClick={() => handleEdit(agent)}
+                >
+                  Edit
+                </button>
+                <button
+                  className="rounded-xl border border-red-200 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50"
+                  onClick={() => handleDelete(agent.id)}
+                  disabled={deleteAgent.isPending}
+                >
+                  Delete
+                </button>
+              </div>
             </div>
-            <div className="flex items-center gap-3">
-              <button
-                className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-                onClick={() => handleEdit(agent)}
-              >
-                Edit
-              </button>
-              <button
-                className="rounded-xl border border-red-200 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50"
-                onClick={() => handleDelete(agent.id)}
-                disabled={deleteAgent.isPending}
-              >
-                Delete
-              </button>
-            </div>
-          </div>
-        ))}
-        {agentsQuery.data?.length === 0 ? (
-          <div className="card p-6 text-sm text-slate-500">No agents yet. Create one to get started.</div>
-        ) : null}
-      </div>
+          ))}
+          {agentsQuery.data?.length === 0 ? (
+            <div className="card p-6 text-sm text-slate-500">No agents yet. Create one to get started.</div>
+          ) : null}
+        </div>
+      )}
 
       <AgentCreateModal
         isOpen={isCreateModalOpen}

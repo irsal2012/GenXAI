@@ -1,5 +1,22 @@
 @import "tailwindcss";
 
+/*
+  Tailwind v4 is “CSS-first”. Our UI uses semantic colors like `bg-primary-600`.
+  In some setups the JS config isn't picked up by the PostCSS plugin, which
+  means `primary-*` utilities never get generated and buttons render as
+  transparent with white text (effectively invisible).
+
+  Defining the tokens here guarantees `bg-primary-*`, `text-primary-*`,
+  `focus:ring-primary-*`, etc. exist.
+*/
+@theme {
+  --color-primary-50: #eff6ff;
+  --color-primary-100: #dbeafe;
+  --color-primary-500: #3b82f6;
+  --color-primary-600: #2563eb;
+  --color-primary-700: #1d4ed8;
+}
+
 :root {
   font-family: "Inter", system-ui, sans-serif;
   color: #0f172a;
