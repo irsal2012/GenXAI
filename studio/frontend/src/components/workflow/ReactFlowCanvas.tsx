@@ -40,7 +40,9 @@ const getLayoutedElements = (nodes: Node[], edges: Edge[]) => {
   dagreGraph.setGraph({ rankdir: 'TB', ranksep: 100, nodesep: 80 })
 
   nodes.forEach((node) => {
-    dagreGraph.setNode(node.id, { width: 180, height: 80 })
+    // Agent nodes are more compact (to match the palette cards)
+    const size = node.type === 'agent' ? { width: 160, height: 44 } : { width: 180, height: 80 }
+    dagreGraph.setNode(node.id, size)
   })
 
   edges.forEach((edge) => {
@@ -54,8 +56,8 @@ const getLayoutedElements = (nodes: Node[], edges: Edge[]) => {
     return {
       ...node,
       position: {
-        x: nodeWithPosition.x - 90,
-        y: nodeWithPosition.y - 40,
+        x: nodeWithPosition.x - nodeWithPosition.width / 2,
+        y: nodeWithPosition.y - nodeWithPosition.height / 2,
       },
     }
   })
@@ -241,6 +243,7 @@ const ReactFlowCanvas = ({ nodes: initialNodes, edges: initialEdges, onNodesChan
         onInit={setReactFlowInstance}
         onDrop={onDrop}
         onDragOver={onDragOver}
+        deleteKeyCode={['Backspace', 'Delete']}
         fitView
         attributionPosition="bottom-left"
         nodesDraggable={true}
