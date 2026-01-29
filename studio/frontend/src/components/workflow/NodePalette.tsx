@@ -22,13 +22,6 @@ const nodeTypes: NodeType[] = [
     description: 'Workflow entry point',
   },
   {
-    type: 'agent',
-    label: 'Agent',
-    icon: '🤖',
-    color: '#3b82f6',
-    description: 'Execute an AI agent',
-  },
-  {
     type: 'tool',
     label: 'Tool',
     icon: '🔧',
