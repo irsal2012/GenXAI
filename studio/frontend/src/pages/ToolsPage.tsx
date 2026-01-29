@@ -1,19 +1,35 @@
 import { useMemo, useState } from 'react'
-import { useToolCategories, useToolSearch, useTools } from '../services/tools'
+import { PlusIcon } from '@heroicons/react/24/outline'
+import { useToolCategories, useToolSearch, useTools, useToolTemplates, useCreateTool } from '../services/tools'
 import ErrorState from '../components/ErrorState'
 import LoadingState from '../components/LoadingState'
+import ToolCreateModal from '../components/ToolCreateModal'
 
 const ToolsPage = () => {
   const [query, setQuery] = useState('')
   const [category, setCategory] = useState('')
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
+  
   const toolsQuery = useTools()
   const categoriesQuery = useToolCategories()
   const searchQuery = useToolSearch(query, category || undefined)
+  const templatesQuery = useToolTemplates()
+  const createToolMutation = useCreateTool()
 
   const tools = useMemo(() => {
     if (query) return searchQuery.data ?? []
     return toolsQuery.data ?? []
   }, [query, searchQuery.data, toolsQuery.data])
+
+  const handleCreateTool = async (toolData: any) => {
+    try {
+      await createToolMutation.mutateAsync(toolData)
+      setIsCreateModalOpen(false)
+    } catch (error) {
+      console.error('Failed to create tool:', error)
+      throw error
+    }
+  }
 
   if (toolsQuery.isLoading) {
     return <LoadingState message="Loading tools..." />
@@ -25,6 +41,22 @@ const ToolsPage = () => {
 
   return (
     <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">Tools</h1>
+          <p className="text-sm text-slate-600 mt-1">
+            Manage and create custom tools for your agents
+          </p>
+        </div>
+        <button
+          onClick={() => setIsCreateModalOpen(true)}
+          className="flex items-center gap-2 rounded-xl bg-primary-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary-700 transition-colors"
+        >
+          <PlusIcon className="h-5 w-5" />
+          Create Tool
+        </button>
+      </div>
+
       <div className="card p-5">
         <div className="grid gap-4 md:grid-cols-3">
           <div>
@@ -91,6 +123,14 @@ const ToolsPage = () => {
           <div className="card p-6 text-sm text-slate-500">No tools matched your filters.</div>
         ) : null}
       </div>
+
+      <ToolCreateModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onCreate={handleCreateTool}
+        isCreating={createToolMutation.isPending}
+        templates={templatesQuery.data ?? []}
+      />
     </div>
   )
 }

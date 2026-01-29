@@ -10,8 +10,8 @@ import {
 
 const links = [
   { to: '/', label: 'Dashboard', icon: Squares2X2Icon },
-  { to: '/agents', label: 'Agents', icon: UserCircleIcon },
   { to: '/tools', label: 'Tools', icon: WrenchScrewdriverIcon },
+  { to: '/agents', label: 'Agents', icon: UserCircleIcon },
   { to: '/workflows', label: 'Workflows', icon: PlayCircleIcon },
   { to: '/templates', label: 'Templates', icon: DocumentDuplicateIcon },
   { to: '/playground', label: 'Playground', icon: BeakerIcon },
