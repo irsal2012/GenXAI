@@ -43,6 +43,17 @@ def init_db() -> None:
             )
             """
         )
+
+        # Best-effort data hygiene/migration:
+        # Older versions stored empty lists as '{}' due to json_dumps using `value or {}`.
+        # That breaks the API when validating `tools: List[str]`.
+        conn.execute(
+            """
+            UPDATE agents
+            SET tools = '[]'
+            WHERE tools = '{}' OR tools IS NULL OR tools = ''
+            """
+        )
         conn.execute(
             """
             CREATE TABLE IF NOT EXISTS executions (
@@ -59,13 +70,26 @@ def init_db() -> None:
 
 
 def json_dumps(value: Any) -> str:
-    return json.dumps(value or {})
+    """Serialize Python values to JSON for storage.
+
+    IMPORTANT: we must preserve empty containers.
+
+    The previous implementation used `value or {}` which incorrectly converted empty
+    lists (e.g. tools=[]) into `{}`. That later causes API failures when we
+    deserialize and validate against Pydantic models expecting `List[str]`.
+    """
+
+    return json.dumps(value)
 
 
 def json_loads(value: Optional[str], default: Any) -> Any:
     if value is None:
         return default
-    return json.loads(value)
+    try:
+        parsed = json.loads(value)
+    except Exception:
+        return default
+    return default if parsed is None else parsed
 
 
 def fetch_all(query: str, params: Iterable[Any] = ()) -> list[Dict[str, Any]]:

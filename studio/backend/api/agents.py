@@ -10,6 +10,29 @@ from services.db import execute, fetch_all, fetch_one, json_dumps, json_loads
 router = APIRouter()
 
 
+def _normalize_tools(value: Any) -> List[str]:
+    """Ensure we always return a List[str] for tools.
+
+    Historical data could contain JSON objects (e.g. '{}') because older versions
+    mistakenly serialized empty lists as '{}' in the DB.
+    """
+
+    if value is None:
+        return []
+    if isinstance(value, list):
+        return [str(v) for v in value]
+    # If we got a dict/object, treat as empty list (invalid for tools).
+    return []
+
+
+def _normalize_metadata(value: Any) -> Dict[str, Any]:
+    if value is None:
+        return {}
+    if isinstance(value, dict):
+        return value
+    return {}
+
+
 class AgentCreate(BaseModel):
     """Agent creation request."""
 
@@ -37,18 +60,22 @@ class AgentResponse(BaseModel):
 async def list_agents() -> List[AgentResponse]:
     """List all agents."""
     agents = fetch_all("SELECT * FROM agents")
-    return [
-        AgentResponse(
-            id=agent["id"],
-            role=agent["role"],
-            goal=agent["goal"],
-            backstory=agent["backstory"],
-            llm_model=agent["llm_model"],
-            tools=json_loads(agent["tools"], []),
-            metadata=json_loads(agent["metadata"], {}),
+    responses: List[AgentResponse] = []
+    for agent in agents:
+        tools = _normalize_tools(json_loads(agent.get("tools"), []))
+        metadata = _normalize_metadata(json_loads(agent.get("metadata"), {}))
+        responses.append(
+            AgentResponse(
+                id=agent["id"],
+                role=agent["role"],
+                goal=agent["goal"],
+                backstory=agent["backstory"],
+                llm_model=agent["llm_model"],
+                tools=tools,
+                metadata=metadata,
+            )
         )
-        for agent in agents
-    ]
+    return responses
 
 
 @router.post("/")
@@ -87,8 +114,8 @@ async def get_agent(agent_id: str) -> AgentResponse:
         goal=agent["goal"],
         backstory=agent["backstory"],
         llm_model=agent["llm_model"],
-        tools=json_loads(agent["tools"], []),
-        metadata=json_loads(agent["metadata"], {}),
+        tools=_normalize_tools(json_loads(agent.get("tools"), [])),
+        metadata=_normalize_metadata(json_loads(agent.get("metadata"), {})),
     )
 
 
