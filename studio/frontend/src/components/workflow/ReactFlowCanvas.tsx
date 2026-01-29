@@ -207,6 +207,7 @@ const ReactFlowCanvas = ({ nodes: initialNodes, edges: initialEdges, onNodesChan
       const agentId = event.dataTransfer.getData('agentId')
       const agentName = event.dataTransfer.getData('agentName')
       const agentGoal = event.dataTransfer.getData('agentGoal')
+      const agentToolsStr = event.dataTransfer.getData('agentTools')
 
       if (!type) return
 
@@ -214,6 +215,16 @@ const ReactFlowCanvas = ({ nodes: initialNodes, edges: initialEdges, onNodesChan
         x: event.clientX,
         y: event.clientY,
       })
+
+      // Parse tools if available
+      let tools: string[] = []
+      if (agentToolsStr) {
+        try {
+          tools = JSON.parse(agentToolsStr)
+        } catch (e) {
+          console.error('Failed to parse agent tools:', e)
+        }
+      }
 
       const newNode: Node = {
         id: `${type}-${Date.now()}`,
@@ -223,6 +234,7 @@ const ReactFlowCanvas = ({ nodes: initialNodes, edges: initialEdges, onNodesChan
           label: agentName || type.charAt(0).toUpperCase() + type.slice(1),
           config: {
             ...(agentGoal ? { goal: agentGoal } : null),
+            ...(tools.length > 0 ? { tools } : null),
           },
           ...(agentId && { agentId }),
         },

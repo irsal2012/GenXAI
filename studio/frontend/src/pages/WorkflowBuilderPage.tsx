@@ -6,6 +6,7 @@ import ErrorState from '../components/ErrorState'
 import LoadingState from '../components/LoadingState'
 import ReactFlowCanvas from '../components/workflow/ReactFlowCanvas'
 import NodePalette from '../components/workflow/NodePalette'
+import AgentConfigModal from '../components/workflow/AgentConfigModal'
 import { convertToReactFlow } from '../utils/workflowConverter'
 
 const WorkflowBuilderPage = () => {

@@ -88,15 +88,26 @@ const NodePalette = () => {
                   e.dataTransfer.setData('agentId', agent.id)
                   e.dataTransfer.setData('agentName', agent.role)
                   e.dataTransfer.setData('agentGoal', agent.goal)
+                  e.dataTransfer.setData('agentTools', JSON.stringify(agent.tools || []))
                   e.dataTransfer.effectAllowed = 'move'
                 }}
-                className="flex items-center gap-2 p-2 rounded-lg border border-slate-200 bg-slate-50 hover:bg-blue-50 hover:border-blue-300 cursor-move transition-all"
+                className="flex flex-col gap-1 p-2 rounded-lg border border-slate-200 bg-slate-50 hover:bg-blue-50 hover:border-blue-300 cursor-move transition-all"
               >
-                <div className="text-lg">🤖</div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-xs font-medium text-slate-700 truncate">{agent.role}</div>
-                  <div className="text-xs text-slate-500 truncate">{agent.goal}</div>
+                <div className="flex items-center gap-2">
+                  <div className="text-lg">🤖</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-xs font-medium text-slate-700 truncate">{agent.role}</div>
+                    <div className="text-xs text-slate-500 truncate">{agent.goal}</div>
+                  </div>
                 </div>
+                {agent.tools && agent.tools.length > 0 && (
+                  <div className="flex items-center gap-1 pl-7">
+                    <div className="text-[10px]">🔧</div>
+                    <div className="text-[10px] text-slate-600">
+                      {agent.tools.length} tool{agent.tools.length !== 1 ? 's' : ''}
+                    </div>
+                  </div>
+                )}
               </div>
             ))}
           </div>

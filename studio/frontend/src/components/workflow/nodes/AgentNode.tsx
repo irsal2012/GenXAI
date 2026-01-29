@@ -24,9 +24,12 @@ const AgentNode = memo(({ id, data, isConnectable, selected }: NodeProps<AgentNo
     ? 'border-blue-500 bg-blue-50'
     : 'border-slate-200 bg-slate-50 hover:bg-blue-50 hover:border-blue-300'
 
+  const tools = data.config?.tools || []
+  const hasTools = tools.length > 0
+
   return (
     <div
-      className={`relative flex items-start gap-1.5 px-2 py-1.5 rounded-lg border shadow-sm min-w-[140px] max-w-[200px] transition-colors ${containerClass}`}
+      className={`relative flex flex-col gap-1 px-2 py-1.5 rounded-lg border shadow-sm min-w-[160px] max-w-[220px] transition-colors ${containerClass}`}
     >
       <Handle
         type="target"
@@ -35,18 +38,33 @@ const AgentNode = memo(({ id, data, isConnectable, selected }: NodeProps<AgentNo
         className="!bg-blue-500 !w-3 !h-3"
       />
 
-      {/* Icon */}
-      <div className="text-sm leading-none mt-0.5">🤖</div>
+      {/* Header with icon and label */}
+      <div className="flex items-start gap-1.5">
+        {/* Icon */}
+        <div className="text-sm leading-none mt-0.5">🤖</div>
 
-      {/* Content */}
-      <div className="flex-1 min-w-0">
-        <div className="text-[11px] leading-4 font-medium text-slate-700 truncate">{data.label}</div>
-        {(data.config?.goal || data.config?.description || data.config?.role) && (
-          <div className="text-[11px] leading-4 text-slate-500 truncate">
-            {data.config?.goal || data.config?.description || data.config?.role}
-          </div>
-        )}
+        {/* Content */}
+        <div className="flex-1 min-w-0">
+          <div className="text-[11px] leading-4 font-medium text-slate-700 truncate">{data.label}</div>
+          {(data.config?.goal || data.config?.description || data.config?.role) && (
+            <div className="text-[11px] leading-4 text-slate-500 truncate">
+              {data.config?.goal || data.config?.description || data.config?.role}
+            </div>
+          )}
+        </div>
       </div>
+
+      {/* Tools section */}
+      {hasTools && (
+        <div className="flex items-start gap-1 pt-1 border-t border-slate-200">
+          <div className="text-[10px] leading-none mt-0.5">🔧</div>
+          <div className="flex-1 min-w-0">
+            <div className="text-[10px] leading-3 text-slate-600 truncate" title={tools.join(', ')}>
+              {tools.length} tool{tools.length !== 1 ? 's' : ''}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Delete button (always visible on hover) */}
       <button
