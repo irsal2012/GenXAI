@@ -13,10 +13,13 @@ import {
   useEdgesState,
   addEdge,
   MarkerType,
+  Handle,
+  Position,
   type Connection,
   type Edge,
   type Node,
   type ReactFlowInstance,
+  type NodeProps,
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
 import dagre from 'dagre'
@@ -57,6 +60,48 @@ const getLayoutedElements = (nodes: Node[], edges: Edge[]) => {
   })
 
   return { nodes: layoutedNodes, edges }
+}
+
+// Custom Node Component with connection handles
+const CustomNode = ({ data, type }: NodeProps) => {
+  const nodeColors: Record<string, string> = {
+    start: '#10b981',
+    end: '#ef4444',
+    agent: '#3b82f6',
+    tool: '#8b5cf6',
+    decision: '#f59e0b',
+    default: '#6b7280',
+  }
+
+  const color = nodeColors[type || 'default'] || nodeColors.default
+
+  return (
+    <div
+      style={{
+        background: 'white',
+        border: `2px solid ${color}`,
+        borderRadius: '12px',
+        padding: '10px',
+        minWidth: '150px',
+        fontSize: '14px',
+        fontWeight: 600,
+      }}
+    >
+      <Handle type="target" position={Position.Top} style={{ background: color }} />
+      <div style={{ textAlign: 'center' }}>{String(data.label)}</div>
+      <Handle type="source" position={Position.Bottom} style={{ background: color }} />
+    </div>
+  )
+}
+
+// Node types mapping
+const nodeTypes = {
+  start: CustomNode,
+  agent: CustomNode,
+  tool: CustomNode,
+  decision: CustomNode,
+  end: CustomNode,
+  default: CustomNode,
 }
 
 const ReactFlowCanvas = ({ nodes: initialNodes, edges: initialEdges, onNodesChange, onEdgesChange }: ReactFlowCanvasProps) => {
@@ -179,6 +224,7 @@ const ReactFlowCanvas = ({ nodes: initialNodes, edges: initialEdges, onNodesChan
       <ReactFlow
         nodes={nodesWithStyles}
         edges={edges}
+        nodeTypes={nodeTypes}
         onNodesChange={handleNodesChange}
         onEdgesChange={handleEdgesChange}
         onConnect={onConnect}
@@ -187,6 +233,10 @@ const ReactFlowCanvas = ({ nodes: initialNodes, edges: initialEdges, onNodesChan
         onDragOver={onDragOver}
         fitView
         attributionPosition="bottom-left"
+        nodesDraggable={true}
+        nodesConnectable={true}
+        elementsSelectable={true}
+        selectNodesOnDrag={false}
       >
         <Background color="#e2e8f0" gap={20} />
         <Controls />
