@@ -93,7 +93,7 @@ const WorkflowBuilderPage = () => {
           </div>
         </div>
       </div>
-      <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
+      <div className="grid gap-6 lg:grid-cols-[5fr_1fr]">
         <div className="card p-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-base font-semibold">Workflow Editor</h3>
