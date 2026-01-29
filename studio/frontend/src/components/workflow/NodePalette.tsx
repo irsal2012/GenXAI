@@ -22,13 +22,6 @@ const nodeTypes: NodeType[] = [
     description: 'Workflow entry point',
   },
   {
-    type: 'tool',
-    label: 'Tool',
-    icon: '🔧',
-    color: '#8b5cf6',
-    description: 'Invoke a tool',
-  },
-  {
     type: 'decision',
     label: 'Decision',
     icon: '❓',
