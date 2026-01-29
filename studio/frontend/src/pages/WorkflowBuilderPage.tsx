@@ -5,6 +5,7 @@ import { useBuilderStore } from '../store/builderStore'
 import ErrorState from '../components/ErrorState'
 import LoadingState from '../components/LoadingState'
 import ReactFlowCanvas from '../components/workflow/ReactFlowCanvas'
+import NodePalette from '../components/workflow/NodePalette'
 import { convertToReactFlow } from '../utils/workflowConverter'
 
 const WorkflowBuilderPage = () => {
@@ -121,8 +122,11 @@ const WorkflowBuilderPage = () => {
           </div>
 
           {viewMode === 'visual' ? (
-            <div className="h-[500px]">
-              <ReactFlowCanvas nodes={visualWorkflow.nodes} edges={visualWorkflow.edges} />
+            <div className="h-[500px] flex">
+              <NodePalette />
+              <div className="flex-1">
+                <ReactFlowCanvas nodes={visualWorkflow.nodes} edges={visualWorkflow.edges} />
+              </div>
             </div>
           ) : (
             <>

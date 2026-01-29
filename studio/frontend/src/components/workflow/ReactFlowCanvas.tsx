@@ -3,7 +3,7 @@
  * Provides full drag-and-drop editing capabilities
  */
 
-import { useCallback, useMemo } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import {
   ReactFlow,
   Background,
@@ -16,6 +16,7 @@ import {
   type Connection,
   type Edge,
   type Node,
+  type ReactFlowInstance,
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
 import dagre from 'dagre'
@@ -59,6 +60,9 @@ const getLayoutedElements = (nodes: Node[], edges: Edge[]) => {
 }
 
 const ReactFlowCanvas = ({ nodes: initialNodes, edges: initialEdges, onNodesChange, onEdgesChange }: ReactFlowCanvasProps) => {
+  const reactFlowWrapper = useRef<HTMLDivElement>(null)
+  const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | null>(null)
+  
   // Apply auto-layout
   const { nodes: layoutedNodes, edges: layoutedEdges } = useMemo(
     () => getLayoutedElements(initialNodes, initialEdges),
@@ -130,14 +134,57 @@ const ReactFlowCanvas = ({ nodes: initialNodes, edges: initialEdges, onNodesChan
     [nodes]
   )
 
+  // Handle drag over
+  const onDragOver = useCallback((event: React.DragEvent) => {
+    event.preventDefault()
+    event.dataTransfer.dropEffect = 'move'
+  }, [])
+
+  // Handle drop
+  const onDrop = useCallback(
+    (event: React.DragEvent) => {
+      event.preventDefault()
+
+      if (!reactFlowInstance) return
+
+      const type = event.dataTransfer.getData('application/reactflow')
+      const agentId = event.dataTransfer.getData('agentId')
+      const agentName = event.dataTransfer.getData('agentName')
+
+      if (!type) return
+
+      const position = reactFlowInstance.screenToFlowPosition({
+        x: event.clientX,
+        y: event.clientY,
+      })
+
+      const newNode: Node = {
+        id: `${type}-${Date.now()}`,
+        type,
+        position,
+        data: {
+          label: agentName || type.charAt(0).toUpperCase() + type.slice(1),
+          ...(agentId && { agentId }),
+        },
+      }
+
+      setNodes((nds) => nds.concat(newNode))
+      onNodesChange?.([...nodes, newNode])
+    },
+    [reactFlowInstance, setNodes, nodes, onNodesChange]
+  )
+
   return (
-    <div className="w-full h-full bg-slate-50 rounded-xl border border-slate-200">
+    <div ref={reactFlowWrapper} className="w-full h-full bg-slate-50 rounded-xl border border-slate-200">
       <ReactFlow
         nodes={nodesWithStyles}
         edges={edges}
         onNodesChange={handleNodesChange}
         onEdgesChange={handleEdgesChange}
         onConnect={onConnect}
+        onInit={setReactFlowInstance}
+        onDrop={onDrop}
+        onDragOver={onDragOver}
         fitView
         attributionPosition="bottom-left"
       >
