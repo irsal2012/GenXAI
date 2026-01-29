@@ -126,16 +126,49 @@ const ReactFlowCanvas = ({ nodes: initialNodes, edges: initialEdges, onNodesChan
       ...edge,
       type: 'smoothstep',
       animated: true,
+      style: {
+        strokeDasharray: '5,5',
+        stroke: '#94a3b8',
+        strokeWidth: 2,
+      },
       markerEnd: {
         type: MarkerType.ArrowClosed,
+        color: '#94a3b8',
       },
     }))
   )
 
   const onConnect = useCallback(
     (params: Connection) => {
-      const newEdges = addEdge(params, edges)
-      setEdges(newEdges)
+      const newEdge = {
+        ...params,
+        type: 'smoothstep',
+        animated: true,
+        style: {
+          strokeDasharray: '5,5',
+          stroke: '#94a3b8',
+          strokeWidth: 2,
+        },
+        markerEnd: {
+          type: MarkerType.ArrowClosed,
+          color: '#94a3b8',
+        },
+      }
+      const newEdges = addEdge(newEdge, edges) as any[]
+      setEdges(newEdges.map((edge) => ({
+        ...edge,
+        type: edge.type || 'smoothstep',
+        animated: true,
+        style: {
+          strokeDasharray: '5,5',
+          stroke: '#94a3b8',
+          strokeWidth: 2,
+        },
+        markerEnd: {
+          type: MarkerType.ArrowClosed,
+          color: '#94a3b8',
+        },
+      })))
       onEdgesChange?.(newEdges)
     },
     [edges, setEdges, onEdgesChange]
