@@ -24,6 +24,7 @@ import {
 import '@xyflow/react/dist/style.css'
 import dagre from 'dagre'
 import type { ReactFlowNode, ReactFlowEdge } from '../../utils/workflowConverter'
+import AgentNode from './nodes/AgentNode'
 
 interface ReactFlowCanvasProps {
   nodes: ReactFlowNode[]
@@ -97,7 +98,7 @@ const CustomNode = ({ data, type }: NodeProps) => {
 // Node types mapping
 const nodeTypes = {
   start: CustomNode,
-  agent: CustomNode,
+  agent: AgentNode,
   tool: CustomNode,
   decision: CustomNode,
   end: CustomNode,
@@ -161,21 +162,26 @@ const ReactFlowCanvas = ({ nodes: initialNodes, edges: initialEdges, onNodesChan
     default: '#6b7280',
   }
 
-  // Custom node styles
+  // Custom node styles: keep styling for non-agent nodes only.
+  // Agent nodes are rendered by AgentNode component so it can match the palette card style.
   const nodesWithStyles = useMemo(
     () =>
-      nodes.map((node) => ({
-        ...node,
-        style: {
-          background: 'white',
-          border: `2px solid ${nodeColors[node.type || 'default'] || nodeColors.default}`,
-          borderRadius: '12px',
-          padding: '10px',
-          width: 180,
-          fontSize: '14px',
-          fontWeight: 600,
-        },
-      })),
+      nodes.map((node) => {
+        if (node.type === 'agent') return node
+
+        return {
+          ...node,
+          style: {
+            background: 'white',
+            border: `2px solid ${nodeColors[node.type || 'default'] || nodeColors.default}`,
+            borderRadius: '12px',
+            padding: '10px',
+            width: 180,
+            fontSize: '14px',
+            fontWeight: 600,
+          },
+        }
+      }),
     [nodes]
   )
 
@@ -195,6 +201,7 @@ const ReactFlowCanvas = ({ nodes: initialNodes, edges: initialEdges, onNodesChan
       const type = event.dataTransfer.getData('application/reactflow')
       const agentId = event.dataTransfer.getData('agentId')
       const agentName = event.dataTransfer.getData('agentName')
+      const agentGoal = event.dataTransfer.getData('agentGoal')
 
       if (!type) return
 
@@ -209,6 +216,9 @@ const ReactFlowCanvas = ({ nodes: initialNodes, edges: initialEdges, onNodesChan
         position,
         data: {
           label: agentName || type.charAt(0).toUpperCase() + type.slice(1),
+          config: {
+            ...(agentGoal ? { goal: agentGoal } : null),
+          },
           ...(agentId && { agentId }),
         },
       }

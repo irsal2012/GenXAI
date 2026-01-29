@@ -12,7 +12,7 @@ const ToolPalette = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
   const [searchQuery, setSearchQuery] = useState('')
 
-  const onDragStart = (event: React.DragEvent, toolName: string, toolData: any) => {
+  const onDragStart = (event: React.DragEvent, _toolName: string, toolData: any) => {
     event.dataTransfer.setData('application/tool', JSON.stringify(toolData))
     event.dataTransfer.effectAllowed = 'copy'
   }

@@ -87,6 +87,7 @@ const NodePalette = () => {
                   e.dataTransfer.setData('application/reactflow', 'agent')
                   e.dataTransfer.setData('agentId', agent.id)
                   e.dataTransfer.setData('agentName', agent.role)
+                  e.dataTransfer.setData('agentGoal', agent.goal)
                   e.dataTransfer.effectAllowed = 'move'
                 }}
                 className="flex items-center gap-2 p-2 rounded-lg border border-slate-200 bg-slate-50 hover:bg-blue-50 hover:border-blue-300 cursor-move transition-all"
