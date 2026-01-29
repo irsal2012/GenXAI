@@ -25,6 +25,8 @@ import '@xyflow/react/dist/style.css'
 import dagre from 'dagre'
 import type { ReactFlowNode, ReactFlowEdge } from '../../utils/workflowConverter'
 import AgentNode from './nodes/AgentNode'
+import StartNode from './nodes/StartNode'
+import EndNode from './nodes/EndNode'
 
 interface ReactFlowCanvasProps {
   nodes: ReactFlowNode[]
@@ -99,11 +101,11 @@ const CustomNode = ({ data, type }: NodeProps) => {
 
 // Node types mapping
 const nodeTypes = {
-  start: CustomNode,
+  start: StartNode,
   agent: AgentNode,
   tool: CustomNode,
   decision: CustomNode,
-  end: CustomNode,
+  end: EndNode,
   default: CustomNode,
 }
 
@@ -164,12 +166,12 @@ const ReactFlowCanvas = ({ nodes: initialNodes, edges: initialEdges, onNodesChan
     default: '#6b7280',
   }
 
-  // Custom node styles: keep styling for non-agent nodes only.
-  // Agent nodes are rendered by AgentNode component so it can match the palette card style.
+  // Custom node styles: keep styling for non-custom component nodes only.
+  // Agent, Start, and End nodes are rendered by their own components.
   const nodesWithStyles = useMemo(
     () =>
       nodes.map((node) => {
-        if (node.type === 'agent') return node
+        if (node.type === 'agent' || node.type === 'start' || node.type === 'end') return node
 
         return {
           ...node,
