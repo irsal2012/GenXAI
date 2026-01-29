@@ -4,7 +4,7 @@ import { useExecuteWorkflow, useUpdateWorkflow, useWorkflow } from '../services/
 import { useBuilderStore } from '../store/builderStore'
 import ErrorState from '../components/ErrorState'
 import LoadingState from '../components/LoadingState'
-import SimpleWorkflowCanvas from '../components/workflow/SimpleWorkflowCanvas'
+import ReactFlowCanvas from '../components/workflow/ReactFlowCanvas'
 import { convertToReactFlow } from '../utils/workflowConverter'
 
 const WorkflowBuilderPage = () => {
@@ -122,7 +122,7 @@ const WorkflowBuilderPage = () => {
 
           {viewMode === 'visual' ? (
             <div className="h-[500px]">
-              <SimpleWorkflowCanvas nodes={visualWorkflow.nodes} edges={visualWorkflow.edges} />
+              <ReactFlowCanvas nodes={visualWorkflow.nodes} edges={visualWorkflow.edges} />
             </div>
           ) : (
             <>

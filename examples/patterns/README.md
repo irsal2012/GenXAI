@@ -130,6 +130,33 @@ Generator → Validator → (if pass) → Finalizer
 
 ---
 
+### 6. Peer-to-Peer (P2P) Pattern
+**File:** `06_peer_to_peer.py`
+
+Decentralized agent communication where agents interact directly without a central manager.
+
+```
+Agent1 ←→ Agent2
+  ↕         ↕
+Agent3 ←→ Agent4
+```
+
+**Use Cases:**
+- Collaborative problem-solving
+- Distributed decision-making
+- Multi-agent negotiation
+- Consensus building
+- Peer review systems
+
+**Key Features:**
+- No central coordinator
+- Direct agent-to-agent communication
+- Multiple termination strategies
+- Emergent behavior
+- Consensus-based decisions
+
+---
+
 ## 🚀 Running the Examples
 
 ### Prerequisites
@@ -159,6 +186,9 @@ python examples/patterns/04_coordinator_delegator_worker.py
 
 # Cyclic/iterative
 python examples/patterns/05_cyclic_iterative.py
+
+# Peer-to-peer
+python examples/patterns/06_peer_to_peer.py
 ```
 
 ### Run All Patterns
@@ -181,6 +211,7 @@ done
 | Parallel | Medium | Fast | High | Independent tasks |
 | CDW | High | Fast | Very High | Complex projects |
 | Cyclic | Medium | Slow | Medium | Quality refinement |
+| P2P | Medium-High | Medium | High | Collaborative/Distributed |
 
 ## 🎯 Choosing the Right Pattern
 
@@ -209,6 +240,13 @@ done
 - Quality standards are high
 - Refinement is expected
 - Feedback improves output
+
+### Use **P2P** when:
+- Agents need to collaborate as equals
+- No clear hierarchy exists
+- Consensus-based decisions required
+- Distributed problem-solving needed
+- Emergent solutions are acceptable
 
 ## 🔧 Customization
 
