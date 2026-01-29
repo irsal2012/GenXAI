@@ -3,9 +3,9 @@ import { Squares2X2Icon, PlayCircleIcon, UserCircleIcon, WrenchScrewdriverIcon }
 
 const links = [
   { to: '/', label: 'Dashboard', icon: Squares2X2Icon },
-  { to: '/workflows', label: 'Workflows', icon: PlayCircleIcon },
   { to: '/agents', label: 'Agents', icon: UserCircleIcon },
   { to: '/tools', label: 'Tools', icon: WrenchScrewdriverIcon },
+  { to: '/workflows', label: 'Workflows', icon: PlayCircleIcon },
 ]
 
 const Sidebar = () => {
