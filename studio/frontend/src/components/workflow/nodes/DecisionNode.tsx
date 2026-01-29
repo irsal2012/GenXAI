@@ -2,19 +2,19 @@ import { memo } from 'react'
 import { Handle, Position, useReactFlow } from '@xyflow/react'
 import type { Node, NodeProps } from '@xyflow/react'
 
-interface EndNodeData {
+interface DecisionNodeData {
   [key: string]: unknown
   label: string
 }
 
-type EndNodeType = Node<EndNodeData, 'end'>
+type DecisionNodeType = Node<DecisionNodeData, 'decision'>
 
-const EndNode = memo(({ id, data, isConnectable, selected }: NodeProps<EndNodeType>) => {
+const DecisionNode = memo(({ id, data, isConnectable, selected }: NodeProps<DecisionNodeType>) => {
   const { deleteElements } = useReactFlow()
 
   const containerClass = selected
-    ? 'border-red-500 bg-red-50'
-    : 'border-red-500 bg-white hover:bg-red-50'
+    ? 'border-orange-500 bg-orange-50'
+    : 'border-orange-500 bg-white hover:bg-orange-50'
 
   return (
     <div
@@ -24,18 +24,18 @@ const EndNode = memo(({ id, data, isConnectable, selected }: NodeProps<EndNodeTy
         type="target"
         position={Position.Top}
         isConnectable={isConnectable}
-        className="!bg-red-500 !w-3 !h-3"
+        className="!bg-orange-500 !w-3 !h-3"
       />
 
       {/* Icon */}
-      <div className="flex-shrink-0 w-8 h-8 bg-slate-400 rounded flex items-center justify-center text-white text-lg mt-0.5">
-        ◼
+      <div className="flex-shrink-0 w-8 h-8 flex items-center justify-center text-red-500 text-2xl font-bold mt-0.5">
+        ?
       </div>
 
       {/* Content */}
       <div className="flex-1 min-w-0">
         <div className="text-sm font-semibold text-slate-800">{data.label}</div>
-        <div className="text-xs text-slate-500">Workflow exit point</div>
+        <div className="text-xs text-slate-500">Conditional branching</div>
       </div>
 
       {/* Delete button (always visible on hover) */}
@@ -56,10 +56,17 @@ const EndNode = memo(({ id, data, isConnectable, selected }: NodeProps<EndNodeTy
       >
         ×
       </button>
+
+      <Handle
+        type="source"
+        position={Position.Bottom}
+        isConnectable={isConnectable}
+        className="!bg-orange-500 !w-3 !h-3"
+      />
     </div>
   )
 })
 
-EndNode.displayName = 'EndNode'
+DecisionNode.displayName = 'DecisionNode'
 
-export default EndNode
+export default DecisionNode

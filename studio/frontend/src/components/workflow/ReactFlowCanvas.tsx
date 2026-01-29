@@ -27,6 +27,7 @@ import type { ReactFlowNode, ReactFlowEdge } from '../../utils/workflowConverter
 import AgentNode from './nodes/AgentNode'
 import StartNode from './nodes/StartNode'
 import EndNode from './nodes/EndNode'
+import DecisionNode from './nodes/DecisionNode'
 
 interface ReactFlowCanvasProps {
   nodes: ReactFlowNode[]
@@ -104,7 +105,7 @@ const nodeTypes = {
   start: StartNode,
   agent: AgentNode,
   tool: CustomNode,
-  decision: CustomNode,
+  decision: DecisionNode,
   end: EndNode,
   default: CustomNode,
 }
@@ -167,11 +168,11 @@ const ReactFlowCanvas = ({ nodes: initialNodes, edges: initialEdges, onNodesChan
   }
 
   // Custom node styles: keep styling for non-custom component nodes only.
-  // Agent, Start, and End nodes are rendered by their own components.
+  // Agent, Start, End, and Decision nodes are rendered by their own components.
   const nodesWithStyles = useMemo(
     () =>
       nodes.map((node) => {
-        if (node.type === 'agent' || node.type === 'start' || node.type === 'end') return node
+        if (node.type === 'agent' || node.type === 'start' || node.type === 'end' || node.type === 'decision') return node
 
         return {
           ...node,
