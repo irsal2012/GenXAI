@@ -1,7 +1,9 @@
-import { useCreateAgent, useDeleteAgent, useAgents } from '../services/agents'
+import { useState } from 'react'
+import { useCreateAgent, useDeleteAgent, useUpdateAgent, useAgents } from '../services/agents'
 import ErrorState from '../components/ErrorState'
 import LoadingState from '../components/LoadingState'
-import type { AgentInput } from '../types/api'
+import AgentEditModal from '../components/AgentEditModal'
+import type { Agent, AgentInput } from '../types/api'
 
 const defaultAgent: AgentInput = {
   role: 'Research Assistant',
@@ -16,6 +18,9 @@ const AgentsPage = () => {
   const agentsQuery = useAgents()
   const createAgent = useCreateAgent()
   const deleteAgent = useDeleteAgent()
+  const [editingAgent, setEditingAgent] = useState<Agent | null>(null)
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const updateAgent = useUpdateAgent(editingAgent?.id ?? '')
 
   const handleCreate = async () => {
     await createAgent.mutateAsync({
@@ -27,6 +32,22 @@ const AgentsPage = () => {
   const handleDelete = async (agentId: string) => {
     if (!window.confirm('Delete this agent?')) return
     await deleteAgent.mutateAsync(agentId)
+  }
+
+  const handleEdit = (agent: Agent) => {
+    setEditingAgent(agent)
+    setIsModalOpen(true)
+  }
+
+  const handleSave = async (data: AgentInput) => {
+    if (editingAgent) {
+      await updateAgent.mutateAsync(data)
+    }
+  }
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false)
+    setEditingAgent(null)
   }
 
   if (agentsQuery.isLoading) {
@@ -60,19 +81,35 @@ const AgentsPage = () => {
               <p className="text-sm text-slate-500">{agent.goal}</p>
               <p className="mt-1 text-xs text-slate-400">Model: {agent.llm_model}</p>
             </div>
-            <button
-              className="rounded-xl border border-red-200 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50"
-              onClick={() => handleDelete(agent.id)}
-              disabled={deleteAgent.isPending}
-            >
-              Delete
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                onClick={() => handleEdit(agent)}
+              >
+                Edit
+              </button>
+              <button
+                className="rounded-xl border border-red-200 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50"
+                onClick={() => handleDelete(agent.id)}
+                disabled={deleteAgent.isPending}
+              >
+                Delete
+              </button>
+            </div>
           </div>
         ))}
         {agentsQuery.data?.length === 0 ? (
           <div className="card p-6 text-sm text-slate-500">No agents yet. Create one to get started.</div>
         ) : null}
       </div>
+
+      <AgentEditModal
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        onSave={handleSave}
+        agent={editingAgent}
+        isSaving={updateAgent.isPending}
+      />
     </div>
   )
 }

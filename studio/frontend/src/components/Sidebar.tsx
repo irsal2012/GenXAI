@@ -1,11 +1,20 @@
 import { NavLink } from 'react-router-dom'
-import { Squares2X2Icon, PlayCircleIcon, UserCircleIcon, WrenchScrewdriverIcon } from '@heroicons/react/24/outline'
+import { 
+  Squares2X2Icon, 
+  PlayCircleIcon, 
+  UserCircleIcon, 
+  WrenchScrewdriverIcon,
+  DocumentDuplicateIcon,
+  BeakerIcon
+} from '@heroicons/react/24/outline'
 
 const links = [
   { to: '/', label: 'Dashboard', icon: Squares2X2Icon },
   { to: '/agents', label: 'Agents', icon: UserCircleIcon },
   { to: '/tools', label: 'Tools', icon: WrenchScrewdriverIcon },
   { to: '/workflows', label: 'Workflows', icon: PlayCircleIcon },
+  { to: '/templates', label: 'Templates', icon: DocumentDuplicateIcon },
+  { to: '/playground', label: 'Playground', icon: BeakerIcon },
 ]
 
 const Sidebar = () => {

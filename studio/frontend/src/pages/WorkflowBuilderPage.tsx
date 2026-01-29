@@ -4,6 +4,8 @@ import { useExecuteWorkflow, useUpdateWorkflow, useWorkflow } from '../services/
 import { useBuilderStore } from '../store/builderStore'
 import ErrorState from '../components/ErrorState'
 import LoadingState from '../components/LoadingState'
+import SimpleWorkflowCanvas from '../components/workflow/SimpleWorkflowCanvas'
+import { convertToReactFlow } from '../utils/workflowConverter'
 
 const WorkflowBuilderPage = () => {
   const { workflowId } = useParams<{ workflowId: string }>()
@@ -30,6 +32,13 @@ const WorkflowBuilderPage = () => {
       edges: workflowQuery.data?.edges ?? [],
     }
   }, [workflowQuery.data])
+
+  const visualWorkflow = useMemo(() => {
+    if (!workflowQuery.data) return { nodes: [], edges: [] }
+    return convertToReactFlow(workflowQuery.data)
+  }, [workflowQuery.data])
+
+  const [viewMode, setViewMode] = useState<'visual' | 'json'>('visual')
 
   const handleSave = async () => {
     if (!workflowQuery.data || !workflowId) return
@@ -85,10 +94,38 @@ const WorkflowBuilderPage = () => {
       </div>
       <div className="grid gap-6 lg:grid-cols-2">
         <div className="card p-6">
-          <h3 className="text-base font-semibold">Builder placeholder</h3>
-          <p className="mt-2 text-sm text-slate-500">
-            This placeholder keeps the JSON editor view while the full ReactFlow editor is built.
-          </p>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-base font-semibold">Workflow Editor</h3>
+            <div className="flex gap-2">
+              <button
+                className={`px-3 py-1 text-xs font-medium rounded-lg transition ${
+                  viewMode === 'visual'
+                    ? 'bg-primary-600 text-white'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+                onClick={() => setViewMode('visual')}
+              >
+                Visual
+              </button>
+              <button
+                className={`px-3 py-1 text-xs font-medium rounded-lg transition ${
+                  viewMode === 'json'
+                    ? 'bg-primary-600 text-white'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+                onClick={() => setViewMode('json')}
+              >
+                JSON
+              </button>
+            </div>
+          </div>
+
+          {viewMode === 'visual' ? (
+            <div className="h-[500px]">
+              <SimpleWorkflowCanvas nodes={visualWorkflow.nodes} edges={visualWorkflow.edges} />
+            </div>
+          ) : (
+            <>
           <div className="mt-4 space-y-4 text-sm">
             <label className="block">
               <span className="text-xs font-medium uppercase text-slate-500">Nodes</span>
@@ -115,6 +152,8 @@ const WorkflowBuilderPage = () => {
               />
             </label>
           </div>
+            </>
+          )}
         </div>
         <div className="space-y-6">
           <div className="card p-6">
