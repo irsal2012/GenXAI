@@ -3,30 +3,24 @@ import { useCreateAgent, useDeleteAgent, useUpdateAgent, useAgents } from '../se
 import ErrorState from '../components/ErrorState'
 import LoadingState from '../components/LoadingState'
 import AgentEditModal from '../components/AgentEditModal'
+import AgentCreateModal from '../components/AgentCreateModal'
 import type { Agent, AgentInput } from '../types/api'
-
-const defaultAgent: AgentInput = {
-  role: 'Research Assistant',
-  goal: 'Help uncover insights quickly',
-  backstory: 'Seasoned analyst with a knack for synthesis.',
-  llm_model: 'gpt-4',
-  tools: [],
-  metadata: {},
-}
 
 const AgentsPage = () => {
   const agentsQuery = useAgents()
   const createAgent = useCreateAgent()
   const deleteAgent = useDeleteAgent()
   const [editingAgent, setEditingAgent] = useState<Agent | null>(null)
-  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
   const updateAgent = useUpdateAgent(editingAgent?.id ?? '')
 
-  const handleCreate = async () => {
-    await createAgent.mutateAsync({
-      ...defaultAgent,
-      role: `Agent ${Date.now()}`,
-    })
+  const handleCreate = async (data: AgentInput) => {
+    await createAgent.mutateAsync(data)
+  }
+
+  const handleOpenCreateModal = () => {
+    setIsCreateModalOpen(true)
   }
 
   const handleDelete = async (agentId: string) => {
@@ -36,7 +30,7 @@ const AgentsPage = () => {
 
   const handleEdit = (agent: Agent) => {
     setEditingAgent(agent)
-    setIsModalOpen(true)
+    setIsEditModalOpen(true)
   }
 
   const handleSave = async (data: AgentInput) => {
@@ -45,9 +39,13 @@ const AgentsPage = () => {
     }
   }
 
-  const handleCloseModal = () => {
-    setIsModalOpen(false)
+  const handleCloseEditModal = () => {
+    setIsEditModalOpen(false)
     setEditingAgent(null)
+  }
+
+  const handleCloseCreateModal = () => {
+    setIsCreateModalOpen(false)
   }
 
   if (agentsQuery.isLoading) {
@@ -67,10 +65,9 @@ const AgentsPage = () => {
         </div>
         <button
           className="rounded-xl bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700"
-          onClick={handleCreate}
-          disabled={createAgent.isPending}
+          onClick={handleOpenCreateModal}
         >
-          {createAgent.isPending ? 'Creating...' : 'Create agent'}
+          Create agent
         </button>
       </div>
       <div className="grid gap-4">
@@ -103,9 +100,16 @@ const AgentsPage = () => {
         ) : null}
       </div>
 
+      <AgentCreateModal
+        isOpen={isCreateModalOpen}
+        onClose={handleCloseCreateModal}
+        onCreate={handleCreate}
+        isCreating={createAgent.isPending}
+      />
+
       <AgentEditModal
-        isOpen={isModalOpen}
-        onClose={handleCloseModal}
+        isOpen={isEditModalOpen}
+        onClose={handleCloseEditModal}
         onSave={handleSave}
         agent={editingAgent}
         isSaving={updateAgent.isPending}
