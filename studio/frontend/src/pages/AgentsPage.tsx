@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useCreateAgent, useDeleteAgent, useUpdateAgent, useAgents } from '../services/agents'
 import ErrorState from '../components/ErrorState'
 import LoadingState from '../components/LoadingState'
@@ -7,6 +8,7 @@ import AgentCreateModal from '../components/AgentCreateModal'
 import type { Agent, AgentInput } from '../types/api'
 
 const AgentsPage = () => {
+  const navigate = useNavigate()
   const agentsQuery = useAgents()
   const createAgent = useCreateAgent()
   const deleteAgent = useDeleteAgent()
@@ -55,12 +57,23 @@ const AgentsPage = () => {
           <h2 className="text-lg font-semibold">Agent Catalog</h2>
           <p className="text-sm text-slate-500">Define reusable agents for workflows.</p>
         </div>
-        <button
-          className="rounded-xl bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700"
-          onClick={handleOpenCreateModal}
-        >
-          Create agent
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            className="rounded-xl border border-primary-600 px-4 py-2 text-sm font-semibold text-primary-600 hover:bg-primary-50 transition-colors"
+            onClick={handleOpenCreateModal}
+          >
+            Quick Create
+          </button>
+          <button
+            className="rounded-xl bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700 transition-colors flex items-center gap-2"
+            onClick={() => navigate('/agents/builder')}
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            </svg>
+            Visual Builder
+          </button>
+        </div>
       </div>
 
       {agentsQuery.isLoading ? (
