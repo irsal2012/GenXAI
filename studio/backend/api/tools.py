@@ -31,7 +31,7 @@ class ToolCreateInput(BaseModel):
     tags: List[str] = []
     version: str = "1.0.0"
     author: str = "GenXAI User"
-    parameters: List[ToolParameterInput]
+    parameters: Optional[List[ToolParameterInput]] = []  # Optional for template-based tools
     code: Optional[str] = None  # For code-based tools
     template: Optional[str] = None  # For template-based tools
     template_config: Optional[Dict[str, Any]] = None  # Template configuration
@@ -118,6 +118,23 @@ async def get_tool(tool_name: str) -> Dict[str, Any]:
 async def create_tool(tool_input: ToolCreateInput) -> Dict[str, Any]:
     """Create a new tool (code-based or template-based)."""
     try:
+        # Tool persistence relies on optional dependencies (e.g. SQLAlchemy).
+        # If the Studio backend is started without installing the API extras,
+        # importing the persistence layer will fail and otherwise surface as a
+        # generic 500.
+        try:
+            from genxai.tools.persistence import ToolService
+        except ModuleNotFoundError as e:
+            raise HTTPException(
+                status_code=500,
+                detail=(
+                    "Tool persistence dependencies are missing. "
+                    "Please install backend dependencies (recommended): "
+                    "`pip install -e '.[api]'` (this includes SQLAlchemy). "
+                    f"Original error: {e}"
+                ),
+            )
+        
         # Check if tool already exists
         if ToolRegistry.get(tool_input.name):
             raise HTTPException(
@@ -134,20 +151,46 @@ async def create_tool(tool_input: ToolCreateInput) -> Dict[str, Any]:
                 detail=f"Invalid category: {tool_input.category}"
             )
 
-        # Create tool based on type
+        # Determine tool type and prepare data
         if tool_input.code:
-            # Code-based tool creation
+            tool_type = "code_based"
+            # Create tool instance
             tool = await _create_code_based_tool(tool_input, category)
+            # Save to database
+            ToolService.save_tool(
+                name=tool_input.name,
+                description=tool_input.description,
+                category=tool_input.category,
+                tags=tool_input.tags,
+                version=tool_input.version,
+                author=tool_input.author,
+                tool_type=tool_type,
+                code=tool_input.code,
+                parameters=[p.dict() for p in tool_input.parameters] if tool_input.parameters else [],
+            )
         elif tool_input.template:
-            # Template-based tool creation
+            tool_type = "template_based"
+            # Create tool instance
             tool = await _create_template_based_tool(tool_input, category)
+            # Save to database
+            ToolService.save_tool(
+                name=tool_input.name,
+                description=tool_input.description,
+                category=tool_input.category,
+                tags=tool_input.tags,
+                version=tool_input.version,
+                author=tool_input.author,
+                tool_type=tool_type,
+                template_name=tool_input.template,
+                template_config=tool_input.template_config,
+            )
         else:
             raise HTTPException(
                 status_code=400,
                 detail="Either 'code' or 'template' must be provided"
             )
 
-        # Register the tool
+        # Register the tool in memory
         ToolRegistry.register(tool)
 
         return {
@@ -233,12 +276,18 @@ async def list_templates() -> List[Dict[str, Any]]:
 
 @router.delete("/{tool_name}")
 async def delete_tool(tool_name: str) -> Dict[str, Any]:
-    """Delete a tool from the registry."""
+    """Delete a tool from the registry and database."""
+    from genxai.tools.persistence import ToolService
+    
     tool = ToolRegistry.get(tool_name)
     if not tool:
         raise HTTPException(status_code=404, detail="Tool not found")
 
+    # Delete from registry
     ToolRegistry.unregister(tool_name)
+    
+    # Delete from database
+    ToolService.delete_tool(tool_name)
     
     return {
         "success": True,

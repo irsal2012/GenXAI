@@ -71,22 +71,28 @@ result = {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    const toolData = {
-      name,
-      description,
-      category,
-      tags: tags.split(',').map(t => t.trim()).filter(t => t.length > 0),
-      version,
-      author,
-      ...(activeTab === 0
-        ? { code, parameters }
-        : { template: selectedTemplate, template_config: templateConfig }
-      )
-    }
+    try {
+      const toolData = {
+        name,
+        description,
+        category,
+        tags: tags.split(',').map(t => t.trim()).filter(t => t.length > 0),
+        version,
+        author,
+        ...(activeTab === 0
+          ? { code, parameters }
+          : { template: selectedTemplate, template_config: templateConfig }
+        )
+      }
 
-    await onCreate(toolData)
-    resetForm()
-    onClose()
+      console.log('Creating tool with data:', toolData)
+      await onCreate(toolData)
+      resetForm()
+      onClose()
+    } catch (error) {
+      console.error('Error creating tool:', error)
+      alert(`Failed to create tool: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    }
   }
 
   const resetForm = () => {

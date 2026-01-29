@@ -6,7 +6,18 @@ from typing import List, Dict, Any
 from pydantic import BaseModel
 import uuid
 
-from services.db import execute, fetch_all, fetch_one, json_dumps, json_loads
+try:
+    # When running from within `studio/backend/`
+    from services.db import execute, fetch_all, fetch_one, json_dumps, json_loads
+except ModuleNotFoundError:
+    # When running from repo root as `studio.backend.*`
+    from studio.backend.services.db import (
+        execute,
+        fetch_all,
+        fetch_one,
+        json_dumps,
+        json_loads,
+    )
 
 router = APIRouter()
 executions_router = APIRouter()

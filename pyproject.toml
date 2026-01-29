@@ -33,6 +33,9 @@ dependencies = [
     "python-dotenv>=1.0.0",
     "pyyaml>=6.0.1",
     "typing-extensions>=4.8.0",
+    "click>=8.1.0",
+    "rich>=13.0.0",
+    "sqlalchemy>=2.0.23",
 ]
 
 [project.optional-dependencies]
@@ -99,12 +102,12 @@ Repository = "https://github.com/genxai/genxai"
 Issues = "https://github.com/genxai/genxai/issues"
 
 [project.scripts]
-genxai = "genxai.cli.main:main"
+genxai = "cli.main:main"
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["genxai*"]
-exclude = ["tests*", "docs*", "examples*"]
+include = ["genxai*", "cli*"]
+exclude = ["tests*", "docs*", "examples*", "studio*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

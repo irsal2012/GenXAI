@@ -22,13 +22,8 @@ const ToolsPage = () => {
   }, [query, searchQuery.data, toolsQuery.data])
 
   const handleCreateTool = async (toolData: any) => {
-    try {
-      await createToolMutation.mutateAsync(toolData)
-      setIsCreateModalOpen(false)
-    } catch (error) {
-      console.error('Failed to create tool:', error)
-      throw error
-    }
+    console.log('handleCreateTool called with:', toolData)
+    await createToolMutation.mutateAsync(toolData)
   }
 
   if (toolsQuery.isLoading) {
