@@ -50,6 +50,12 @@ async def search_tools(query: str, category: str = None) -> List[Dict[str, Any]]
     ]
 
 
+@router.get("/stats")
+async def get_stats() -> Dict[str, Any]:
+    """Get tool registry statistics."""
+    return ToolRegistry.get_stats()
+
+
 @router.get("/{tool_name}")
 async def get_tool(tool_name: str) -> Dict[str, Any]:
     """Get tool details."""
@@ -69,9 +75,3 @@ async def get_tool(tool_name: str) -> Dict[str, Any]:
         "schema": tool.get_schema(),
         "metrics": tool.get_metrics(),
     }
-
-
-@router.get("/stats")
-async def get_stats() -> Dict[str, Any]:
-    """Get tool registry statistics."""
-    return ToolRegistry.get_stats()
