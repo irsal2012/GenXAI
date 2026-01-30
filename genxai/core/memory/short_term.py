@@ -1,128 +1,202 @@
-"""Short-term memory implementation."""
+"""Short-term memory implementation with LRU eviction."""
 
-from collections import deque
 from typing import Any, Dict, List, Optional
 from datetime import datetime
+from collections import OrderedDict
 import logging
 
-from genxai.core.memory.base import Memory, MemoryType
+from genxai.core.memory.base import Memory, MemoryType, MemoryConfig
 
 logger = logging.getLogger(__name__)
 
 
 class ShortTermMemory:
-    """Recent conversation context (like human working memory)."""
+    """Short-term memory with limited capacity and LRU eviction.
+    
+    This memory type stores recent interactions and automatically evicts
+    the least recently used items when capacity is reached.
+    """
 
-    def __init__(self, capacity: int = 20) -> None:
+    def __init__(self, config: Optional[MemoryConfig] = None) -> None:
         """Initialize short-term memory.
 
         Args:
-            capacity: Maximum number of memories to store
+            config: Memory configuration (uses defaults if not provided)
         """
-        self.capacity = capacity
-        self.memories: deque[Memory] = deque(maxlen=capacity)
-        self._total_added = 0
+        self.config = config or MemoryConfig()
+        self.capacity = self.config.short_term_capacity
+        
+        # Use OrderedDict for LRU behavior
+        self._memories: OrderedDict[str, Memory] = OrderedDict()
+        self._access_count = 0
+        
+        logger.info(f"Initialized short-term memory with capacity: {self.capacity}")
 
-    async def add(
-        self, content: Any, metadata: Optional[Dict[str, Any]] = None
-    ) -> Memory:
-        """Add to short-term memory with automatic eviction.
+    def store(self, memory: Memory) -> None:
+        """Store a memory item.
+
+        If capacity is reached, evicts the least recently used item.
 
         Args:
-            content: Content to store
-            metadata: Optional metadata
+            memory: Memory to store
+        """
+        # If memory already exists, remove it (will be re-added at end)
+        if memory.id in self._memories:
+            del self._memories[memory.id]
+        
+        # If at capacity, remove oldest (least recently used)
+        if len(self._memories) >= self.capacity:
+            oldest_id = next(iter(self._memories))
+            evicted = self._memories.pop(oldest_id)
+            logger.debug(f"Evicted memory {oldest_id} (importance: {evicted.importance})")
+        
+        # Add new memory at end (most recently used)
+        self._memories[memory.id] = memory
+        logger.debug(f"Stored memory {memory.id} in short-term memory")
+
+    def retrieve(self, memory_id: str) -> Optional[Memory]:
+        """Retrieve a memory by ID.
+
+        Accessing a memory moves it to the end (most recently used).
+
+        Args:
+            memory_id: ID of memory to retrieve
 
         Returns:
-            Created memory
+            Memory if found, None otherwise
         """
-        memory = Memory(
-            id=f"stm_{self._total_added}",
-            type=MemoryType.SHORT_TERM,
-            content=content,
-            metadata=metadata or {},
-            timestamp=datetime.now(),
-            importance=self._calculate_importance(content),
-            access_count=0,
-            last_accessed=datetime.now(),
-        )
-
-        self.memories.append(memory)
-        self._total_added += 1
-
-        logger.debug(f"Added to short-term memory: {memory.id}")
+        if memory_id not in self._memories:
+            return None
+        
+        # Move to end (mark as recently used)
+        memory = self._memories.pop(memory_id)
+        self._memories[memory_id] = memory
+        
+        # Update access tracking
+        memory.access_count += 1
+        memory.last_accessed = datetime.now()
+        self._access_count += 1
+        
+        logger.debug(f"Retrieved memory {memory_id} (access count: {memory.access_count})")
         return memory
 
-    async def get_recent(self, n: int = 10) -> List[Memory]:
-        """Get n most recent memories.
+    def retrieve_recent(self, limit: int = 10) -> List[Memory]:
+        """Retrieve the most recent memories.
 
         Args:
-            n: Number of memories to retrieve
+            limit: Maximum number of memories to retrieve
 
         Returns:
-            List of recent memories
+            List of recent memories (most recent first)
         """
-        return list(self.memories)[-n:]
+        # Get last N items (most recent)
+        recent_items = list(self._memories.values())[-limit:]
+        
+        # Reverse to get most recent first
+        recent_items.reverse()
+        
+        logger.debug(f"Retrieved {len(recent_items)} recent memories")
+        return recent_items
 
-    async def get_context(self, max_tokens: int = 4000) -> str:
-        """Get recent context for LLM.
+    def retrieve_by_importance(self, threshold: float = 0.5, limit: int = 10) -> List[Memory]:
+        """Retrieve memories above an importance threshold.
 
         Args:
-            max_tokens: Maximum tokens to include
+            threshold: Minimum importance score (0.0 to 1.0)
+            limit: Maximum number of memories to retrieve
 
         Returns:
-            Formatted context string
+            List of important memories (sorted by importance, descending)
         """
-        context = []
-        token_count = 0
+        # Filter by importance
+        important = [m for m in self._memories.values() if m.importance >= threshold]
+        
+        # Sort by importance (descending)
+        important.sort(key=lambda m: m.importance, reverse=True)
+        
+        # Limit results
+        result = important[:limit]
+        
+        logger.debug(
+            f"Retrieved {len(result)} memories with importance >= {threshold}"
+        )
+        return result
 
-        for memory in reversed(self.memories):
-            memory_text = str(memory.content)
-            memory_tokens = len(memory_text.split())
+    def search(self, query: str, limit: int = 5) -> List[Memory]:
+        """Search memories by content.
 
-            if token_count + memory_tokens > max_tokens:
-                break
-
-            context.insert(0, memory_text)
-            token_count += memory_tokens
-            memory.access_count += 1
-            memory.last_accessed = datetime.now()
-
-        return "\n".join(context)
-
-    async def clear(self) -> None:
-        """Clear all short-term memories."""
-        self.memories.clear()
-        logger.info("Cleared short-term memory")
-
-    async def get_important(self, threshold: float = 0.7) -> List[Memory]:
-        """Get memories above importance threshold.
+        Simple text-based search. For semantic search, use long-term memory.
 
         Args:
-            threshold: Importance threshold (0.0 to 1.0)
+            query: Search query
+            limit: Maximum number of results
 
         Returns:
-            List of important memories
+            List of matching memories
         """
-        return [m for m in self.memories if m.importance >= threshold]
+        query_lower = query.lower()
+        matches = []
+        
+        for memory in self._memories.values():
+            # Convert content to string for searching
+            content_str = str(memory.content).lower()
+            
+            if query_lower in content_str:
+                matches.append(memory)
+        
+        # Sort by recency (most recent first)
+        matches.reverse()
+        
+        # Limit results
+        result = matches[:limit]
+        
+        logger.debug(f"Found {len(result)} memories matching '{query}'")
+        return result
 
-    def _calculate_importance(self, content: Any) -> float:
-        """Calculate importance score (0.0 to 1.0).
+    def delete(self, memory_id: str) -> bool:
+        """Delete a memory by ID.
 
         Args:
-            content: Memory content
+            memory_id: ID of memory to delete
 
         Returns:
-            Importance score
+            True if deleted, False if not found
         """
-        # Simple heuristic: longer content = more important
-        # In practice, use LLM to assess importance
-        text = str(content)
-        if len(text) > 500:
-            return 0.8
-        elif len(text) > 200:
-            return 0.6
-        else:
-            return 0.4
+        if memory_id in self._memories:
+            del self._memories[memory_id]
+            logger.debug(f"Deleted memory {memory_id}")
+            return True
+        return False
+
+    def clear(self) -> None:
+        """Clear all memories."""
+        count = len(self._memories)
+        self._memories.clear()
+        logger.info(f"Cleared {count} memories from short-term memory")
+
+    def get_size(self) -> int:
+        """Get current number of stored memories.
+
+        Returns:
+            Number of memories
+        """
+        return len(self._memories)
+
+    def get_capacity(self) -> int:
+        """Get maximum capacity.
+
+        Returns:
+            Maximum number of memories
+        """
+        return self.capacity
+
+    def is_full(self) -> bool:
+        """Check if memory is at capacity.
+
+        Returns:
+            True if at capacity
+        """
+        return len(self._memories) >= self.capacity
 
     def get_stats(self) -> Dict[str, Any]:
         """Get memory statistics.
@@ -130,18 +204,37 @@ class ShortTermMemory:
         Returns:
             Statistics dictionary
         """
+        if not self._memories:
+            return {
+                "size": 0,
+                "capacity": self.capacity,
+                "utilization": 0.0,
+                "total_accesses": self._access_count,
+                "avg_importance": 0.0,
+                "avg_access_count": 0.0,
+            }
+        
+        memories = list(self._memories.values())
+        
         return {
+            "size": len(memories),
             "capacity": self.capacity,
-            "current_size": len(self.memories),
-            "total_added": self._total_added,
-            "utilization": len(self.memories) / self.capacity if self.capacity > 0 else 0,
-            "avg_importance": (
-                sum(m.importance for m in self.memories) / len(self.memories)
-                if self.memories
-                else 0
-            ),
+            "utilization": len(memories) / self.capacity,
+            "total_accesses": self._access_count,
+            "avg_importance": sum(m.importance for m in memories) / len(memories),
+            "avg_access_count": sum(m.access_count for m in memories) / len(memories),
+            "oldest_memory": memories[0].timestamp.isoformat() if memories else None,
+            "newest_memory": memories[-1].timestamp.isoformat() if memories else None,
         }
+
+    def __len__(self) -> int:
+        """Get number of stored memories."""
+        return len(self._memories)
+
+    def __contains__(self, memory_id: str) -> bool:
+        """Check if memory exists."""
+        return memory_id in self._memories
 
     def __repr__(self) -> str:
         """String representation."""
-        return f"ShortTermMemory(size={len(self.memories)}/{self.capacity})"
+        return f"ShortTermMemory(size={len(self._memories)}, capacity={self.capacity})"

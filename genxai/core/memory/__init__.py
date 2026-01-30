@@ -2,6 +2,7 @@
 
 from genxai.core.memory.base import Memory, MemoryType, MemoryConfig
 from genxai.core.memory.short_term import ShortTermMemory
+from genxai.core.memory.long_term import LongTermMemory
 from genxai.core.memory.manager import MemorySystem
 
 __all__ = [
@@ -9,5 +10,6 @@ __all__ = [
     "MemoryType",
     "MemoryConfig",
     "ShortTermMemory",
+    "LongTermMemory",
     "MemorySystem",
 ]

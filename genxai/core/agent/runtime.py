@@ -6,6 +6,8 @@ import time
 import logging
 
 from genxai.core.agent.base import Agent
+from genxai.llm.base import LLMProvider
+from genxai.llm.factory import LLMProviderFactory
 
 logger = logging.getLogger(__name__)
 
@@ -19,16 +21,39 @@ class AgentExecutionError(Exception):
 class AgentRuntime:
     """Runtime for executing agents."""
 
-    def __init__(self, agent: Agent) -> None:
+    def __init__(
+        self,
+        agent: Agent,
+        llm_provider: Optional[LLMProvider] = None,
+        api_key: Optional[str] = None,
+    ) -> None:
         """Initialize agent runtime.
 
         Args:
             agent: Agent to execute
+            llm_provider: LLM provider instance (optional, will be created if not provided)
+            api_key: API key for LLM provider (optional, will use env var if not provided)
         """
         self.agent = agent
-        self._llm_provider: Optional[Any] = None
         self._tools: Dict[str, Any] = {}
         self._memory: Optional[Any] = None
+
+        # Initialize LLM provider
+        if llm_provider:
+            self._llm_provider = llm_provider
+        else:
+            # Create provider from agent config
+            try:
+                self._llm_provider = LLMProviderFactory.create_provider(
+                    model=agent.config.llm_model,
+                    api_key=api_key,
+                    temperature=agent.config.llm_temperature,
+                    max_tokens=agent.config.llm_max_tokens,
+                )
+                logger.info(f"Created LLM provider for agent {agent.id}: {agent.config.llm_model}")
+            except Exception as e:
+                logger.warning(f"Failed to create LLM provider for agent {agent.id}: {e}")
+                self._llm_provider = None
 
     async def execute(
         self,
@@ -160,24 +185,79 @@ class AgentRuntime:
         
         return "\n".join(prompt_parts)
 
+    def _build_system_prompt(self) -> str:
+        """Build system prompt from agent configuration.
+
+        Returns:
+            System prompt string
+        """
+        system_parts = []
+        
+        # Add role
+        system_parts.append(f"You are a {self.agent.config.role}.")
+        
+        # Add goal
+        system_parts.append(f"Your goal is: {self.agent.config.goal}")
+        
+        # Add backstory if provided
+        if self.agent.config.backstory:
+            system_parts.append(f"\nBackground: {self.agent.config.backstory}")
+        
+        # Add agent type specific instructions
+        if self.agent.config.agent_type == "deliberative":
+            system_parts.append("\nYou should think carefully and plan before acting.")
+        elif self.agent.config.agent_type == "learning":
+            system_parts.append("\nYou should learn from feedback and improve over time.")
+        elif self.agent.config.agent_type == "collaborative":
+            system_parts.append("\nYou should work well with other agents and coordinate effectively.")
+        
+        return "\n".join(system_parts)
+
     async def _get_llm_response(self, prompt: str) -> str:
         """Get response from LLM.
-
-        This is a placeholder that will be replaced with actual LLM integration.
 
         Args:
             prompt: Prompt to send to LLM
 
         Returns:
             LLM response
+
+        Raises:
+            RuntimeError: If LLM provider not initialized
         """
-        # Placeholder implementation
-        logger.debug(f"Getting LLM response for agent {self.agent.id}")
-        
-        # Simulate LLM call
-        await asyncio.sleep(0.1)
-        
-        return f"[Placeholder LLM response for: {prompt[:50]}...]"
+        if not self._llm_provider:
+            logger.error(f"No LLM provider available for agent {self.agent.id}")
+            raise RuntimeError(
+                f"Agent {self.agent.id} has no LLM provider. "
+                "Provide an API key or set OPENAI_API_KEY environment variable."
+            )
+
+        try:
+            logger.debug(f"Calling LLM for agent {self.agent.id}")
+
+            # Build system prompt from agent config
+            system_prompt = self._build_system_prompt()
+
+            # Call LLM provider
+            response = await self._llm_provider.generate(
+                prompt=prompt,
+                system_prompt=system_prompt,
+            )
+
+            # Update token usage
+            self.agent._total_tokens += response.usage.get("total_tokens", 0)
+
+            logger.debug(
+                f"LLM response received for agent {self.agent.id}: "
+                f"{len(response.content)} chars, "
+                f"{response.usage.get('total_tokens', 0)} tokens"
+            )
+
+            return response.content
+
+        except Exception as e:
+            logger.error(f"LLM call failed for agent {self.agent.id}: {e}")
+            raise RuntimeError(f"LLM call failed: {e}") from e
 
     async def _process_tools(
         self,
@@ -204,8 +284,24 @@ class AgentRuntime:
             task: Task that was executed
             response: Response generated
         """
-        # Placeholder for memory update
-        logger.debug(f"Updating memory for agent {self.agent.id}")
+        if not self._memory:
+            return
+        
+        try:
+            from genxai.core.memory.base import MemoryType
+            
+            # Store task in memory
+            task_memory_id = self._memory.store(
+                content={"task": task, "response": response},
+                memory_type=MemoryType.SHORT_TERM,
+                importance=0.5,
+                tags=["conversation", "task"],
+                metadata={"agent_id": self.agent.id},
+            )
+            
+            logger.debug(f"Stored memory {task_memory_id} for agent {self.agent.id}")
+        except Exception as e:
+            logger.error(f"Failed to update memory: {e}")
 
     def set_llm_provider(self, provider: Any) -> None:
         """Set LLM provider.
@@ -229,10 +325,45 @@ class AgentRuntime:
         """Set memory system.
 
         Args:
-            memory: Memory system instance
+            memory: Memory system instance (MemoryManager or MemorySystem)
         """
         self._memory = memory
         logger.info(f"Memory system set for agent {self.agent.id}")
+    
+    def get_memory_context(self, limit: int = 5) -> str:
+        """Get recent memory context for LLM prompts.
+
+        Args:
+            limit: Number of recent memories to include
+
+        Returns:
+            Formatted memory context string
+        """
+        if not self._memory:
+            return ""
+        
+        try:
+            # Get recent memories
+            recent_memories = self._memory.retrieve_recent(limit=limit)
+            
+            if not recent_memories:
+                return ""
+            
+            # Format memories for context
+            context_parts = ["Recent context:"]
+            for memory in recent_memories:
+                if isinstance(memory.content, dict):
+                    task = memory.content.get("task", "")
+                    response = memory.content.get("response", "")
+                    context_parts.append(f"- Task: {task}")
+                    context_parts.append(f"  Response: {response[:100]}...")
+                else:
+                    context_parts.append(f"- {str(memory.content)[:100]}...")
+            
+            return "\n".join(context_parts)
+        except Exception as e:
+            logger.error(f"Failed to get memory context: {e}")
+            return ""
 
     async def batch_execute(
         self,
