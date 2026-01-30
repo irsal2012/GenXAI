@@ -1,10 +1,11 @@
 """LLM Provider Factory for creating and managing LLM providers."""
 
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, Iterable, List
 import os
 import logging
 
 from genxai.llm.base import LLMProvider
+from genxai.llm.routing import RoutedLLMProvider
 from genxai.llm.providers.openai import OpenAIProvider
 
 logger = logging.getLogger(__name__)
@@ -12,6 +13,14 @@ logger = logging.getLogger(__name__)
 
 class LLMProviderFactory:
     """Factory for creating LLM provider instances."""
+
+    _fallback_chain: List[str] = [
+        "gpt-4",
+        "gpt-4-turbo",
+        "gpt-3.5-turbo",
+        "claude-3-sonnet",
+        "claude-3-haiku",
+    ]
 
     _providers: Dict[str, type[LLMProvider]] = {
         # OpenAI
@@ -102,6 +111,17 @@ class LLMProviderFactory:
                 **kwargs,
             )
             logger.info(f"Created LLM provider: {provider_class.__name__} with model {model}")
+            if fallback_models:
+                return RoutedLLMProvider(
+                    primary=provider,
+                    fallbacks=cls._create_fallback_providers(
+                        fallback_models,
+                        api_key=api_key,
+                        temperature=temperature,
+                        max_tokens=max_tokens,
+                        **kwargs,
+                    ),
+                )
             return provider
 
         except Exception as e:
@@ -124,6 +144,64 @@ class LLMProviderFactory:
                         continue
 
             raise ValueError(f"Failed to create provider for model '{model}': {e}") from e
+
+    @classmethod
+    def create_routed_provider(
+        cls,
+        primary_model: str,
+        fallback_models: Optional[List[str]] = None,
+        **kwargs: Any,
+    ) -> LLMProvider:
+        """Create a routed provider with a fallback chain.
+
+        Args:
+            primary_model: Primary model name
+            fallback_models: Optional override for fallback chain
+            **kwargs: Provider options forwarded to create_provider
+
+        Returns:
+            RoutedLLMProvider instance
+        """
+        fallback_chain = fallback_models or cls._fallback_chain
+        return cls.create_provider(
+            model=primary_model,
+            fallback_models=fallback_chain,
+            **kwargs,
+        )
+
+    @classmethod
+    def set_default_fallback_chain(cls, models: Iterable[str]) -> None:
+        """Set the default fallback model chain."""
+        cls._fallback_chain = list(models)
+
+    @classmethod
+    def _create_fallback_providers(
+        cls,
+        fallback_models: Iterable[str],
+        api_key: Optional[str],
+        temperature: float,
+        max_tokens: Optional[int],
+        **kwargs: Any,
+    ) -> List[LLMProvider]:
+        providers: List[LLMProvider] = []
+        for fallback_model in fallback_models:
+            try:
+                provider_class = cls._get_provider_class(fallback_model)
+                if not provider_class:
+                    logger.warning("No provider class for fallback model %s", fallback_model)
+                    continue
+                fallback_key = api_key or cls._get_api_key_for_provider(provider_class)
+                provider = provider_class(
+                    model=fallback_model,
+                    api_key=fallback_key,
+                    temperature=temperature,
+                    max_tokens=max_tokens,
+                    **kwargs,
+                )
+                providers.append(provider)
+            except Exception as exc:
+                logger.warning("Failed to initialize fallback model %s: %s", fallback_model, exc)
+        return providers
 
     @classmethod
     def _load_provider_class(cls, module_path: str) -> Optional[type[LLMProvider]]:

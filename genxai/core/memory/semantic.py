@@ -5,6 +5,13 @@ from datetime import datetime
 import logging
 import uuid
 
+from genxai.core.memory.persistence import (
+    JsonMemoryStore,
+    MemoryPersistenceConfig,
+    SqliteMemoryStore,
+    create_memory_store,
+)
+
 logger = logging.getLogger(__name__)
 
 
@@ -92,6 +99,7 @@ class SemanticMemory:
     def __init__(
         self,
         graph_db: Optional[Any] = None,
+        persistence: Optional[MemoryPersistenceConfig] = None,
     ) -> None:
         """Initialize semantic memory.
 
@@ -100,6 +108,11 @@ class SemanticMemory:
         """
         self._graph_db = graph_db
         self._use_graph = graph_db is not None
+        self._persistence = persistence
+        if persistence:
+            self._store = create_memory_store(persistence)
+        else:
+            self._store = None
         
         # Fallback to in-memory storage
         self._facts: Dict[str, Fact] = {}
@@ -114,6 +127,9 @@ class SemanticMemory:
                 "Graph database not provided. Using in-memory storage. "
                 "Facts will not persist across restarts."
             )
+
+        if self._store and self._persistence and self._persistence.enabled:
+            self._load_from_disk()
 
     async def store_fact(
         self,
@@ -176,6 +192,8 @@ class SemanticMemory:
             if object not in self._object_index:
                 self._object_index[object] = set()
             self._object_index[object].add(fact.id)
+
+        self._persist()
 
         logger.debug(f"Stored fact: {fact}")
         return fact
@@ -385,6 +403,8 @@ class SemanticMemory:
         # Remove fact
         del self._facts[fact_id]
 
+        self._persist()
+
         logger.debug(f"Deleted fact: {fact}")
         return True
 
@@ -396,6 +416,8 @@ class SemanticMemory:
         self._object_index.clear()
         logger.info("Cleared all facts")
 
+        self._persist()
+
     async def get_stats(self) -> Dict[str, Any]:
         """Get semantic memory statistics.
 
@@ -406,6 +428,7 @@ class SemanticMemory:
             return {
                 "total_facts": 0,
                 "backend": "graph" if self._use_graph else "in-memory",
+                "persistence": bool(self._persistence and self._persistence.enabled),
             }
 
         facts = list(self._facts.values())
@@ -419,7 +442,30 @@ class SemanticMemory:
             "oldest_fact": min(f.timestamp for f in facts).isoformat(),
             "newest_fact": max(f.timestamp for f in facts).isoformat(),
             "backend": "graph" if self._use_graph else "in-memory",
+            "persistence": bool(self._persistence and self._persistence.enabled),
         }
+
+    def _persist(self) -> None:
+        if not self._store:
+            return
+        self._store.save_list("semantic_memory.json", [fact.to_dict() for fact in self._facts.values()])
+
+    def _load_from_disk(self) -> None:
+        if not self._store:
+            return
+        data = self._store.load_list("semantic_memory.json")
+        if not data:
+            return
+        self._facts = {}
+        self._subject_index = {}
+        self._predicate_index = {}
+        self._object_index = {}
+        for item in data:
+            fact = Fact.from_dict(item)
+            self._facts[fact.id] = fact
+            self._subject_index.setdefault(fact.subject, set()).add(fact.id)
+            self._predicate_index.setdefault(fact.predicate, set()).add(fact.id)
+            self._object_index.setdefault(fact.object, set()).add(fact.id)
 
     async def _find_exact_fact(
         self,

@@ -202,6 +202,7 @@ Create a file `agent_with_memory.py`:
 ```python
 import asyncio
 import os
+from pathlib import Path
 from genxai.core.agent.base import AgentFactory
 from genxai.core.agent.runtime import AgentRuntime
 from genxai.core.memory.manager import MemorySystem
@@ -216,8 +217,12 @@ async def main():
         enable_memory=True,
     )
     
-    # Create memory system
-    memory = MemorySystem(agent_id="assistant")
+    # Create memory system (optionally persist to disk)
+    memory = MemorySystem(
+        agent_id="assistant",
+        persistence_enabled=True,
+        persistence_path=Path(".genxai/memory"),
+    )
     
     # Create runtime with memory
     runtime = AgentRuntime(agent=agent, api_key=os.getenv("OPENAI_API_KEY"))

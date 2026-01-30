@@ -3,6 +3,7 @@
 from typing import Any, Dict, List, Optional, Tuple
 import logging
 
+from pathlib import Path
 from genxai.core.memory.base import Memory, MemoryType, MemoryConfig
 from genxai.core.memory.short_term import ShortTermMemory
 from genxai.core.memory.long_term import LongTermMemory
@@ -12,6 +13,7 @@ from genxai.core.memory.procedural import ProceduralMemory, Procedure
 from genxai.core.memory.working import WorkingMemory
 from genxai.core.memory.vector_store import VectorStoreFactory
 from genxai.core.memory.embedding import EmbeddingServiceFactory
+from genxai.core.memory.persistence import MemoryPersistenceConfig
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +36,10 @@ class MemorySystem:
         config: Optional[MemoryConfig] = None,
         vector_store_backend: Optional[str] = None,
         embedding_provider: Optional[str] = None,
+        persistence_enabled: bool = False,
+        persistence_path: Optional[Path] = None,
+        persistence_backend: str = "json",
+        persistence_sqlite_path: Optional[Path] = None,
     ) -> None:
         """Initialize memory system.
 
@@ -45,6 +51,12 @@ class MemorySystem:
         """
         self.agent_id = agent_id
         self.config = config or MemoryConfig()
+        self._persistence = MemoryPersistenceConfig(
+            base_dir=persistence_path or Path(".genxai/memory"),
+            enabled=persistence_enabled,
+            backend=persistence_backend,
+            sqlite_path=persistence_sqlite_path,
+        )
 
         # Initialize short-term memory
         self.short_term = ShortTermMemory(capacity=self.config.short_term_capacity)
@@ -60,40 +72,50 @@ class MemorySystem:
         if self.config.long_term_enabled:
             try:
                 # Create vector store
-                if vector_store_backend:
+                backend = vector_store_backend or self.config.vector_db
+                if backend:
                     self.vector_store = VectorStoreFactory.create(
-                        backend=vector_store_backend or self.config.vector_db,
+                        backend=backend,
                     )
                 
                 # Create embedding service
-                if embedding_provider:
+                provider = embedding_provider or "openai"
+                if provider:
                     self.embedding_service = EmbeddingServiceFactory.create(
-                        provider=embedding_provider,
+                        provider=provider,
                     )
                 
                 # Initialize long-term memory
-                self.long_term = LongTermMemory(config=self.config)
+                self.long_term = LongTermMemory(
+                    config=self.config,
+                    vector_store=self.vector_store,
+                    embedding_service=self.embedding_service,
+                    persistence=self._persistence,
+                )
                 logger.info("Long-term memory initialized with vector store")
             except Exception as e:
                 logger.warning(f"Failed to initialize long-term memory: {e}")
-                self.long_term = LongTermMemory(config=self.config)
+                self.long_term = LongTermMemory(
+                    config=self.config,
+                    persistence=self._persistence,
+                )
 
         # Initialize episodic memory
         self.episodic: Optional[EpisodicMemory] = None
         if self.config.episodic_enabled:
-            self.episodic = EpisodicMemory()
+            self.episodic = EpisodicMemory(persistence=self._persistence)
             logger.info("Episodic memory initialized")
 
         # Initialize semantic memory
         self.semantic: Optional[SemanticMemory] = None
         if self.config.semantic_enabled:
-            self.semantic = SemanticMemory()
+            self.semantic = SemanticMemory(persistence=self._persistence)
             logger.info("Semantic memory initialized")
 
         # Initialize procedural memory
         self.procedural: Optional[ProceduralMemory] = None
         if self.config.procedural_enabled:
-            self.procedural = ProceduralMemory()
+            self.procedural = ProceduralMemory(persistence=self._persistence)
             logger.info("Procedural memory initialized")
 
         logger.info(f"Memory system initialized for agent: {agent_id}")
@@ -174,7 +196,7 @@ class MemorySystem:
             memory: Memory to store
             ttl: Time-to-live in seconds
         """
-        if not self.long_term:
+        if self.long_term is None:
             logger.warning("Long-term memory not enabled")
             return
 
@@ -204,7 +226,7 @@ class MemorySystem:
         Returns:
             List of (memory, similarity_score) tuples
         """
-        if not self.vector_store or not self.embedding_service:
+        if self.vector_store is None or self.embedding_service is None:
             logger.warning("Vector search not available")
             return []
 
@@ -243,7 +265,7 @@ class MemorySystem:
         Returns:
             Created episode
         """
-        if not self.episodic:
+        if self.episodic is None:
             logger.warning("Episodic memory not enabled")
             return None
 
@@ -271,7 +293,7 @@ class MemorySystem:
         Returns:
             List of similar episodes
         """
-        if not self.episodic:
+        if self.episodic is None:
             return []
 
         return await self.episodic.retrieve_similar_tasks(task, limit)
@@ -288,7 +310,7 @@ class MemorySystem:
         Returns:
             Success rate (0.0 to 1.0)
         """
-        if not self.episodic:
+        if self.episodic is None:
             return 0.0
 
         return await self.episodic.get_success_rate(
@@ -318,7 +340,7 @@ class MemorySystem:
         Returns:
             Created fact
         """
-        if not self.semantic:
+        if self.semantic is None:
             logger.warning("Semantic memory not enabled")
             return None
 
@@ -346,7 +368,7 @@ class MemorySystem:
         Returns:
             List of matching facts
         """
-        if not self.semantic:
+        if self.semantic is None:
             return []
 
         return await self.semantic.query(
@@ -377,7 +399,7 @@ class MemorySystem:
         Returns:
             Created procedure
         """
-        if not self.procedural:
+        if self.procedural is None:
             logger.warning("Procedural memory not enabled")
             return None
 
@@ -398,7 +420,7 @@ class MemorySystem:
         Returns:
             Procedure if found
         """
-        if not self.procedural:
+        if self.procedural is None:
             return None
 
         return await self.procedural.retrieve_procedure(name=name)
@@ -419,7 +441,7 @@ class MemorySystem:
         Returns:
             True if recorded
         """
-        if not self.procedural:
+        if self.procedural is None:
             return False
 
         return await self.procedural.record_execution(
@@ -442,7 +464,7 @@ class MemorySystem:
         Returns:
             Statistics about consolidation
         """
-        if not self.long_term:
+        if self.long_term is None:
             logger.warning("Long-term memory not enabled")
             return {"consolidated": 0}
 
@@ -489,7 +511,16 @@ class MemorySystem:
             stats["procedural"] = await self.procedural.get_stats()
 
         if self.vector_store:
-            stats["vector_store"] = await self.vector_store.get_stats()
+            try:
+                stats["vector_store"] = await self.vector_store.get_stats()
+            except Exception as exc:
+                logger.warning("Vector store stats unavailable: %s", exc)
+                stats["vector_store"] = {"error": str(exc)}
+
+        stats["persistence"] = {
+            "enabled": self._persistence.enabled,
+            "path": str(self._persistence.base_dir),
+        }
 
         return stats
 

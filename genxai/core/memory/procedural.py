@@ -5,6 +5,8 @@ from datetime import datetime
 import logging
 import uuid
 
+from genxai.core.memory.persistence import JsonMemoryStore, MemoryPersistenceConfig
+
 logger = logging.getLogger(__name__)
 
 
@@ -143,6 +145,7 @@ class ProceduralMemory:
     def __init__(
         self,
         max_procedures: int = 100,
+        persistence: Optional[MemoryPersistenceConfig] = None,
     ) -> None:
         """Initialize procedural memory.
 
@@ -152,6 +155,11 @@ class ProceduralMemory:
         self._max_procedures = max_procedures
         self._procedures: Dict[str, Procedure] = {}
         self._name_index: Dict[str, str] = {}  # name -> procedure_id
+        self._persistence = persistence
+        self._store = JsonMemoryStore(persistence) if persistence else None
+
+        if self._store and self._persistence and self._persistence.enabled:
+            self._load_from_disk()
         
         logger.info("Initialized procedural memory")
 
@@ -218,6 +226,7 @@ class ProceduralMemory:
             await self.delete_procedure(least_successful.id)
 
         logger.debug(f"Stored procedure: {procedure}")
+        self._persist()
         return procedure
 
     async def retrieve_procedure(
@@ -325,6 +334,7 @@ class ProceduralMemory:
             return False
 
         procedure.record_execution(success, duration)
+        self._persist()
         logger.debug(
             f"Recorded execution for {procedure.name}: "
             f"success={success}, duration={duration:.2f}s"
@@ -379,6 +389,8 @@ class ProceduralMemory:
         # Remove procedure
         del self._procedures[procedure_id]
 
+        self._persist()
+
         logger.debug(f"Deleted procedure: {procedure}")
         return True
 
@@ -387,6 +399,8 @@ class ProceduralMemory:
         self._procedures.clear()
         self._name_index.clear()
         logger.info("Cleared all procedures")
+
+        self._persist()
 
     async def get_stats(self) -> Dict[str, Any]:
         """Get procedural memory statistics.
@@ -397,6 +411,7 @@ class ProceduralMemory:
         if not self._procedures:
             return {
                 "total_procedures": 0,
+                "persistence": bool(self._persistence and self._persistence.enabled),
             }
 
         procedures = list(self._procedures.values())
@@ -415,7 +430,27 @@ class ProceduralMemory:
             "most_successful": max(procedures, key=lambda p: p.success_rate).name,
             "oldest_procedure": min(p.timestamp for p in procedures).isoformat(),
             "newest_procedure": max(p.timestamp for p in procedures).isoformat(),
+            "persistence": bool(self._persistence and self._persistence.enabled),
         }
+
+    def _persist(self) -> None:
+        if not self._store:
+            return
+        payload = {
+            "procedures": [proc.to_dict() for proc in self._procedures.values()],
+            "name_index": self._name_index,
+        }
+        self._store.save_mapping("procedural_memory.json", payload)
+
+    def _load_from_disk(self) -> None:
+        if not self._store:
+            return
+        data = self._store.load_mapping("procedural_memory.json")
+        if not data:
+            return
+        procedures = data.get("procedures", [])
+        self._procedures = {proc["id"]: Procedure.from_dict(proc) for proc in procedures}
+        self._name_index = data.get("name_index", {})
 
     def __len__(self) -> int:
         """Get number of stored procedures."""

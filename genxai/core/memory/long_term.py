@@ -1,11 +1,19 @@
 """Long-term memory implementation with Redis backend."""
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 from datetime import datetime, timedelta
 import json
 import logging
 
 from genxai.core.memory.base import Memory, MemoryType, MemoryConfig
+from genxai.core.memory.persistence import (
+    JsonMemoryStore,
+    MemoryPersistenceConfig,
+    SqliteMemoryStore,
+    create_memory_store,
+)
+from genxai.core.memory.vector_store import VectorStore
+from genxai.core.memory.embedding import EmbeddingService
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +30,9 @@ class LongTermMemory:
         config: Optional[MemoryConfig] = None,
         redis_client: Optional[Any] = None,
         key_prefix: str = "genxai:memory:long_term:",
+        vector_store: Optional[VectorStore] = None,
+        embedding_service: Optional[EmbeddingService] = None,
+        persistence: Optional[MemoryPersistenceConfig] = None,
     ) -> None:
         """Initialize long-term memory.
 
@@ -33,6 +44,13 @@ class LongTermMemory:
         self.config = config or MemoryConfig()
         self._redis = redis_client
         self._key_prefix = key_prefix
+        self._vector_store = vector_store
+        self._embedding_service = embedding_service
+        self._persistence = persistence
+        if persistence:
+            self._store = create_memory_store(persistence)
+        else:
+            self._store = None
         
         # Fallback to in-memory storage if Redis not available
         self._in_memory_storage: Dict[str, Memory] = {}
@@ -45,6 +63,9 @@ class LongTermMemory:
                 "Redis client not provided. Using in-memory storage. "
                 "Memories will not persist across restarts."
             )
+
+        if self._store and self._persistence and self._persistence.enabled:
+            self._load_from_disk()
 
     def store(
         self,
@@ -82,6 +103,8 @@ class LongTermMemory:
             # In-memory storage
             self._in_memory_storage[memory.id] = memory
             logger.debug(f"Stored memory {memory.id} in-memory")
+
+        self._persist()
 
     def retrieve(self, memory_id: str) -> Optional[Memory]:
         """Retrieve a memory by ID.
@@ -242,6 +265,7 @@ class LongTermMemory:
         if memory_id in self._in_memory_storage:
             del self._in_memory_storage[memory_id]
             logger.debug(f"Deleted memory {memory_id} from in-memory storage")
+            self._persist()
             return True
         
         return False
@@ -264,6 +288,8 @@ class LongTermMemory:
         count = len(self._in_memory_storage)
         self._in_memory_storage.clear()
         logger.info(f"Cleared {count} memories from in-memory storage")
+
+        self._persist()
 
     def get_size(self) -> int:
         """Get current number of stored memories.
@@ -294,6 +320,8 @@ class LongTermMemory:
                 "size": 0,
                 "backend": "redis" if self._use_redis else "in-memory",
                 "avg_importance": 0.0,
+                "vector_store": bool(self._vector_store),
+                "persistence": bool(self._persistence and self._persistence.enabled),
             }
         
         # Get sample of memories for stats
@@ -326,6 +354,52 @@ class LongTermMemory:
             "avg_importance": sum(m.importance for m in memories) / len(memories),
             "oldest_memory": min(m.timestamp for m in memories).isoformat(),
             "newest_memory": max(m.timestamp for m in memories).isoformat(),
+            "vector_store": bool(self._vector_store),
+            "persistence": bool(self._persistence and self._persistence.enabled),
+        }
+
+    async def store_with_embedding(self, memory: Memory, ttl: Optional[int] = None) -> None:
+        """Store memory and push embedding to vector store if configured."""
+        self.store(memory, ttl)
+        if self._vector_store and self._embedding_service:
+            try:
+                embedding = await self._embedding_service.embed(str(memory.content))
+                await self._vector_store.store(memory, embedding)
+            except Exception as exc:
+                logger.error("Failed to store memory embedding: %s", exc)
+
+    async def search(
+        self,
+        query: str,
+        limit: int = 10,
+        filters: Optional[Dict[str, Any]] = None,
+    ) -> List[Tuple[Memory, float]]:
+        """Search long-term memory using vector store if available."""
+        if not self._vector_store or not self._embedding_service:
+            logger.warning("Vector search not available")
+            return []
+
+        try:
+            query_embedding = await self._embedding_service.embed(query)
+            return await self._vector_store.search(query_embedding, limit=limit, filters=filters)
+        except Exception as exc:
+            logger.error("Failed to search long-term memory: %s", exc)
+            return []
+
+    def _persist(self) -> None:
+        if not self._store:
+            return
+        payload = [json.loads(self._serialize_memory(memory)) for memory in self._in_memory_storage.values()]
+        self._store.save_list("long_term_memory.json", payload)
+
+    def _load_from_disk(self) -> None:
+        if not self._store:
+            return
+        data = self._store.load_list("long_term_memory.json")
+        if not data:
+            return
+        self._in_memory_storage = {
+            item["id"]: self._deserialize_memory(json.dumps(item)) for item in data
         }
 
     def _make_key(self, memory_id: str) -> str:
@@ -364,13 +438,24 @@ class LongTermMemory:
 
     def _store_metadata(self, memory: Memory) -> None:
         """Store memory metadata for querying (placeholder)."""
-        # TODO: Implement metadata indexing for efficient queries
-        pass
+        if not self._store:
+            return
+        if isinstance(self._store, SqliteMemoryStore):
+            self._store.store_long_term_metadata(
+                memory_id=memory.id,
+                memory_type=memory.type.value,
+                importance=memory.importance,
+                timestamp=memory.timestamp.isoformat(),
+                tags=memory.tags,
+                metadata=memory.metadata,
+            )
 
     def _delete_metadata(self, memory_id: str) -> None:
         """Delete memory metadata (placeholder)."""
-        # TODO: Implement metadata deletion
-        pass
+        if not self._store:
+            return
+        if isinstance(self._store, SqliteMemoryStore):
+            self._store.delete_long_term_metadata(memory_id)
 
     def __len__(self) -> int:
         """Get number of stored memories."""

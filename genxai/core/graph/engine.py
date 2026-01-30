@@ -5,9 +5,16 @@ from typing import Any, Dict, List, Optional, Set
 from collections import defaultdict, deque
 import logging
 import time
+import copy
+from pathlib import Path
 
 from genxai.core.graph.nodes import Node, NodeStatus, NodeType
 from genxai.core.graph.edges import Edge
+from genxai.core.graph.checkpoints import (
+    WorkflowCheckpoint,
+    WorkflowCheckpointManager,
+    create_checkpoint,
+)
 from genxai.observability.metrics import (
     record_workflow_execution,
     record_workflow_node_execution,
@@ -196,7 +203,11 @@ class Graph:
         return result
 
     async def run(
-        self, input_data: Any, max_iterations: int = 100, state: Optional[Dict[str, Any]] = None
+        self,
+        input_data: Any,
+        max_iterations: int = 100,
+        state: Optional[Dict[str, Any]] = None,
+        resume_from: Optional[WorkflowCheckpoint] = None,
     ) -> Dict[str, Any]:
         """Execute the graph workflow.
 
@@ -220,10 +231,20 @@ class Graph:
         status = "success"
 
         # Initialize state
-        if state is None:
-            state = {}
-        state["input"] = input_data
-        state["iterations"] = 0
+        if resume_from:
+            state = resume_from.state.copy()
+            state["input"] = input_data
+            state.setdefault("iterations", 0)
+        else:
+            if state is None:
+                state = {}
+            state["input"] = input_data
+            state["iterations"] = 0
+
+        if resume_from:
+            for node_id, status in resume_from.node_statuses.items():
+                if node_id in self.nodes:
+                    self.nodes[node_id].status = NodeStatus(status)
 
         # Find entry points (nodes with no incoming edges)
         entry_points = [
@@ -261,6 +282,22 @@ class Graph:
 
         logger.info(f"Graph execution completed: {self.name}")
         return state
+
+    def create_checkpoint(self, name: str, state: Dict[str, Any]) -> WorkflowCheckpoint:
+        """Create a checkpoint from current workflow state."""
+        node_statuses = {node_id: node.status for node_id, node in self.nodes.items()}
+        return create_checkpoint(name=name, workflow=self.name, state=state, node_statuses=node_statuses)
+
+    def save_checkpoint(self, name: str, state: Dict[str, Any], path: Path) -> Path:
+        """Persist a checkpoint to disk."""
+        manager = WorkflowCheckpointManager(path)
+        checkpoint = self.create_checkpoint(name=name, state=state)
+        return manager.save(checkpoint)
+
+    def load_checkpoint(self, name: str, path: Path) -> WorkflowCheckpoint:
+        """Load a checkpoint from disk."""
+        manager = WorkflowCheckpointManager(path)
+        return manager.load(name)
 
     async def _execute_node(
         self, node_id: str, state: Dict[str, Any], max_iterations: int
@@ -357,9 +394,9 @@ class Graph:
         """
         # Placeholder implementation
         if node.type == NodeType.INPUT:
-            return state.get("input")
+            return copy.deepcopy(state.get("input"))
         elif node.type == NodeType.OUTPUT:
-            return state
+            return copy.deepcopy(state)
         else:
             # For now, just return a placeholder
             return {"node_id": node.id, "type": node.type.value}

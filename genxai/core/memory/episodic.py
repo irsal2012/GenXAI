@@ -6,6 +6,12 @@ import logging
 import uuid
 
 from genxai.core.memory.base import Memory, MemoryType
+from genxai.core.memory.persistence import (
+    JsonMemoryStore,
+    MemoryPersistenceConfig,
+    SqliteMemoryStore,
+    create_memory_store,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -92,6 +98,7 @@ class EpisodicMemory:
         self,
         graph_db: Optional[Any] = None,
         max_episodes: int = 1000,
+        persistence: Optional[MemoryPersistenceConfig] = None,
     ) -> None:
         """Initialize episodic memory.
 
@@ -102,6 +109,11 @@ class EpisodicMemory:
         self._graph_db = graph_db
         self._max_episodes = max_episodes
         self._use_graph = graph_db is not None
+        self._persistence = persistence
+        if persistence:
+            self._store = create_memory_store(persistence)
+        else:
+            self._store = None
         
         # Fallback to in-memory storage
         self._episodes: Dict[str, Episode] = {}
@@ -113,6 +125,9 @@ class EpisodicMemory:
                 "Graph database not provided. Using in-memory storage. "
                 "Episodes will not persist across restarts."
             )
+
+        if self._store and self._persistence and self._persistence.enabled:
+            self._load_from_disk()
 
     async def store_episode(
         self,
@@ -164,6 +179,8 @@ class EpisodicMemory:
                     key=lambda k: self._episodes[k].timestamp
                 )
                 del self._episodes[oldest_id]
+
+        self._persist()
 
         logger.debug(f"Stored episode {episode.id} for agent {agent_id}")
         return episode
@@ -346,6 +363,8 @@ class EpisodicMemory:
             self._episodes.clear()
             logger.info("Cleared all episodes")
 
+        self._persist()
+
     async def get_stats(self) -> Dict[str, Any]:
         """Get episodic memory statistics.
 
@@ -356,6 +375,7 @@ class EpisodicMemory:
             return {
                 "total_episodes": 0,
                 "backend": "graph" if self._use_graph else "in-memory",
+                "persistence": bool(self._persistence and self._persistence.enabled),
             }
 
         episodes = list(self._episodes.values())
@@ -371,7 +391,21 @@ class EpisodicMemory:
             "oldest_episode": min(ep.timestamp for ep in episodes).isoformat(),
             "newest_episode": max(ep.timestamp for ep in episodes).isoformat(),
             "backend": "graph" if self._use_graph else "in-memory",
+            "persistence": bool(self._persistence and self._persistence.enabled),
         }
+
+    def _persist(self) -> None:
+        if not self._store:
+            return
+        self._store.save_list("episodic_memory.json", [ep.to_dict() for ep in self._episodes.values()])
+
+    def _load_from_disk(self) -> None:
+        if not self._store:
+            return
+        data = self._store.load_list("episodic_memory.json")
+        if not data:
+            return
+        self._episodes = {item["id"]: Episode.from_dict(item) for item in data}
 
     async def _store_in_graph(self, episode: Episode) -> None:
         """Store episode in graph database (placeholder)."""

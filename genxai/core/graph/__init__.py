@@ -8,6 +8,10 @@ from genxai.core.graph.executor import (
     WorkflowExecutor,
     execute_workflow_sync,
 )
+from genxai.core.graph.checkpoints import (
+    WorkflowCheckpoint,
+    WorkflowCheckpointManager,
+)
 
 __all__ = [
     "Node",
@@ -17,4 +21,6 @@ __all__ = [
     "EnhancedGraph",
     "WorkflowExecutor",
     "execute_workflow_sync",
+    "WorkflowCheckpoint",
+    "WorkflowCheckpointManager",
 ]
