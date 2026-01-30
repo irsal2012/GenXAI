@@ -33,16 +33,37 @@ const WorkflowBuilderPage = () => {
   }, [workflowQuery.data, resetDrafts])
 
   const workflowSnapshot = useMemo(() => {
-    return {
-      nodes: workflowQuery.data?.nodes ?? [],
-      edges: workflowQuery.data?.edges ?? [],
+    try {
+      return {
+        nodes: JSON.parse(draftNodes || '[]'),
+        edges: JSON.parse(draftEdges || '[]'),
+      }
+    } catch {
+      return {
+        nodes: workflowQuery.data?.nodes ?? [],
+        edges: workflowQuery.data?.edges ?? [],
+      }
     }
-  }, [workflowQuery.data])
+  }, [draftNodes, draftEdges, workflowQuery.data])
 
   const visualWorkflow = useMemo(() => {
-    if (!workflowQuery.data) return { nodes: [], edges: [] }
-    return convertToReactFlow(workflowQuery.data)
-  }, [workflowQuery.data])
+    try {
+      const nodes = JSON.parse(draftNodes || '[]')
+      const edges = JSON.parse(draftEdges || '[]')
+      const metadata = JSON.parse(draftMetadata || '{}')
+      return convertToReactFlow({
+        id: workflowQuery.data?.id || '',
+        name: workflowQuery.data?.name || '',
+        description: workflowQuery.data?.description || '',
+        nodes,
+        edges,
+        metadata,
+      })
+    } catch {
+      if (!workflowQuery.data) return { nodes: [], edges: [] }
+      return convertToReactFlow(workflowQuery.data)
+    }
+  }, [draftNodes, draftEdges, draftMetadata, workflowQuery.data])
 
   const [viewMode, setViewMode] = useState<'visual' | 'json'>('visual')
   const [selectedNode, setSelectedNode] = useState<Node | null>(null)
@@ -260,8 +281,27 @@ const WorkflowBuilderPage = () => {
           }}
           onSave={(updatedConfig) => {
             // Update the node's config in the workflow
-            console.log('Updated agent config:', updatedConfig)
-            // TODO: Implement actual node update logic
+            try {
+              const nodes = JSON.parse(draftNodes || '[]')
+              const nodeIndex = nodes.findIndex((n: any) => n.id === agentConfigModalNode.id)
+              if (nodeIndex !== -1) {
+                nodes[nodeIndex].config = updatedConfig
+                setDraftNodes(JSON.stringify(nodes, null, 2))
+                
+                // Update selectedNode if it's the same node we just configured
+                if (selectedNode && selectedNode.id === agentConfigModalNode.id) {
+                  setSelectedNode({
+                    ...selectedNode,
+                    data: {
+                      ...selectedNode.data,
+                      config: updatedConfig,
+                    },
+                  })
+                }
+              }
+            } catch (e) {
+              console.error('Failed to update node config:', e)
+            }
             setAgentConfigModalOpen(false)
             setAgentConfigModalNode(null)
           }}
