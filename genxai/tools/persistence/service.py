@@ -134,6 +134,37 @@ class ToolService:
             db.close()
     
     @staticmethod
+    def update_tool_code(name: str, code: str) -> bool:
+        """Update tool code in database.
+        
+        Args:
+            name: Tool name
+            code: New Python code
+            
+        Returns:
+            True if updated, False if not found
+        """
+        db = SessionLocal()
+        try:
+            tool = db.query(ToolModel).filter(ToolModel.name == name).first()
+            if tool and tool.tool_type == "code_based":
+                tool.code = code
+                db.commit()
+                logger.info(f"Updated tool code in database: {name}")
+                
+                # Update file if exists
+                ToolService._export_to_file(tool)
+                
+                return True
+            return False
+        except Exception as e:
+            db.rollback()
+            logger.error(f"Failed to update tool code: {e}")
+            raise
+        finally:
+            db.close()
+    
+    @staticmethod
     def delete_tool(name: str) -> bool:
         """Delete tool from database.
         

@@ -328,6 +328,93 @@ async def execute_tool(tool_name: str, parameters: Dict[str, Any]) -> Dict[str, 
         )
 
 
+@router.get("/{tool_name}/code")
+async def get_tool_code(tool_name: str) -> Dict[str, Any]:
+    """Get the source code of a dynamic tool.
+    
+    Args:
+        tool_name: Name of the tool
+        
+    Returns:
+        Tool code and metadata
+    """
+    from genxai.tools.dynamic import DynamicTool
+    
+    tool = ToolRegistry.get(tool_name)
+    if not tool:
+        raise HTTPException(status_code=404, detail=f"Tool '{tool_name}' not found")
+    
+    # Check if tool is a DynamicTool
+    if not isinstance(tool, DynamicTool):
+        raise HTTPException(
+            status_code=400,
+            detail=f"Tool '{tool_name}' is not a dynamic tool and cannot be edited"
+        )
+    
+    return {
+        "name": tool.metadata.name,
+        "code": tool.get_code(),
+        "editable": True,
+        "timeout": tool.timeout,
+    }
+
+
+@router.put("/{tool_name}/code")
+async def update_tool_code(tool_name: str, code: str) -> Dict[str, Any]:
+    """Update the source code of a dynamic tool.
+    
+    Args:
+        tool_name: Name of the tool
+        code: New Python code
+        
+    Returns:
+        Success message and updated tool info
+    """
+    from genxai.tools.dynamic import DynamicTool
+    from genxai.tools.persistence import ToolService
+    
+    tool = ToolRegistry.get(tool_name)
+    if not tool:
+        raise HTTPException(status_code=404, detail=f"Tool '{tool_name}' not found")
+    
+    # Check if tool is a DynamicTool
+    if not isinstance(tool, DynamicTool):
+        raise HTTPException(
+            status_code=400,
+            detail=f"Tool '{tool_name}' is not a dynamic tool and cannot be edited"
+        )
+    
+    try:
+        # Update the tool code
+        tool.update_code(code)
+        
+        # Update in database
+        try:
+            ToolService.update_tool_code(tool_name, code)
+        except Exception as e:
+            logger.warning(f"Failed to update tool code in database: {e}")
+        
+        return {
+            "success": True,
+            "message": f"Tool '{tool_name}' code updated successfully",
+            "tool": {
+                "name": tool.metadata.name,
+                "code": tool.get_code(),
+            }
+        }
+    except (SyntaxError, ValueError) as e:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid Python code: {str(e)}"
+        )
+    except Exception as e:
+        logger.error(f"Failed to update tool code: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to update tool code: {str(e)}"
+        )
+
+
 @router.delete("/{tool_name}")
 async def delete_tool(tool_name: str) -> Dict[str, Any]:
     """Delete a tool from the registry and database."""

@@ -108,3 +108,37 @@ export const useExecuteTool = () => {
     },
   })
 }
+
+export const useGetToolCode = (toolName: string) => {
+  return useQuery({
+    queryKey: ['tools', toolName, 'code'],
+    queryFn: async () => {
+      const { data } = await api.get(`/tools/${toolName}/code`)
+      return data
+    },
+    enabled: Boolean(toolName),
+  })
+}
+
+export const useUpdateToolCode = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({
+      toolName,
+      code,
+    }: {
+      toolName: string
+      code: string
+    }) => {
+      const { data } = await api.put(`/tools/${toolName}/code`, { code })
+      return data
+    },
+    onSuccess: (_, variables) => {
+      // Invalidate tool code query
+      queryClient.invalidateQueries({ queryKey: ['tools', variables.toolName, 'code'] })
+      // Invalidate tool details
+      queryClient.invalidateQueries({ queryKey: ['tools', variables.toolName] })
+    },
+  })
+}

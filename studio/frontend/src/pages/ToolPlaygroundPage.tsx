@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react'
-import { useTools, useExecuteTool } from '../services/tools'
+import { useTools, useExecuteTool, useGetToolCode, useUpdateToolCode } from '../services/tools'
 import ErrorState from '../components/ErrorState'
 import LoadingState from '../components/LoadingState'
 import ExecutionHistoryPanel from '../components/playground/ExecutionHistoryPanel'
 import ExecutionMetrics from '../components/playground/ExecutionMetrics'
 import ErrorDisplay from '../components/playground/ErrorDisplay'
+import CodeEditorModal from '../components/playground/CodeEditorModal'
+import { CodeBracketIcon } from '@heroicons/react/24/outline'
 import type { ToolSummary } from '../types/api'
 
 interface ExecutionHistoryEntry {
@@ -28,12 +30,50 @@ const ToolPlaygroundPage = () => {
   const [error, setError] = useState<string>('')
   const [executionMetrics, setExecutionMetrics] = useState<any>(null)
   const [history, setHistory] = useState<ExecutionHistoryEntry[]>([])
+  const [isCodeEditorOpen, setIsCodeEditorOpen] = useState(false)
+  const [toolCode, setToolCode] = useState<string>('')
+  const [isEditable, setIsEditable] = useState(false)
+
+  const updateToolCode = useUpdateToolCode()
 
   const handleToolSelect = (tool: ToolSummary) => {
     setSelectedTool(tool)
     setParameters({})
     setResult('')
     setError('')
+    setIsCodeEditorOpen(false)
+  }
+
+  const handleOpenCodeEditor = async () => {
+    if (!selectedTool) return
+
+    try {
+      const response = await fetch(`/api/tools/${selectedTool.name}/code`)
+      if (response.ok) {
+        const data = await response.json()
+        setToolCode(data.code)
+        setIsEditable(data.editable)
+        setIsCodeEditorOpen(true)
+      }
+    } catch (err) {
+      // Tool is not editable (built-in tool)
+      setIsEditable(false)
+    }
+  }
+
+  const handleSaveCode = async (code: string) => {
+    if (!selectedTool) return
+
+    await updateToolCode.mutateAsync({
+      toolName: selectedTool.name,
+      code,
+    })
+
+    setToolCode(code)
+    setIsCodeEditorOpen(false)
+    
+    // Show success message
+    alert('Code updated successfully! You can now test the updated tool.')
   }
 
   const handleParameterChange = (key: string, value: any) => {
@@ -161,13 +201,22 @@ const ToolPlaygroundPage = () => {
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-lg font-semibold">Tool Playground</h2>
-        <p className="text-sm text-slate-500">
-          Test tools with custom parameters and see results in real-time
-        </p>
-      </div>
+    <>
+      <CodeEditorModal
+        isOpen={isCodeEditorOpen}
+        toolName={selectedTool?.name || ''}
+        initialCode={toolCode}
+        onClose={() => setIsCodeEditorOpen(false)}
+        onSave={handleSaveCode}
+      />
+
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-lg font-semibold">Tool Playground</h2>
+          <p className="text-sm text-slate-500">
+            Test tools with custom parameters and see results in real-time
+          </p>
+        </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Tool Selection */}
@@ -199,8 +248,20 @@ const ToolPlaygroundPage = () => {
             <>
               {/* Tool Info */}
               <div className="card p-5">
-                <h3 className="text-base font-semibold">{selectedTool.name}</h3>
-                <p className="text-sm text-slate-600 mt-2">{selectedTool.description}</p>
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <h3 className="text-base font-semibold">{selectedTool.name}</h3>
+                    <p className="text-sm text-slate-600 mt-2">{selectedTool.description}</p>
+                  </div>
+                  <button
+                    onClick={handleOpenCodeEditor}
+                    className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-primary-700 bg-primary-50 hover:bg-primary-100 rounded-lg transition"
+                    title="View/Edit Tool Code"
+                  >
+                    <CodeBracketIcon className="h-4 w-4" />
+                    Edit Code
+                  </button>
+                </div>
                 <div className="flex flex-wrap gap-2 mt-3">
                   <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
                     {selectedTool.category}
@@ -314,7 +375,8 @@ const ToolPlaygroundPage = () => {
           )}
         </div>
       </div>
-    </div>
+      </div>
+    </>
   )
 }
 
