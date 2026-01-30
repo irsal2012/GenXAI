@@ -7,6 +7,9 @@ from abc import ABC, abstractmethod
 import time
 import logging
 
+from genxai.observability.metrics import record_tool_execution
+from genxai.observability.tracing import span, record_exception
+
 logger = logging.getLogger(__name__)
 
 
@@ -101,18 +104,23 @@ class Tool(ABC):
         """
         start_time = time.time()
 
+        status = "success"
+        error_type: Optional[str] = None
         try:
-            # Validate input
-            if not self.validate_input(**kwargs):
-                return ToolResult(
-                    success=False,
-                    data=None,
-                    error="Invalid input parameters",
-                    execution_time=time.time() - start_time,
-                )
+            with span("genxai.tool.execute", {"tool_name": self.metadata.name}):
+                # Validate input
+                if not self.validate_input(**kwargs):
+                    status = "error"
+                    error_type = "ValidationError"
+                    return ToolResult(
+                        success=False,
+                        data=None,
+                        error="Invalid input parameters",
+                        execution_time=time.time() - start_time,
+                    )
 
-            # Execute tool logic
-            raw_result = await self._execute(**kwargs)
+                # Execute tool logic
+                raw_result = await self._execute(**kwargs)
 
             # Normalize results:
             # - If tool returns ToolResult, respect it.
@@ -132,10 +140,18 @@ class Tool(ABC):
                     self._success_count += 1
                 else:
                     self._failure_count += 1
+                    status = "error"
+                    error_type = raw_result.error or "ToolError"
                 # Ensure metadata/execution_time are populated.
                 if not raw_result.metadata:
                     raw_result.metadata = {"tool": self.metadata.name, "version": self.metadata.version}
                 raw_result.execution_time = execution_time
+                record_tool_execution(
+                    tool_name=self.metadata.name,
+                    duration=execution_time,
+                    status="success" if raw_result.success else "error",
+                    error_type=error_type,
+                )
                 return raw_result
 
             if isinstance(raw_result, dict) and "success" in raw_result and isinstance(raw_result["success"], bool):
@@ -152,8 +168,16 @@ class Tool(ABC):
             # If tool explicitly signaled success/failure, respect it.
             if tool_success is False:
                 self._failure_count += 1
+                status = "error"
+                error_type = tool_error or "ToolError"
                 logger.warning(
                     f"Tool {self.metadata.name} reported failure in {execution_time:.2f}s: {tool_error}"
+                )
+                record_tool_execution(
+                    tool_name=self.metadata.name,
+                    duration=execution_time,
+                    status="error",
+                    error_type=error_type,
                 )
                 return ToolResult(
                     success=False,
@@ -167,6 +191,11 @@ class Tool(ABC):
             logger.info(
                 f"Tool {self.metadata.name} executed successfully in {execution_time:.2f}s"
             )
+            record_tool_execution(
+                tool_name=self.metadata.name,
+                duration=execution_time,
+                status="success",
+            )
             return ToolResult(
                 success=True,
                 data=result_data,
@@ -179,8 +208,17 @@ class Tool(ABC):
             self._execution_count += 1
             self._total_execution_time += execution_time
             self._failure_count += 1
+            status = "error"
+            error_type = type(e).__name__
 
             logger.error(f"Tool {self.metadata.name} failed: {str(e)}")
+            record_exception(e)
+            record_tool_execution(
+                tool_name=self.metadata.name,
+                duration=execution_time,
+                status=status,
+                error_type=error_type,
+            )
 
             return ToolResult(
                 success=False, data=None, error=str(e), execution_time=execution_time

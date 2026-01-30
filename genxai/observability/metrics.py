@@ -1,8 +1,8 @@
 """Metrics collection for GenXAI with Prometheus support."""
 
-from typing import Dict, Any, Optional
 from collections import defaultdict
-from datetime import datetime
+from contextlib import contextmanager
+from typing import Any, Dict, Optional
 import time
 
 try:
@@ -21,6 +21,21 @@ class MetricsCollector:
         self._gauges: Dict[str, float] = {}
         self._histograms: Dict[str, list[float]] = defaultdict(list)
         self._timers: Dict[str, float] = {}
+
+    @contextmanager
+    def time(self, metric: str, tags: Optional[Dict[str, str]] = None):
+        """Context manager to time a code block.
+
+        Args:
+            metric: Metric name
+            tags: Optional tags
+        """
+        start = time.time()
+        try:
+            yield
+        finally:
+            duration = time.time() - start
+            self.timing(metric, duration, tags)
 
     def increment(self, metric: str, value: int = 1, tags: Optional[Dict[str, str]] = None) -> None:
         """Increment a counter metric.
@@ -360,3 +375,120 @@ def get_metrics_collector() -> MetricsCollector:
         Global metrics collector instance
     """
     return _global_metrics
+
+
+def _safe_inc(counter: Any, labels: Optional[Dict[str, str]] = None, value: int = 1) -> None:
+    if counter is None:
+        return
+    if labels:
+        counter.labels(**labels).inc(value)
+    else:
+        counter.inc(value)
+
+
+def _safe_observe(histogram: Any, labels: Optional[Dict[str, str]] = None, value: float = 0.0) -> None:
+    if histogram is None:
+        return
+    if labels:
+        histogram.labels(**labels).observe(value)
+    else:
+        histogram.observe(value)
+
+
+def _safe_set(gauge: Any, labels: Optional[Dict[str, str]] = None, value: float = 0.0) -> None:
+    if gauge is None:
+        return
+    if labels:
+        gauge.labels(**labels).set(value)
+    else:
+        gauge.set(value)
+
+
+def record_agent_execution(
+    agent_id: str,
+    duration: float,
+    status: str = "success",
+    error_type: Optional[str] = None,
+) -> None:
+    """Record agent execution metrics.
+
+    Args:
+        agent_id: Agent identifier
+        duration: Execution duration in seconds
+        status: Execution status (success/error)
+        error_type: Optional error type
+    """
+    _safe_inc(agent_executions_total, {"agent_id": agent_id, "status": status})
+    _safe_observe(agent_execution_duration_seconds, {"agent_id": agent_id}, duration)
+    if status != "success" and error_type:
+        _safe_inc(agent_errors_total, {"agent_id": agent_id, "error_type": error_type})
+
+
+def record_tool_execution(
+    tool_name: str,
+    duration: float,
+    status: str = "success",
+    error_type: Optional[str] = None,
+) -> None:
+    """Record tool execution metrics."""
+    _safe_inc(tool_calls_total, {"tool_name": tool_name, "status": status})
+    _safe_observe(tool_execution_duration_seconds, {"tool_name": tool_name}, duration)
+    if status != "success" and error_type:
+        _safe_inc(tool_errors_total, {"tool_name": tool_name, "error_type": error_type})
+
+
+def record_llm_request(
+    provider: str,
+    model: str,
+    duration: float,
+    status: str = "success",
+    input_tokens: int = 0,
+    output_tokens: int = 0,
+    total_cost: float = 0.0,
+) -> None:
+    """Record LLM request metrics."""
+    _safe_inc(llm_requests_total, {"provider": provider, "model": model, "status": status})
+    _safe_inc(llm_tokens_total, {"provider": provider, "model": model, "token_type": "input"}, input_tokens)
+    _safe_inc(llm_tokens_total, {"provider": provider, "model": model, "token_type": "output"}, output_tokens)
+    _safe_inc(llm_cost_total, {"provider": provider, "model": model}, total_cost)
+    _safe_observe(llm_request_duration_seconds, {"provider": provider, "model": model}, duration)
+
+
+def record_memory_operation(
+    operation_type: str,
+    memory_type: str,
+    duration: float,
+    status: str = "success",
+) -> None:
+    """Record memory operation metrics."""
+    _safe_inc(
+        memory_operations_total,
+        {"operation_type": operation_type, "memory_type": memory_type, "status": status},
+    )
+    _safe_observe(
+        memory_operation_duration_seconds,
+        {"operation_type": operation_type, "memory_type": memory_type},
+        duration,
+    )
+
+
+def record_workflow_execution(
+    workflow_id: str,
+    duration: float,
+    status: str = "success",
+) -> None:
+    """Record workflow execution metrics."""
+    _safe_inc(workflow_executions_total, {"workflow_id": workflow_id, "status": status})
+    _safe_observe(workflow_execution_duration_seconds, {"workflow_id": workflow_id}, duration)
+
+
+def record_workflow_node_execution(
+    workflow_id: str,
+    node_id: str,
+    status: str = "success",
+) -> None:
+    """Record workflow node execution metrics."""
+    _safe_inc(
+        workflow_node_executions_total,
+        {"workflow_id": workflow_id, "node_id": node_id, "status": status},
+    )

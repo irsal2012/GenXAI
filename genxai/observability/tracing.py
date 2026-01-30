@@ -1,7 +1,8 @@
 """OpenTelemetry tracing for GenXAI."""
 
-from typing import Optional, Dict, Any, Callable
+from contextlib import contextmanager
 from functools import wraps
+from typing import Any, Callable, Dict, Optional
 import os
 
 try:
@@ -102,14 +103,36 @@ class TracingManager:
         """
         if not self.tracer:
             return _NoOpSpan()
-        
+
         span = self.tracer.start_as_current_span(name)
-        
+
         if attributes:
             for key, value in attributes.items():
                 span.set_attribute(key, value)
-        
+
         return span
+
+    @contextmanager
+    def span(
+        self,
+        name: str,
+        attributes: Optional[Dict[str, Any]] = None,
+    ):
+        """Context manager for a tracing span.
+
+        Args:
+            name: Span name
+            attributes: Optional span attributes
+        """
+        if not self.tracer:
+            yield _NoOpSpan()
+            return
+
+        with self.tracer.start_as_current_span(name) as span:
+            if attributes:
+                for key, value in attributes.items():
+                    span.set_attribute(key, value)
+            yield span
     
     def trace(
         self,
@@ -305,6 +328,19 @@ def start_span(name: str, attributes: Optional[Dict[str, Any]] = None):
         Span context manager
     """
     return get_tracing_manager().start_span(name, attributes)
+
+
+def span(name: str, attributes: Optional[Dict[str, Any]] = None):
+    """Context manager for a tracing span.
+
+    Args:
+        name: Span name
+        attributes: Optional span attributes
+
+    Returns:
+        Context manager yielding the span
+    """
+    return get_tracing_manager().span(name, attributes)
 
 
 def add_event(name: str, attributes: Optional[Dict[str, Any]] = None):

@@ -1,10 +1,53 @@
 """Structured logging for GenXAI."""
 
+import json
 import logging
 import sys
-from typing import Any, Dict, Optional
+from contextvars import ContextVar
 from datetime import datetime
-import json
+from typing import Any, Dict, Optional
+
+
+_request_id_ctx: ContextVar[Optional[str]] = ContextVar("genxai_request_id", default=None)
+_workflow_id_ctx: ContextVar[Optional[str]] = ContextVar("genxai_workflow_id", default=None)
+_agent_id_ctx: ContextVar[Optional[str]] = ContextVar("genxai_agent_id", default=None)
+
+
+def set_log_context(
+    *,
+    request_id: Optional[str] = None,
+    workflow_id: Optional[str] = None,
+    agent_id: Optional[str] = None,
+) -> None:
+    """Set context values for structured logging.
+
+    Args:
+        request_id: Request identifier
+        workflow_id: Workflow identifier
+        agent_id: Agent identifier
+    """
+    if request_id is not None:
+        _request_id_ctx.set(request_id)
+    if workflow_id is not None:
+        _workflow_id_ctx.set(workflow_id)
+    if agent_id is not None:
+        _agent_id_ctx.set(agent_id)
+
+
+def clear_log_context() -> None:
+    """Clear logging context values."""
+    _request_id_ctx.set(None)
+    _workflow_id_ctx.set(None)
+    _agent_id_ctx.set(None)
+
+
+def get_log_context() -> Dict[str, Optional[str]]:
+    """Get current logging context values."""
+    return {
+        "request_id": _request_id_ctx.get(),
+        "workflow_id": _workflow_id_ctx.get(),
+        "agent_id": _agent_id_ctx.get(),
+    }
 
 
 class StructuredFormatter(logging.Formatter):
@@ -29,6 +72,9 @@ class StructuredFormatter(logging.Formatter):
             "line": record.lineno,
         }
 
+        # Add contextual identifiers
+        log_data.update(get_log_context())
+
         # Add exception info if present
         if record.exc_info:
             log_data["exception"] = self.formatException(record.exc_info)
@@ -44,6 +90,7 @@ def setup_logging(
     level: str = "INFO",
     structured: bool = False,
     log_file: Optional[str] = None,
+    redact_sensitive: bool = True,
 ) -> None:
     """Set up logging configuration.
 
@@ -64,6 +111,8 @@ def setup_logging(
     # Console handler
     console_handler = logging.StreamHandler(sys.stdout)
     console_handler.setFormatter(formatter)
+    if redact_sensitive:
+        console_handler.addFilter(SensitiveDataFilter())
 
     # Configure root logger
     root_logger = logging.getLogger()
@@ -74,6 +123,8 @@ def setup_logging(
     if log_file:
         file_handler = logging.FileHandler(log_file)
         file_handler.setFormatter(formatter)
+        if redact_sensitive:
+            file_handler.addFilter(SensitiveDataFilter())
         root_logger.addHandler(file_handler)
 
     logging.info(f"Logging configured: level={level}, structured={structured}")
@@ -89,13 +140,13 @@ def get_logger(name: str, extra: Optional[Dict[str, Any]] = None) -> logging.Log
     Returns:
         Configured logger
     """
-    logger = logging.getLogger(name)
+    base_logger = logging.getLogger(name)
 
     if extra:
         # Create adapter with extra context
-        logger = logging.LoggerAdapter(logger, extra)
+        return logging.LoggerAdapter(base_logger, extra)
 
-    return logger
+    return base_logger
 
 
 class LogContext:
@@ -202,7 +253,7 @@ class StructuredLogger:
             "timestamp": datetime.utcnow().isoformat(),
             "level": level,
             "message": message,
-            "context": self.context,
+            "context": {**get_log_context(), **self.context},
             **kwargs
         }
         return json.dumps(log_entry)

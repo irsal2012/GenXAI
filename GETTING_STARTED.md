@@ -14,6 +14,9 @@ cd genxai
 # Install dependencies
 pip install -e ".[dev,llm]"
 
+# Or install all optional extras
+pip install -e ".[all]"
+
 # Set up your OpenAI API key
 export OPENAI_API_KEY="your-api-key-here"
 ```
@@ -24,11 +27,9 @@ Create a simple agent workflow in Python:
 
 ```python
 import asyncio
-from genxai.core.graph.engine import Graph
+from genxai import Agent, AgentConfig, AgentRegistry, Graph
 from genxai.core.graph.nodes import InputNode, OutputNode, AgentNode
 from genxai.core.graph.edges import Edge
-from genxai.core.agent.base import Agent, AgentConfig
-from genxai.core.agent.runtime import AgentRuntime
 from genxai.llm.providers.openai import OpenAIProvider
 
 async def main():
@@ -40,10 +41,10 @@ async def main():
     )
     agent = Agent(id="assistant", config=agent_config)
     
-    # Set up agent runtime with LLM
-    runtime = AgentRuntime(agent)
+    # Register the agent and set up LLM
+    AgentRegistry.register(agent)
     llm_provider = OpenAIProvider(model="gpt-4")
-    runtime.set_llm_provider(llm_provider)
+    # Note: wire providers into your runtime/agent as needed for your workflow
     
     # Create a graph
     graph = Graph(name="simple_workflow")
@@ -72,7 +73,7 @@ if __name__ == "__main__":
 Graphs define the workflow structure with nodes and edges:
 
 ```python
-from genxai.core.graph.engine import Graph
+from genxai import Graph
 from genxai.core.graph.nodes import InputNode, OutputNode
 from genxai.core.graph.edges import Edge
 
@@ -87,7 +88,7 @@ graph.add_edge(Edge(source="input", target="output"))
 Agents are intelligent entities that can process tasks:
 
 ```python
-from genxai.core.agent.base import Agent, AgentConfig
+from genxai import Agent, AgentConfig
 
 config = AgentConfig(
     role="Data Analyst",
@@ -126,6 +127,23 @@ llm = OpenAIProvider(
 
 response = await llm.generate("Hello, how are you?")
 print(response.content)
+```
+
+## 📈 Metrics API (Optional)
+
+GenXAI ships with a lightweight metrics API (non-Studio) that exposes
+Prometheus-formatted metrics at `/metrics`.
+
+Start the server with:
+
+```bash
+genxai metrics serve --host 0.0.0.0 --port 8001
+```
+
+Then scrape:
+
+```text
+GET http://localhost:8001/metrics
 ```
 
 ## 🎯 Examples

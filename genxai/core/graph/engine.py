@@ -4,9 +4,15 @@ import asyncio
 from typing import Any, Dict, List, Optional, Set
 from collections import defaultdict, deque
 import logging
+import time
 
 from genxai.core.graph.nodes import Node, NodeStatus, NodeType
 from genxai.core.graph.edges import Edge
+from genxai.observability.metrics import (
+    record_workflow_execution,
+    record_workflow_node_execution,
+)
+from genxai.observability.tracing import span, record_exception
 
 logger = logging.getLogger(__name__)
 
@@ -210,6 +216,9 @@ class Graph:
 
         self.validate()
 
+        start_time = time.time()
+        status = "success"
+
         # Initialize state
         if state is None:
             state = {}
@@ -234,8 +243,21 @@ class Graph:
         logger.debug(f"Entry points: {entry_points}")
 
         # Execute from entry points
-        for entry_point in entry_points:
-            await self._execute_node(entry_point, state, max_iterations)
+        try:
+            with span("genxai.workflow.execute", {"workflow_id": self.name}):
+                for entry_point in entry_points:
+                    await self._execute_node(entry_point, state, max_iterations)
+        except Exception as exc:
+            status = "error"
+            record_exception(exc)
+            raise
+        finally:
+            duration = time.time() - start_time
+            record_workflow_execution(
+                workflow_id=self.name,
+                duration=duration,
+                status=status,
+            )
 
         logger.info(f"Graph execution completed: {self.name}")
         return state
@@ -267,13 +289,24 @@ class Graph:
         # Mark as running
         node.status = NodeStatus.RUNNING
         logger.debug(f"Executing node: {node_id}")
+        node_start = time.time()
 
         try:
             # Execute node (placeholder - will be implemented with actual executors)
-            result = await self._execute_node_logic(node, state)
+            with span(
+                "genxai.workflow.node",
+                {"workflow_id": self.name, "node_id": node_id, "node_type": node.type.value},
+            ):
+                result = await self._execute_node_logic(node, state)
             node.result = result
             node.status = NodeStatus.COMPLETED
             logger.debug(f"Node completed: {node_id}")
+
+            record_workflow_node_execution(
+                workflow_id=self.name,
+                node_id=node_id,
+                status="success",
+            )
 
             # Update state with result
             state[node_id] = result
@@ -303,6 +336,11 @@ class Graph:
             node.status = NodeStatus.FAILED
             node.error = str(e)
             logger.error(f"Node execution failed: {node_id} - {e}")
+            record_workflow_node_execution(
+                workflow_id=self.name,
+                node_id=node_id,
+                status="error",
+            )
             raise GraphExecutionError(f"Node {node_id} failed: {e}") from e
 
     async def _execute_node_logic(self, node: Node, state: Dict[str, Any]) -> Any:

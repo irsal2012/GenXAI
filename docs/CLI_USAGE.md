@@ -10,6 +10,12 @@ pip install -e .
 
 # Or install from PyPI (when published)
 pip install genxai
+
+# Full install with providers/tools/observability/API
+pip install "genxai[llm,tools,observability,api]"
+
+# Everything included
+pip install "genxai[all]"
 ```
 
 ## Tool Management Commands
@@ -123,6 +129,20 @@ Import a tool from a JSON file:
 
 ```bash
 genxai tool import-tool ./tool.json
+```
+
+## Metrics API Commands
+
+Start the metrics API server (non-Studio) to expose Prometheus metrics:
+
+```bash
+genxai metrics serve --host 0.0.0.0 --port 8001
+```
+
+Enable auto-reload during development:
+
+```bash
+genxai metrics serve --reload
 ```
 
 ## Tool Categories

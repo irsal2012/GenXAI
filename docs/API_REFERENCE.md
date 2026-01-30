@@ -220,6 +220,21 @@ response = await http_pool.get("https://api.example.com")
 
 ## Observability
 
+### Metrics API
+
+GenXAI exposes a Prometheus-compatible metrics endpoint via a lightweight
+FastAPI app (non-Studio). Run the server with:
+
+```bash
+genxai metrics serve --host 0.0.0.0 --port 8001
+```
+
+Then scrape:
+
+```text
+GET http://localhost:8001/metrics
+```
+
 ### Metrics
 
 ```python

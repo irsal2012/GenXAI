@@ -56,6 +56,10 @@ GenXAI is an advanced agentic AI framework designed to surpass existing solution
 - **Scalability**: Horizontal scaling, distributed execution
 - **Reliability**: 99.9% uptime target
 
+### 📈 Metrics API
+- **Prometheus endpoint** at `/metrics` (non-Studio FastAPI app)
+- **CLI launch**: `genxai metrics serve --host 0.0.0.0 --port 8001`
+
 ---
 
 ## 📋 Documentation
@@ -148,40 +152,64 @@ See [IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md) for detailed timeline.
 
 ```python
 import os
-from genxai import Graph, Agent, Tool
+from genxai import Agent, AgentConfig, AgentRegistry, Graph
 
 # Set your API key (required)
 os.environ["OPENAI_API_KEY"] = "sk-your-api-key-here"
 
 # Define agents
 classifier = Agent(
-    role="Classifier",
-    goal="Categorize customer requests",
-    llm="gpt-4",
-    tools=["sentiment_analysis", "category_detector"]
+    id="classifier",
+    config=AgentConfig(
+        role="Classifier",
+        goal="Categorize customer requests",
+        llm_model="gpt-4",
+        tools=["sentiment_analysis", "category_detector"],
+    ),
 )
 
 support = Agent(
-    role="Support Agent",
-    goal="Resolve customer issues",
-    llm="claude-3-opus",
-    memory="persistent"
+    id="support",
+    config=AgentConfig(
+        role="Support Agent",
+        goal="Resolve customer issues",
+        llm_model="claude-3-opus",
+        enable_memory=True,
+    ),
 )
+
+AgentRegistry.register(classifier)
+AgentRegistry.register(support)
 
 # Build graph
 graph = Graph()
-graph.add_node("start", type="input")
-graph.add_node("classify", agent=classifier)
-graph.add_node("support", agent=support)
-graph.add_node("end", type="output")
+from genxai.core.graph.nodes import InputNode, OutputNode, AgentNode
+from genxai.core.graph.edges import Edge
 
-graph.add_edge("start", "classify")
-graph.add_edge("classify", "support", 
-               condition=lambda s: s.category == "technical")
-graph.add_edge("support", "end")
+graph.add_node(InputNode(id="start"))
+graph.add_node(AgentNode(id="classify", agent_id="classifier"))
+graph.add_node(AgentNode(id="support", agent_id="support"))
+graph.add_node(OutputNode(id="end"))
+
+graph.add_edge(Edge(source="start", target="classify"))
+graph.add_edge(Edge(source="classify", target="support"))
+graph.add_edge(Edge(source="support", target="end"))
 
 # Run workflow
-result = await graph.run(input="My app crashed")
+result = await graph.run(input_data="My app crashed")
+```
+
+### Install Options
+
+```bash
+# Core install
+pip install genxai
+
+# Full install with providers/tools/observability/API
+pip install "genxai[llm,tools,observability,api]"
+
+# Everything included
+pip install "genxai[all]"
 ```
 
 ### No-Code Interface

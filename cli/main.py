@@ -1,7 +1,7 @@
 """GenXAI CLI - Main entry point."""
 
 import click
-from cli.commands import tool
+from cli.commands import tool, metrics
 
 
 @click.group()
@@ -16,6 +16,7 @@ def cli():
 
 # Register command groups
 cli.add_command(tool)
+cli.add_command(metrics)
 
 
 def main():
