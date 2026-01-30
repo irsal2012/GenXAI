@@ -1,7 +1,7 @@
 """Communication protocols for agent interaction."""
 
 from enum import Enum
-from typing import Protocol as TypingProtocol
+from typing import Protocol as TypingProtocol, Any
 
 
 class CommunicationProtocol(str, Enum):

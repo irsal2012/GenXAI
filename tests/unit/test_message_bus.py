@@ -2,6 +2,7 @@
 
 import pytest
 import asyncio
+from typing import Any
 from genxai.core.communication.message_bus import MessageBus, Message
 
 
