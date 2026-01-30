@@ -6,6 +6,7 @@ const pageTitles: Record<string, string> = {
   '/workflows': 'Workflows',
   '/agents': 'Agents',
   '/tools': 'Tools',
+  '/settings': 'Settings',
 }
 
 const AppShell = () => {

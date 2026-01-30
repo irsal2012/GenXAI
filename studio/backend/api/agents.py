@@ -1,6 +1,6 @@
 """Agent API endpoints."""
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from typing import List, Dict, Any
 from pydantic import BaseModel
 import uuid
@@ -90,8 +90,14 @@ async def list_agents() -> List[AgentResponse]:
 
 
 @router.post("/")
-async def create_agent(agent: AgentCreate) -> AgentResponse:
-    """Create a new agent."""
+async def create_agent(agent: AgentCreate, request: Request) -> AgentResponse:
+    """Create a new agent.
+    
+    Note: API keys from request.state are available for future agent execution.
+    When agents are executed, use:
+        openai_api_key = request.state.openai_api_key
+        anthropic_api_key = request.state.anthropic_api_key
+    """
     agent_id = f"agent_{uuid.uuid4().hex[:8]}"
     agent_data = agent.dict()
     execute(

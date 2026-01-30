@@ -142,12 +142,16 @@ See [IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md) for detailed timeline.
 
 ---
 
-## 💡 Quick Start (Planned)
+## 💡 Quick Start
 
-### Code Interface
+### Using GenXAI as a Framework Library
 
 ```python
+import os
 from genxai import Graph, Agent, Tool
+
+# Set your API key (required)
+os.environ["OPENAI_API_KEY"] = "sk-your-api-key-here"
 
 # Define agents
 classifier = Agent(

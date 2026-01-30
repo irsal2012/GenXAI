@@ -22,10 +22,12 @@ try:
     # When running from within `studio/backend/`
     from api import workflows, agents, tools
     from services.db import init_db
+    from middleware.api_keys import ApiKeyMiddleware
 except ModuleNotFoundError:
     # When running from repo root as `studio.backend.main`
     from studio.backend.api import workflows, agents, tools
     from studio.backend.services.db import init_db
+    from studio.backend.middleware.api_keys import ApiKeyMiddleware
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -45,6 +47,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Add API Key middleware to extract keys from headers
+app.add_middleware(ApiKeyMiddleware)
 
 
 @app.get("/")

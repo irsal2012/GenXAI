@@ -5,7 +5,8 @@ import {
   UserCircleIcon, 
   WrenchScrewdriverIcon,
   DocumentDuplicateIcon,
-  BeakerIcon
+  BeakerIcon,
+  Cog6ToothIcon
 } from '@heroicons/react/24/outline'
 
 const links = [
@@ -15,6 +16,7 @@ const links = [
   { to: '/workflows', label: 'Workflows', icon: PlayCircleIcon },
   { to: '/templates', label: 'Templates', icon: DocumentDuplicateIcon },
   { to: '/playground', label: 'Playground', icon: BeakerIcon },
+  { to: '/settings', label: 'Settings', icon: Cog6ToothIcon },
 ]
 
 const Sidebar = () => {

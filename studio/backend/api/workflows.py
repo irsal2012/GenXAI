@@ -1,7 +1,7 @@
 """Workflow API endpoints."""
 
 from datetime import datetime
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from typing import List, Dict, Any
 from pydantic import BaseModel
 import uuid
@@ -136,15 +136,37 @@ async def delete_workflow(workflow_id: str) -> Dict[str, str]:
 
 
 @router.post("/{workflow_id}/execute")
-async def execute_workflow(workflow_id: str, input_data: Dict[str, Any]) -> Dict[str, Any]:
-    """Execute a workflow."""
+async def execute_workflow(
+    workflow_id: str, 
+    input_data: Dict[str, Any],
+    request: Request
+) -> Dict[str, Any]:
+    """Execute a workflow with user's API keys."""
     workflow = fetch_one("SELECT id FROM workflows WHERE id = ?", (workflow_id,))
     if not workflow:
         raise HTTPException(status_code=404, detail="Workflow not found")
 
+    # Extract API keys from request state (set by middleware)
+    openai_api_key = getattr(request.state, 'openai_api_key', None)
+    anthropic_api_key = getattr(request.state, 'anthropic_api_key', None)
+
     execution_id = f"exec_{uuid.uuid4().hex[:8]}"
     started_at = datetime.utcnow().isoformat()
-    result = {"message": "Workflow execution placeholder", "input": input_data}
+    
+    # TODO: Implement actual workflow execution with GenXAI engine
+    # For now, this is a placeholder that demonstrates API key availability
+    result = {
+        "message": "Workflow execution placeholder", 
+        "input": input_data,
+        "api_keys_configured": {
+            "openai": openai_api_key is not None,
+            "anthropic": anthropic_api_key is not None
+        }
+    }
+    
+    # When implementing actual execution, use:
+    # from genxai.llm.providers.openai import OpenAIProvider
+    # llm = OpenAIProvider(model="gpt-4", api_key=openai_api_key)
 
     execute(
         """
@@ -155,7 +177,7 @@ async def execute_workflow(workflow_id: str, input_data: Dict[str, Any]) -> Dict
             execution_id,
             workflow_id,
             "completed",
-            json_dumps(["Execution completed"]),
+            json_dumps(["Execution completed with user API keys"]),
             json_dumps(result),
             started_at,
             datetime.utcnow().isoformat(),
@@ -166,7 +188,7 @@ async def execute_workflow(workflow_id: str, input_data: Dict[str, Any]) -> Dict
         "id": execution_id,
         "workflow_id": workflow_id,
         "status": "completed",
-        "logs": ["Execution completed"],
+        "logs": ["Execution completed with user API keys"],
         "result": result,
         "started_at": started_at,
         "completed_at": datetime.utcnow().isoformat(),
