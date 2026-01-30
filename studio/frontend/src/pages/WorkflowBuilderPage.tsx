@@ -18,6 +18,7 @@ const WorkflowBuilderPage = () => {
   const updateWorkflow = useUpdateWorkflow(workflowId ?? '')
   const executeWorkflow = useExecuteWorkflow(workflowId ?? '')
   const [executionResult, setExecutionResult] = useState<string>('')
+  const [isExecutionOutputVisible, setIsExecutionOutputVisible] = useState<boolean>(true)
   const { draftNodes, draftEdges, draftMetadata, resetDrafts, setDraftNodes, setDraftEdges, setDraftMetadata } =
     useBuilderStore()
 
@@ -66,6 +67,7 @@ const WorkflowBuilderPage = () => {
     if (!workflowId) return
     const result = await executeWorkflow.mutateAsync({ input: 'demo payload' })
     setExecutionResult(JSON.stringify(result, null, 2))
+    setIsExecutionOutputVisible(true)
   }
 
   if (workflowQuery.isLoading) {
@@ -200,13 +202,46 @@ const WorkflowBuilderPage = () => {
               {workflowSnapshot.nodes.length} nodes · {workflowSnapshot.edges.length} edges
             </p>
           </div>
-          <div className="card p-6">
-            <h3 className="text-base font-semibold">Execution output</h3>
-            <p className="mt-2 text-sm text-slate-500">Run the workflow to see the execution response.</p>
-            <pre className="mt-3 max-h-80 overflow-auto rounded-xl bg-slate-900 p-4 text-xs text-slate-100">
-              {executionResult || 'No execution yet.'}
-            </pre>
-          </div>
+          {isExecutionOutputVisible ? (
+            <div className="card p-6">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <h3 className="text-base font-semibold">Execution output</h3>
+                  <p className="mt-2 text-sm text-slate-500">Run the workflow to see the execution response.</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50"
+                    onClick={() => setIsExecutionOutputVisible(false)}
+                    title="Close output"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+
+              <pre className="mt-3 max-h-80 overflow-auto rounded-xl bg-slate-900 p-4 text-xs text-slate-100">
+                {executionResult || 'No execution yet.'}
+              </pre>
+            </div>
+          ) : (
+            <div className="card p-6">
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <h3 className="text-base font-semibold">Execution output</h3>
+                  <p className="mt-2 text-sm text-slate-500">Output hidden.</p>
+                </div>
+                <button
+                  type="button"
+                  className="rounded-xl bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700"
+                  onClick={() => setIsExecutionOutputVisible(true)}
+                >
+                  Show
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

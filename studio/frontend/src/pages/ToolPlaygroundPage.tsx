@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useTools, useExecuteTool, useGetToolCode, useUpdateToolCode } from '../services/tools'
+import { useTools, useExecuteTool, useUpdateToolCode } from '../services/tools'
 import ErrorState from '../components/ErrorState'
 import LoadingState from '../components/LoadingState'
 import ExecutionHistoryPanel from '../components/playground/ExecutionHistoryPanel'
@@ -32,7 +32,6 @@ const ToolPlaygroundPage = () => {
   const [history, setHistory] = useState<ExecutionHistoryEntry[]>([])
   const [isCodeEditorOpen, setIsCodeEditorOpen] = useState(false)
   const [toolCode, setToolCode] = useState<string>('')
-  const [isEditable, setIsEditable] = useState(false)
 
   const updateToolCode = useUpdateToolCode()
 
@@ -52,12 +51,11 @@ const ToolPlaygroundPage = () => {
       if (response.ok) {
         const data = await response.json()
         setToolCode(data.code)
-        setIsEditable(data.editable)
         setIsCodeEditorOpen(true)
       }
     } catch (err) {
-      // Tool is not editable (built-in tool)
-      setIsEditable(false)
+      // Tool code endpoint not available or request failed.
+      // We keep the editor closed in this case.
     }
   }
 
