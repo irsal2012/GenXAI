@@ -13,6 +13,21 @@ To support both, imports below try the local (relative) form first and fall
 back to absolute imports.
 """
 
+# NOTE:
+# When starting the backend from inside `studio/backend/` (e.g. `uvicorn main:app`),
+# the repository root is not on `sys.path`. That can lead to:
+# - `import studio` failing
+# - importing an installed/site-packages `genxai` instead of the in-repo source
+#
+# To ensure Studio always runs against the local repo code during development,
+# we prepend the repo root to `sys.path`.
+import os
+import sys
+
+_REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+if _REPO_ROOT not in sys.path:
+    sys.path.insert(0, _REPO_ROOT)
+
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from typing import Dict, Any

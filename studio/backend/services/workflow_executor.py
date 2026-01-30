@@ -7,10 +7,10 @@ for Studio-specific concerns like database integration and API key handling.
 from typing import Any, Dict, List, Optional
 
 # Import from core library
-from genxai.core.graph.executor import execute_workflow_sync
+from genxai.core.graph.executor import execute_workflow_async
 
 
-def execute_studio_workflow(
+async def execute_studio_workflow(
     nodes: List[Dict[str, Any]],
     edges: List[Dict[str, Any]],
     input_data: Dict[str, Any],
@@ -32,7 +32,7 @@ def execute_studio_workflow(
     Returns:
         Execution result from core executor
     """
-    return execute_workflow_sync(
+    return await execute_workflow_async(
         nodes=nodes,
         edges=edges,
         input_data=input_data,

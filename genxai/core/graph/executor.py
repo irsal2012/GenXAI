@@ -1,6 +1,7 @@
 """Workflow execution engine for GenXAI."""
 
 import asyncio
+import copy
 from typing import Any, Dict, List, Optional
 import logging
 
@@ -35,10 +36,19 @@ class EnhancedGraph(Graph):
             Result of node execution
         """
         if node.type == NodeType.INPUT:
-            return state.get("input")
+            # IMPORTANT: Avoid returning the exact same `dict` object stored under
+            # `state["input"]`. If we do, the engine will store that same object
+            # under the input node id (e.g. "start"), creating shared references
+            # which Python's `json.dumps` treats as circular.
+            return copy.deepcopy(state.get("input"))
         
         elif node.type == NodeType.OUTPUT:
-            return state
+            # IMPORTANT: never return the live `state` dict. The engine stores the
+            # node result back into `state[node_id]`, so returning `state` would
+            # create a self-referential structure (circular reference) that can't
+            # be JSON-serialized for persistence.
+            # Also deep-copy to avoid shared references (json can't encode those).
+            return copy.deepcopy(state)
         
         elif node.type == NodeType.AGENT:
             # Get agent from registry
@@ -245,9 +255,12 @@ class WorkflowExecutor:
             node_id = node.get("id")
             node_type = node.get("type")
 
-            if node_type == "input":
+            # Support some common aliases used by the Studio UI
+            # - "start" behaves like an input node
+            # - "end" behaves like an output node
+            if node_type in {"input", "start"}:
                 graph.add_node(InputNode(id=node_id))
-            elif node_type == "output":
+            elif node_type in {"output", "end"}:
                 graph.add_node(OutputNode(id=node_id))
             elif node_type == "agent":
                 graph.add_node(AgentNode(id=node_id, agent_id=node_id))
@@ -385,3 +398,32 @@ def execute_workflow_sync(
         return result
     finally:
         loop.close()
+
+
+async def execute_workflow_async(
+    nodes: List[Dict[str, Any]],
+    edges: List[Dict[str, Any]],
+    input_data: Dict[str, Any],
+    openai_api_key: Optional[str] = None,
+    anthropic_api_key: Optional[str] = None,
+) -> Dict[str, Any]:
+    """Async convenience function for workflow execution.
+
+    This is the correct entry point when you're *already* inside an asyncio
+    event loop (e.g. FastAPI/Uvicorn request handlers).
+
+    Args:
+        nodes: Workflow nodes
+        edges: Workflow edges
+        input_data: Input data
+        openai_api_key: OpenAI API key
+        anthropic_api_key: Anthropic API key
+
+    Returns:
+        Execution result
+    """
+    executor = WorkflowExecutor(
+        openai_api_key=openai_api_key,
+        anthropic_api_key=anthropic_api_key,
+    )
+    return await executor.execute(nodes, edges, input_data)

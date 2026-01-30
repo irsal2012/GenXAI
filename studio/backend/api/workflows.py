@@ -160,9 +160,17 @@ async def execute_workflow(
     
     # Execute workflow using GenXAI engine
     try:
-        from studio.backend.services.workflow_executor import execute_studio_workflow
+        # Support running backend in both modes:
+        # 1) from inside `studio/backend/` (e.g. `uvicorn main:app --reload`)
+        # 2) from repo root as module (e.g. `uvicorn studio.backend.main:app --reload`)
+        try:
+            # When running from within `studio/backend/`
+            from services.workflow_executor import execute_studio_workflow
+        except ModuleNotFoundError:
+            # When running from repo root as `studio.backend.*`
+            from studio.backend.services.workflow_executor import execute_studio_workflow
         
-        execution_result = execute_studio_workflow(
+        execution_result = await execute_studio_workflow(
             nodes=nodes,
             edges=edges,
             input_data=input_data,
