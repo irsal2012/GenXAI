@@ -1,40 +1,110 @@
 """Memory system manager coordinating all memory types."""
 
-from typing import Optional
+from typing import Any, Dict, List, Optional, Tuple
 import logging
 
-from genxai.core.memory.base import MemoryConfig
+from genxai.core.memory.base import Memory, MemoryType, MemoryConfig
 from genxai.core.memory.short_term import ShortTermMemory
+from genxai.core.memory.long_term import LongTermMemory
+from genxai.core.memory.episodic import EpisodicMemory, Episode
+from genxai.core.memory.semantic import SemanticMemory, Fact
+from genxai.core.memory.procedural import ProceduralMemory, Procedure
+from genxai.core.memory.working import WorkingMemory
+from genxai.core.memory.vector_store import VectorStoreFactory
+from genxai.core.memory.embedding import EmbeddingServiceFactory
 
 logger = logging.getLogger(__name__)
 
 
 class MemorySystem:
-    """Comprehensive memory management system."""
+    """Comprehensive memory management system.
+    
+    Orchestrates all memory types:
+    - Short-term: Recent interactions
+    - Long-term: Persistent memories with vector search
+    - Episodic: Agent experiences and episodes
+    - Semantic: Facts and knowledge
+    - Procedural: Learned skills and procedures
+    - Working: Active processing context
+    """
 
-    def __init__(self, agent_id: str, config: Optional[MemoryConfig] = None) -> None:
+    def __init__(
+        self,
+        agent_id: str,
+        config: Optional[MemoryConfig] = None,
+        vector_store_backend: Optional[str] = None,
+        embedding_provider: Optional[str] = None,
+    ) -> None:
         """Initialize memory system.
 
         Args:
             agent_id: ID of the agent this memory belongs to
             config: Memory configuration
+            vector_store_backend: Vector store backend ("chromadb", "pinecone")
+            embedding_provider: Embedding provider ("openai", "local", "cohere")
         """
         self.agent_id = agent_id
         self.config = config or MemoryConfig()
 
-        # Initialize memory stores
+        # Initialize short-term memory
         self.short_term = ShortTermMemory(capacity=self.config.short_term_capacity)
 
-        # Placeholders for other memory types (to be implemented)
-        self.long_term: Optional[Any] = None
-        self.episodic: Optional[Any] = None
-        self.semantic: Optional[Any] = None
-        self.procedural: Optional[Any] = None
-        self.working: Optional[Any] = None
+        # Initialize working memory
+        self.working = WorkingMemory(capacity=self.config.working_capacity)
+
+        # Initialize long-term memory with vector store
+        self.long_term: Optional[LongTermMemory] = None
+        self.vector_store = None
+        self.embedding_service = None
+        
+        if self.config.long_term_enabled:
+            try:
+                # Create vector store
+                if vector_store_backend:
+                    self.vector_store = VectorStoreFactory.create(
+                        backend=vector_store_backend or self.config.vector_db,
+                    )
+                
+                # Create embedding service
+                if embedding_provider:
+                    self.embedding_service = EmbeddingServiceFactory.create(
+                        provider=embedding_provider,
+                    )
+                
+                # Initialize long-term memory
+                self.long_term = LongTermMemory(config=self.config)
+                logger.info("Long-term memory initialized with vector store")
+            except Exception as e:
+                logger.warning(f"Failed to initialize long-term memory: {e}")
+                self.long_term = LongTermMemory(config=self.config)
+
+        # Initialize episodic memory
+        self.episodic: Optional[EpisodicMemory] = None
+        if self.config.episodic_enabled:
+            self.episodic = EpisodicMemory()
+            logger.info("Episodic memory initialized")
+
+        # Initialize semantic memory
+        self.semantic: Optional[SemanticMemory] = None
+        if self.config.semantic_enabled:
+            self.semantic = SemanticMemory()
+            logger.info("Semantic memory initialized")
+
+        # Initialize procedural memory
+        self.procedural: Optional[ProceduralMemory] = None
+        if self.config.procedural_enabled:
+            self.procedural = ProceduralMemory()
+            logger.info("Procedural memory initialized")
 
         logger.info(f"Memory system initialized for agent: {agent_id}")
 
-    async def add_to_short_term(self, content: Any, metadata: Optional[dict] = None) -> None:
+    # ==================== Short-term Memory ====================
+
+    async def add_to_short_term(
+        self,
+        content: Any,
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> None:
         """Add content to short-term memory.
 
         Args:
@@ -43,7 +113,7 @@ class MemorySystem:
         """
         await self.short_term.add(content, metadata)
 
-    async def get_context(self, max_tokens: int = 4000) -> str:
+    async def get_short_term_context(self, max_tokens: int = 4000) -> str:
         """Get context from short-term memory for LLM.
 
         Args:
@@ -58,8 +128,343 @@ class MemorySystem:
         """Clear short-term memory."""
         await self.short_term.clear()
 
-    def get_stats(self) -> dict:
-        """Get memory system statistics.
+    # ==================== Working Memory ====================
+
+    def add_to_working(
+        self,
+        key: str,
+        value: Any,
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        """Add item to working memory.
+
+        Args:
+            key: Item key
+            value: Item value
+            metadata: Optional metadata
+        """
+        self.working.add(key, value, metadata)
+
+    def get_from_working(self, key: str) -> Optional[Any]:
+        """Get item from working memory.
+
+        Args:
+            key: Item key
+
+        Returns:
+            Item value if found
+        """
+        return self.working.get(key)
+
+    def clear_working(self) -> None:
+        """Clear working memory."""
+        self.working.clear()
+
+    # ==================== Long-term Memory ====================
+
+    async def add_to_long_term(
+        self,
+        memory: Memory,
+        ttl: Optional[int] = None,
+    ) -> None:
+        """Add memory to long-term storage.
+
+        Args:
+            memory: Memory to store
+            ttl: Time-to-live in seconds
+        """
+        if not self.long_term:
+            logger.warning("Long-term memory not enabled")
+            return
+
+        # Generate embedding if vector store available
+        if self.embedding_service and self.vector_store:
+            try:
+                embedding = await self.embedding_service.embed(str(memory.content))
+                await self.vector_store.store(memory, embedding)
+                logger.debug(f"Stored memory in vector store: {memory.id}")
+            except Exception as e:
+                logger.error(f"Failed to store in vector store: {e}")
+
+        # Store in long-term memory
+        self.long_term.store(memory, ttl)
+
+    async def search_long_term(
+        self,
+        query: str,
+        limit: int = 10,
+    ) -> List[Tuple[Memory, float]]:
+        """Search long-term memory by semantic similarity.
+
+        Args:
+            query: Search query
+            limit: Maximum results
+
+        Returns:
+            List of (memory, similarity_score) tuples
+        """
+        if not self.vector_store or not self.embedding_service:
+            logger.warning("Vector search not available")
+            return []
+
+        try:
+            # Generate query embedding
+            query_embedding = await self.embedding_service.embed(query)
+            
+            # Search vector store
+            results = await self.vector_store.search(query_embedding, limit=limit)
+            return results
+        except Exception as e:
+            logger.error(f"Failed to search long-term memory: {e}")
+            return []
+
+    # ==================== Episodic Memory ====================
+
+    async def store_episode(
+        self,
+        task: str,
+        actions: List[Dict[str, Any]],
+        outcome: Dict[str, Any],
+        duration: float,
+        success: bool,
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> Optional[Episode]:
+        """Store an episode.
+
+        Args:
+            task: Task description
+            actions: Actions taken
+            outcome: Outcome
+            duration: Duration in seconds
+            success: Success flag
+            metadata: Optional metadata
+
+        Returns:
+            Created episode
+        """
+        if not self.episodic:
+            logger.warning("Episodic memory not enabled")
+            return None
+
+        return await self.episodic.store_episode(
+            agent_id=self.agent_id,
+            task=task,
+            actions=actions,
+            outcome=outcome,
+            duration=duration,
+            success=success,
+            metadata=metadata,
+        )
+
+    async def get_similar_episodes(
+        self,
+        task: str,
+        limit: int = 5,
+    ) -> List[Episode]:
+        """Get episodes similar to a task.
+
+        Args:
+            task: Task description
+            limit: Maximum results
+
+        Returns:
+            List of similar episodes
+        """
+        if not self.episodic:
+            return []
+
+        return await self.episodic.retrieve_similar_tasks(task, limit)
+
+    async def get_success_rate(
+        self,
+        task_pattern: Optional[str] = None,
+    ) -> float:
+        """Get success rate for tasks.
+
+        Args:
+            task_pattern: Optional task pattern filter
+
+        Returns:
+            Success rate (0.0 to 1.0)
+        """
+        if not self.episodic:
+            return 0.0
+
+        return await self.episodic.get_success_rate(
+            agent_id=self.agent_id,
+            task_pattern=task_pattern,
+        )
+
+    # ==================== Semantic Memory ====================
+
+    async def store_fact(
+        self,
+        subject: str,
+        predicate: str,
+        object: str,
+        confidence: float = 1.0,
+        source: Optional[str] = None,
+    ) -> Optional[Fact]:
+        """Store a fact.
+
+        Args:
+            subject: Subject entity
+            predicate: Relationship/property
+            object: Object entity/value
+            confidence: Confidence score
+            source: Source of fact
+
+        Returns:
+            Created fact
+        """
+        if not self.semantic:
+            logger.warning("Semantic memory not enabled")
+            return None
+
+        return await self.semantic.store_fact(
+            subject=subject,
+            predicate=predicate,
+            object=object,
+            confidence=confidence,
+            source=source,
+        )
+
+    async def query_facts(
+        self,
+        subject: Optional[str] = None,
+        predicate: Optional[str] = None,
+        object: Optional[str] = None,
+    ) -> List[Fact]:
+        """Query facts.
+
+        Args:
+            subject: Optional subject filter
+            predicate: Optional predicate filter
+            object: Optional object filter
+
+        Returns:
+            List of matching facts
+        """
+        if not self.semantic:
+            return []
+
+        return await self.semantic.query(
+            subject=subject,
+            predicate=predicate,
+            object=object,
+        )
+
+    # ==================== Procedural Memory ====================
+
+    async def store_procedure(
+        self,
+        name: str,
+        description: str,
+        steps: List[Dict[str, Any]],
+        preconditions: Optional[List[str]] = None,
+        postconditions: Optional[List[str]] = None,
+    ) -> Optional[Procedure]:
+        """Store a procedure.
+
+        Args:
+            name: Procedure name
+            description: Description
+            steps: List of steps
+            preconditions: Required preconditions
+            postconditions: Expected postconditions
+
+        Returns:
+            Created procedure
+        """
+        if not self.procedural:
+            logger.warning("Procedural memory not enabled")
+            return None
+
+        return await self.procedural.store_procedure(
+            name=name,
+            description=description,
+            steps=steps,
+            preconditions=preconditions,
+            postconditions=postconditions,
+        )
+
+    async def get_procedure(self, name: str) -> Optional[Procedure]:
+        """Get a procedure by name.
+
+        Args:
+            name: Procedure name
+
+        Returns:
+            Procedure if found
+        """
+        if not self.procedural:
+            return None
+
+        return await self.procedural.retrieve_procedure(name=name)
+
+    async def record_procedure_execution(
+        self,
+        procedure_id: str,
+        success: bool,
+        duration: float,
+    ) -> bool:
+        """Record procedure execution.
+
+        Args:
+            procedure_id: Procedure ID
+            success: Success flag
+            duration: Duration in seconds
+
+        Returns:
+            True if recorded
+        """
+        if not self.procedural:
+            return False
+
+        return await self.procedural.record_execution(
+            procedure_id=procedure_id,
+            success=success,
+            duration=duration,
+        )
+
+    # ==================== Memory Consolidation ====================
+
+    async def consolidate_memories(
+        self,
+        importance_threshold: float = 0.7,
+    ) -> Dict[str, int]:
+        """Consolidate important memories from short-term to long-term.
+
+        Args:
+            importance_threshold: Minimum importance to consolidate
+
+        Returns:
+            Statistics about consolidation
+        """
+        if not self.long_term:
+            logger.warning("Long-term memory not enabled")
+            return {"consolidated": 0}
+
+        consolidated = 0
+        
+        # Get important memories from short-term
+        for memory in self.short_term.memories:
+            if memory.importance >= importance_threshold:
+                # Move to long-term
+                await self.add_to_long_term(memory)
+                consolidated += 1
+
+        logger.info(f"Consolidated {consolidated} memories to long-term")
+        
+        return {
+            "consolidated": consolidated,
+            "threshold": importance_threshold,
+        }
+
+    # ==================== Statistics ====================
+
+    async def get_stats(self) -> Dict[str, Any]:
+        """Get comprehensive memory system statistics.
 
         Returns:
             Statistics dictionary
@@ -67,14 +472,40 @@ class MemorySystem:
         stats = {
             "agent_id": self.agent_id,
             "short_term": self.short_term.get_stats(),
+            "working": self.working.get_stats(),
         }
 
-        # Add stats for other memory types when implemented
         if self.long_term:
-            stats["long_term"] = {}  # Placeholder
+            stats["long_term"] = self.long_term.get_stats()
+
+        if self.episodic:
+            stats["episodic"] = await self.episodic.get_stats()
+
+        if self.semantic:
+            stats["semantic"] = await self.semantic.get_stats()
+
+        if self.procedural:
+            stats["procedural"] = await self.procedural.get_stats()
+
+        if self.vector_store:
+            stats["vector_store"] = await self.vector_store.get_stats()
 
         return stats
 
     def __repr__(self) -> str:
         """String representation."""
-        return f"MemorySystem(agent_id={self.agent_id}, short_term={len(self.short_term.memories)})"
+        enabled = []
+        if self.short_term:
+            enabled.append("short_term")
+        if self.working:
+            enabled.append("working")
+        if self.long_term:
+            enabled.append("long_term")
+        if self.episodic:
+            enabled.append("episodic")
+        if self.semantic:
+            enabled.append("semantic")
+        if self.procedural:
+            enabled.append("procedural")
+        
+        return f"MemorySystem(agent_id={self.agent_id}, enabled={enabled})"
