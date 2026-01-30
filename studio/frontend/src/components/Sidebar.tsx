@@ -43,18 +43,18 @@ const Sidebar = () => {
         ))}
       </nav>
       
-      {/* Settings at bottom - icon only */}
+      {/* Settings at bottom - icon only, left-aligned */}
       <div className="px-3 pb-3">
         <NavLink
           to="/settings"
           className={({ isActive }) =>
-            `flex items-center justify-center rounded-xl p-3 text-sm font-medium transition ${
+            `flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition ${
               isActive ? 'bg-white/10 text-white' : 'text-slate-300 hover:bg-white/5 hover:text-white'
             }`
           }
           title="Settings"
         >
-          <Cog6ToothIcon className="h-6 w-6" />
+          <Cog6ToothIcon className="h-5 w-5" />
         </NavLink>
       </div>
       
