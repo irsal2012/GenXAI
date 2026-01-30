@@ -3,10 +3,12 @@
 from fastapi import APIRouter, HTTPException
 from typing import List, Dict, Any, Optional
 from pydantic import BaseModel
+import logging
 
 from genxai.tools.registry import ToolRegistry
 from genxai.tools.base import Tool, ToolMetadata, ToolParameter, ToolCategory
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
@@ -272,6 +274,58 @@ async def list_templates() -> List[Dict[str, Any]]:
     """List available tool templates."""
     from genxai.tools.templates import get_available_templates
     return get_available_templates()
+
+
+@router.post("/{tool_name}/execute")
+async def execute_tool(tool_name: str, parameters: Dict[str, Any]) -> Dict[str, Any]:
+    """Execute a tool with given parameters.
+    
+    Args:
+        tool_name: Name of the tool to execute
+        parameters: Parameters to pass to the tool
+        
+    Returns:
+        Execution result with success status, data, and metrics
+    """
+    from genxai.tools.security.limits import get_global_limiter
+    
+    # Get tool from registry
+    tool = ToolRegistry.get(tool_name)
+    if not tool:
+        raise HTTPException(status_code=404, detail=f"Tool '{tool_name}' not found")
+    
+    # Check rate limits
+    limiter = get_global_limiter()
+    allowed, error_msg = limiter.check_rate_limit(tool_name)
+    
+    if not allowed:
+        raise HTTPException(status_code=429, detail=error_msg)
+    
+    try:
+        # Execute the tool
+        result = await tool.execute(**parameters)
+        
+        # Record execution
+        limiter.record_execution(tool_name)
+        
+        # Get execution stats
+        stats = limiter.get_execution_stats(tool_name)
+        
+        return {
+            "success": result.success,
+            "data": result.data,
+            "error": result.error,
+            "execution_time": result.execution_time,
+            "metadata": result.metadata,
+            "rate_limit_stats": stats,
+        }
+        
+    except Exception as e:
+        logger.error(f"Tool execution failed for '{tool_name}': {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Tool execution failed: {str(e)}"
+        )
 
 
 @router.delete("/{tool_name}")

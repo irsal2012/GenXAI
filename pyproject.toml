@@ -75,6 +75,7 @@ tools = [
     "pillow>=10.1.0",
     "pypdf2>=3.0.1",
     "python-magic>=0.4.27",
+    "RestrictedPython>=6.2",
 ]
 
 observability = [

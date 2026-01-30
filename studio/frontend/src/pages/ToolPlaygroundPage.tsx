@@ -1,16 +1,33 @@
-import { useState } from 'react'
-import { useTools } from '../services/tools'
+import { useState, useEffect } from 'react'
+import { useTools, useExecuteTool } from '../services/tools'
 import ErrorState from '../components/ErrorState'
 import LoadingState from '../components/LoadingState'
+import ExecutionHistoryPanel from '../components/playground/ExecutionHistoryPanel'
+import ExecutionMetrics from '../components/playground/ExecutionMetrics'
+import ErrorDisplay from '../components/playground/ErrorDisplay'
 import type { ToolSummary } from '../types/api'
+
+interface ExecutionHistoryEntry {
+  id: string
+  toolName: string
+  parameters: Record<string, any>
+  result: any
+  timestamp: Date
+  executionTime: number
+  success: boolean
+  error?: string
+}
 
 const ToolPlaygroundPage = () => {
   const toolsQuery = useTools()
+  const executeTool = useExecuteTool()
+  
   const [selectedTool, setSelectedTool] = useState<ToolSummary | null>(null)
   const [parameters, setParameters] = useState<Record<string, any>>({})
-  const [result, setResult] = useState<string>('')
-  const [isExecuting, setIsExecuting] = useState(false)
+  const [result, setResult] = useState<any>(null)
   const [error, setError] = useState<string>('')
+  const [executionMetrics, setExecutionMetrics] = useState<any>(null)
+  const [history, setHistory] = useState<ExecutionHistoryEntry[]>([])
 
   const handleToolSelect = (tool: ToolSummary) => {
     setSelectedTool(tool)
@@ -26,31 +43,98 @@ const ToolPlaygroundPage = () => {
     }))
   }
 
+  // Load history from localStorage on mount
+  useEffect(() => {
+    const savedHistory = localStorage.getItem('tool_execution_history')
+    if (savedHistory) {
+      try {
+        const parsed = JSON.parse(savedHistory)
+        setHistory(
+          parsed.map((entry: any) => ({
+            ...entry,
+            timestamp: new Date(entry.timestamp),
+          }))
+        )
+      } catch (e) {
+        console.error('Failed to load execution history:', e)
+      }
+    }
+  }, [])
+
+  // Save history to localStorage whenever it changes
+  useEffect(() => {
+    if (history.length > 0) {
+      localStorage.setItem('tool_execution_history', JSON.stringify(history))
+    }
+  }, [history])
+
   const handleExecute = async () => {
     if (!selectedTool) return
 
-    setIsExecuting(true)
     setError('')
-    setResult('')
+    setResult(null)
+    setExecutionMetrics(null)
 
     try {
-      // Simulate tool execution (replace with actual API call when backend supports it)
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-      
-      const mockResult = {
-        tool: selectedTool.name,
+      const response = await executeTool.mutateAsync({
+        toolName: selectedTool.name,
         parameters,
-        output: `Mock execution result for ${selectedTool.name}`,
-        timestamp: new Date().toISOString(),
-        status: 'success',
+      })
+
+      setResult(response.data)
+      setExecutionMetrics({
+        executionTime: response.execution_time,
+        success: response.success,
+        rateLimitStats: response.rate_limit_stats,
+      })
+
+      // Add to history
+      const historyEntry: ExecutionHistoryEntry = {
+        id: Date.now().toString(),
+        toolName: selectedTool.name,
+        parameters: { ...parameters },
+        result: response.data,
+        timestamp: new Date(),
+        executionTime: response.execution_time,
+        success: response.success,
+        error: response.error,
       }
 
-      setResult(JSON.stringify(mockResult, null, 2))
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Execution failed')
-    } finally {
-      setIsExecuting(false)
+      setHistory((prev) => [historyEntry, ...prev].slice(0, 50)) // Keep last 50
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.detail || err.message || 'Execution failed'
+      setError(errorMessage)
+      
+      // Add failed execution to history
+      const historyEntry: ExecutionHistoryEntry = {
+        id: Date.now().toString(),
+        toolName: selectedTool.name,
+        parameters: { ...parameters },
+        result: null,
+        timestamp: new Date(),
+        executionTime: 0,
+        success: false,
+        error: errorMessage,
+      }
+
+      setHistory((prev) => [historyEntry, ...prev].slice(0, 50))
     }
+  }
+
+  const handleRerun = (entry: ExecutionHistoryEntry) => {
+    // Find and select the tool
+    const tool = toolsQuery.data?.find((t) => t.name === entry.toolName)
+    if (tool) {
+      setSelectedTool(tool)
+      setParameters(entry.parameters)
+      // Optionally auto-execute
+      setTimeout(() => handleExecute(), 100)
+    }
+  }
+
+  const handleClearHistory = () => {
+    setHistory([])
+    localStorage.removeItem('tool_execution_history')
   }
 
   const getParameterFields = () => {
@@ -186,23 +270,28 @@ const ToolPlaygroundPage = () => {
                 <button
                   className="mt-6 w-full rounded-xl bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700 disabled:opacity-50"
                   onClick={handleExecute}
-                  disabled={isExecuting}
+                  disabled={executeTool.isPending}
                 >
-                  {isExecuting ? 'Executing...' : 'Execute Tool'}
+                  {executeTool.isPending ? 'Executing...' : 'Execute Tool'}
                 </button>
               </div>
+
+              {/* Execution Metrics */}
+              {executionMetrics && (
+                <ExecutionMetrics
+                  executionTime={executionMetrics.executionTime}
+                  success={executionMetrics.success}
+                  rateLimitStats={executionMetrics.rateLimitStats}
+                />
+              )}
 
               {/* Results */}
               <div className="card p-5">
                 <h3 className="text-base font-semibold mb-4">Execution Result</h3>
-                {error && (
-                  <div className="rounded-lg bg-red-50 border border-red-200 p-4 mb-4">
-                    <p className="text-sm text-red-700">{error}</p>
-                  </div>
-                )}
+                {error && <ErrorDisplay error={error} />}
                 {result ? (
                   <pre className="max-h-80 overflow-auto rounded-xl bg-slate-900 p-4 text-xs text-slate-100">
-                    {result}
+                    {JSON.stringify(result, null, 2)}
                   </pre>
                 ) : (
                   <p className="text-sm text-slate-500">
@@ -210,6 +299,13 @@ const ToolPlaygroundPage = () => {
                   </p>
                 )}
               </div>
+
+              {/* Execution History */}
+              <ExecutionHistoryPanel
+                history={history}
+                onRerun={handleRerun}
+                onClear={handleClearHistory}
+              />
             </>
           ) : (
             <div className="card p-12 text-center">

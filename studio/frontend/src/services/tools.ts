@@ -93,3 +93,18 @@ export const useDeleteTool = () => {
     },
   })
 }
+
+export const useExecuteTool = () => {
+  return useMutation({
+    mutationFn: async ({
+      toolName,
+      parameters,
+    }: {
+      toolName: string
+      parameters: Record<string, any>
+    }) => {
+      const { data } = await api.post(`/tools/${toolName}/execute`, parameters)
+      return data
+    },
+  })
+}
