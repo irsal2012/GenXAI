@@ -1,8 +1,10 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useApiKeys } from '../contexts/ApiKeyContext'
 import { EyeIcon, EyeSlashIcon, KeyIcon } from '@heroicons/react/24/outline'
 
 const SettingsPage = () => {
+  const navigate = useNavigate()
   const { apiKeys, setApiKey, clearApiKeys } = useApiKeys()
   const [showOpenAI, setShowOpenAI] = useState(false)
   const [showAnthropic, setShowAnthropic] = useState(false)
@@ -11,6 +13,10 @@ const SettingsPage = () => {
   const handleSave = () => {
     setSaved(true)
     setTimeout(() => setSaved(false), 3000)
+  }
+
+  const handleCancel = () => {
+    navigate(-1) // Go back to previous page
   }
 
   const handleClear = () => {
@@ -147,13 +153,22 @@ const SettingsPage = () => {
             >
               Clear All Keys
             </button>
-            <button
-              type="button"
-              className="rounded-xl bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700"
-              onClick={handleSave}
-            >
-              {saved ? '✓ Saved!' : 'Save Settings'}
-            </button>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
+                onClick={handleCancel}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="rounded-xl bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700"
+                onClick={handleSave}
+              >
+                {saved ? '✓ Saved!' : 'Save Settings'}
+              </button>
+            </div>
           </div>
         </div>
       </div>

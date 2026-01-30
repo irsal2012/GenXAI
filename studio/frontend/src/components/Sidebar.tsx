@@ -16,7 +16,6 @@ const links = [
   { to: '/workflows', label: 'Workflows', icon: PlayCircleIcon },
   { to: '/templates', label: 'Templates', icon: DocumentDuplicateIcon },
   { to: '/playground', label: 'Playground', icon: BeakerIcon },
-  { to: '/settings', label: 'Settings', icon: Cog6ToothIcon },
 ]
 
 const Sidebar = () => {
@@ -43,6 +42,22 @@ const Sidebar = () => {
           </NavLink>
         ))}
       </nav>
+      
+      {/* Settings at bottom - icon only */}
+      <div className="px-3 pb-3">
+        <NavLink
+          to="/settings"
+          className={({ isActive }) =>
+            `flex items-center justify-center rounded-xl p-3 text-sm font-medium transition ${
+              isActive ? 'bg-white/10 text-white' : 'text-slate-300 hover:bg-white/5 hover:text-white'
+            }`
+          }
+          title="Settings"
+        >
+          <Cog6ToothIcon className="h-6 w-6" />
+        </NavLink>
+      </div>
+      
       <div className="px-6 py-4 text-xs text-slate-400">API: http://localhost:8000</div>
     </aside>
   )
