@@ -7,6 +7,7 @@ import LoadingState from '../components/LoadingState'
 import ReactFlowCanvas from '../components/workflow/ReactFlowCanvas'
 import NodePalette from '../components/workflow/NodePalette'
 import AgentConfigModal from '../components/workflow/AgentConfigModal'
+import DecisionConfigModal from '../components/workflow/DecisionConfigModal'
 import AgentDetailsPanel from '../components/workflow/AgentDetailsPanel'
 import { convertToReactFlow } from '../utils/workflowConverter'
 import type { Node } from '@xyflow/react'
@@ -44,8 +45,10 @@ const WorkflowBuilderPage = () => {
 
   const [viewMode, setViewMode] = useState<'visual' | 'json'>('visual')
   const [selectedNode, setSelectedNode] = useState<Node | null>(null)
-  const [configModalOpen, setConfigModalOpen] = useState(false)
-  const [configModalNode, setConfigModalNode] = useState<any>(null)
+  const [agentConfigModalOpen, setAgentConfigModalOpen] = useState(false)
+  const [agentConfigModalNode, setAgentConfigModalNode] = useState<any>(null)
+  const [decisionConfigModalOpen, setDecisionConfigModalOpen] = useState(false)
+  const [decisionConfigModalNode, setDecisionConfigModalNode] = useState<any>(null)
 
   const handleSave = async () => {
     if (!workflowQuery.data || !workflowId) return
@@ -137,8 +140,11 @@ const WorkflowBuilderPage = () => {
                   onNodeClick={(node) => setSelectedNode(node)}
                   onNodeDoubleClick={(node) => {
                     if (node.type === 'agent') {
-                      setConfigModalNode(node)
-                      setConfigModalOpen(true)
+                      setAgentConfigModalNode(node)
+                      setAgentConfigModalOpen(true)
+                    } else if (node.type === 'decision') {
+                      setDecisionConfigModalNode(node)
+                      setDecisionConfigModalOpen(true)
                     }
                   }}
                 />
@@ -146,11 +152,11 @@ const WorkflowBuilderPage = () => {
               {selectedNode && selectedNode.type === 'agent' && (
                 <div className="w-80 h-full">
                   <AgentDetailsPanel
-                    selectedNode={selectedNode}
+                    selectedNode={selectedNode as any}
                     onClose={() => setSelectedNode(null)}
                     onConfigure={(node) => {
-                      setConfigModalNode(node)
-                      setConfigModalOpen(true)
+                      setAgentConfigModalNode(node)
+                      setAgentConfigModalOpen(true)
                     }}
                   />
                 </div>
@@ -205,24 +211,47 @@ const WorkflowBuilderPage = () => {
       </div>
 
       {/* Agent Configuration Modal */}
-      {configModalOpen && configModalNode && (
+      {agentConfigModalOpen && agentConfigModalNode && (
         <AgentConfigModal
-          isOpen={configModalOpen}
+          isOpen={agentConfigModalOpen}
           onClose={() => {
-            setConfigModalOpen(false)
-            setConfigModalNode(null)
+            setAgentConfigModalOpen(false)
+            setAgentConfigModalNode(null)
           }}
           agentData={{
-            id: configModalNode.id,
-            label: configModalNode.data.label || 'Agent',
-            config: configModalNode.data.config || {},
+            id: agentConfigModalNode.id,
+            label: agentConfigModalNode.data.label || 'Agent',
+            config: agentConfigModalNode.data.config || {},
           }}
           onSave={(updatedConfig) => {
             // Update the node's config in the workflow
-            console.log('Updated config:', updatedConfig)
+            console.log('Updated agent config:', updatedConfig)
             // TODO: Implement actual node update logic
-            setConfigModalOpen(false)
-            setConfigModalNode(null)
+            setAgentConfigModalOpen(false)
+            setAgentConfigModalNode(null)
+          }}
+        />
+      )}
+
+      {/* Decision Configuration Modal */}
+      {decisionConfigModalOpen && decisionConfigModalNode && (
+        <DecisionConfigModal
+          isOpen={decisionConfigModalOpen}
+          onClose={() => {
+            setDecisionConfigModalOpen(false)
+            setDecisionConfigModalNode(null)
+          }}
+          decisionData={{
+            id: decisionConfigModalNode.id,
+            label: decisionConfigModalNode.data.label || 'Decision',
+            config: decisionConfigModalNode.data.config || {},
+          }}
+          onSave={(updatedConfig) => {
+            // Update the node's config in the workflow
+            console.log('Updated decision config:', updatedConfig)
+            // TODO: Implement actual node update logic
+            setDecisionConfigModalOpen(false)
+            setDecisionConfigModalNode(null)
           }}
         />
       )}
