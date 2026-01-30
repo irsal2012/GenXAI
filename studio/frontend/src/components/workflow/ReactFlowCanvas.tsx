@@ -117,12 +117,17 @@ const ReactFlowCanvas = ({ nodes: initialNodes, edges: initialEdges, onNodesChan
   const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | null>(null)
   
   // Apply auto-layout
-  const { nodes: layoutedNodes, edges: layoutedEdges } = useMemo(
+  const { nodes: layoutedNodes, edges: layoutedEdges} = useMemo(
     () => getLayoutedElements(initialNodes, initialEdges),
     [initialNodes, initialEdges]
   )
 
   const [nodes, setNodes, onNodesChangeInternal] = useNodesState(layoutedNodes)
+  
+  // Update nodes when initialNodes change (e.g., when config is updated)
+  useMemo(() => {
+    setNodes(layoutedNodes)
+  }, [layoutedNodes, setNodes])
   const [edges, setEdges, onEdgesChangeInternal] = useEdgesState(
     layoutedEdges.map((edge) => ({
       ...edge,
