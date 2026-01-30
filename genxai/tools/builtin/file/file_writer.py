@@ -24,7 +24,7 @@ class FileWriterTool(Tool):
 
         parameters = [
             ToolParameter(
-                name="file_path",
+                name="path",
                 type="string",
                 description="Path where file should be written",
                 required=True,
@@ -64,7 +64,7 @@ class FileWriterTool(Tool):
 
     async def _execute(
         self,
-        file_path: str,
+        path: str,
         content: str,
         encoding: str = "utf-8",
         mode: str = "write",
@@ -83,14 +83,14 @@ class FileWriterTool(Tool):
             Dictionary containing write results
         """
         result: Dict[str, Any] = {
-            "file_path": file_path,
+            "path": path,
             "success": False,
         }
 
         try:
             # Create parent directories if needed
             if create_dirs:
-                parent_dir = os.path.dirname(file_path)
+                parent_dir = os.path.dirname(path)
                 if parent_dir and not os.path.exists(parent_dir):
                     os.makedirs(parent_dir, exist_ok=True)
                     result["created_directories"] = True
@@ -99,11 +99,11 @@ class FileWriterTool(Tool):
             write_mode = "w" if mode == "write" else "a"
 
             # Write file
-            with open(file_path, write_mode, encoding=encoding) as f:
+            with open(path, write_mode, encoding=encoding) as f:
                 f.write(content)
 
             # Get file info
-            file_size = os.path.getsize(file_path)
+            file_size = os.path.getsize(path)
             
             result.update({
                 "success": True,
@@ -114,7 +114,7 @@ class FileWriterTool(Tool):
             })
 
         except PermissionError:
-            result["error"] = f"Permission denied: {file_path}"
+            result["error"] = f"Permission denied: {path}"
         except Exception as e:
             result["error"] = str(e)
 

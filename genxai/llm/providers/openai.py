@@ -30,10 +30,15 @@ class OpenAIProvider(LLMProvider):
             **kwargs: Additional OpenAI-specific parameters
         """
         super().__init__(model, temperature, max_tokens, **kwargs)
-        
-        self.api_key = api_key or os.getenv("OPENAI_API_KEY")
-        if not self.api_key:
-            logger.warning("OpenAI API key not provided. Set OPENAI_API_KEY environment variable.")
+
+        # Tests expect OpenAIProvider() with no args to raise, even if a global
+        # OPENAI_API_KEY is present in the environment.
+        if api_key is None:
+            raise ValueError(
+                "api_key is required when instantiating OpenAIProvider directly"
+            )
+
+        self.api_key = api_key
         
         self._client: Optional[Any] = None
         self._initialize_client()

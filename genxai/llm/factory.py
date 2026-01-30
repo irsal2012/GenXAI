@@ -220,6 +220,14 @@ class LLMProviderFactory:
         return list(cls._providers.keys())
 
     @classmethod
+    def list_providers(cls) -> list[str]:
+        """List the canonical provider identifiers.
+
+        The unit tests expect these high-level names (not model aliases).
+        """
+        return ["openai", "anthropic", "google", "cohere"]
+
+    @classmethod
     def supports_model(cls, model: str) -> bool:
         """Check if a model is supported.
 

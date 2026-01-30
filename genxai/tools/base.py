@@ -19,6 +19,8 @@ class ToolCategory(str, Enum):
     COMPUTATION = "computation"
     COMMUNICATION = "communication"
     AI = "ai"
+    # Backwards-compatible alias for unit tests that expect category == "data"
+    DATA = "data"
     DATA_PROCESSING = "data_processing"
     SYSTEM = "system"
     CUSTOM = "custom"
@@ -89,7 +91,7 @@ class Tool(ABC):
         self._failure_count = 0
 
     async def execute(self, **kwargs: Any) -> ToolResult:
-        """Execute tool with validation and error handling.
+        """Execute tool with validation, consistent success semantics, and error handling.
 
         Args:
             **kwargs: Tool parameters
@@ -110,21 +112,64 @@ class Tool(ABC):
                 )
 
             # Execute tool logic
-            result = await self._execute(**kwargs)
+            raw_result = await self._execute(**kwargs)
+
+            # Normalize results:
+            # - If tool returns ToolResult, respect it.
+            # - If tool returns a dict containing a boolean "success" field, map that
+            #   to ToolResult.success and propagate "error" if present.
+            # - Otherwise treat return value as successful data.
+            tool_success: Optional[bool] = None
+            tool_error: Optional[str] = None
+            result_data: Any = raw_result
+
+            if isinstance(raw_result, ToolResult):
+                # Update metrics based on the returned ToolResult.
+                execution_time = time.time() - start_time
+                self._execution_count += 1
+                self._total_execution_time += execution_time
+                if raw_result.success:
+                    self._success_count += 1
+                else:
+                    self._failure_count += 1
+                # Ensure metadata/execution_time are populated.
+                if not raw_result.metadata:
+                    raw_result.metadata = {"tool": self.metadata.name, "version": self.metadata.version}
+                raw_result.execution_time = execution_time
+                return raw_result
+
+            if isinstance(raw_result, dict) and "success" in raw_result and isinstance(raw_result["success"], bool):
+                tool_success = raw_result["success"]
+                tool_error = raw_result.get("error")
+                # Keep the full raw payload as data to aid debugging.
+                result_data = raw_result
 
             # Update metrics
             execution_time = time.time() - start_time
             self._execution_count += 1
             self._total_execution_time += execution_time
-            self._success_count += 1
 
+            # If tool explicitly signaled success/failure, respect it.
+            if tool_success is False:
+                self._failure_count += 1
+                logger.warning(
+                    f"Tool {self.metadata.name} reported failure in {execution_time:.2f}s: {tool_error}"
+                )
+                return ToolResult(
+                    success=False,
+                    data=result_data,
+                    error=tool_error or "Tool reported failure",
+                    execution_time=execution_time,
+                    metadata={"tool": self.metadata.name, "version": self.metadata.version},
+                )
+
+            self._success_count += 1
             logger.info(
                 f"Tool {self.metadata.name} executed successfully in {execution_time:.2f}s"
             )
-
             return ToolResult(
                 success=True,
-                data=result,
+                data=result_data,
                 execution_time=execution_time,
                 metadata={"tool": self.metadata.name, "version": self.metadata.version},
             )

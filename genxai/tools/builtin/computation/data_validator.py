@@ -34,7 +34,16 @@ class DataValidatorTool(Tool):
                 type="string",
                 description="Type of validation to perform",
                 required=True,
-                enum=["email", "url", "phone", "ip", "date", "number", "custom_regex"],
+                enum=[
+                    "email",
+                    "url",
+                    "phone",
+                    "ip",
+                    "date",
+                    "number",
+                    "json",
+                    "custom_regex",
+                ],
             ),
             ToolParameter(
                 name="custom_pattern",
@@ -108,6 +117,9 @@ class DataValidatorTool(Tool):
                     raise ValueError("custom_pattern required for custom_regex validation")
                 result.update(self._validate_custom_regex(data, custom_pattern))
 
+            elif validation_type == "json":
+                result.update(self._validate_json(data))
+
         except Exception as e:
             result["error"] = str(e)
 
@@ -115,6 +127,24 @@ class DataValidatorTool(Tool):
             f"Data validation ({validation_type}) completed: valid={result.get('valid', False)}"
         )
         return result
+
+    def _validate_json(self, data: str) -> Dict[str, Any]:
+        """Validate JSON."""
+        import json
+
+        try:
+            parsed = json.loads(data)
+            return {
+                "valid": True,
+                "format": "json",
+                "parsed_type": type(parsed).__name__,
+            }
+        except Exception as e:
+            return {
+                "valid": False,
+                "format": "json",
+                "error": f"Invalid JSON: {e}",
+            }
 
     def _validate_email(self, data: str) -> Dict[str, Any]:
         """Validate email address."""

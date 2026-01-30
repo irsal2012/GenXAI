@@ -1,5 +1,6 @@
 """Edge types and implementations for graph connections."""
 
+from enum import Enum
 from typing import Any, Callable, Dict, Optional
 from pydantic import BaseModel, Field
 
@@ -37,6 +38,44 @@ class Edge(BaseModel):
             return False
 
 
+class EdgeType(str, Enum):
+    """High-level edge type used by the public WorkflowEngine API.
+
+    The core engine implements sequencing/parallelism via metadata flags.
+    This enum is a compatibility layer for integration tests + user-facing APIs.
+    """
+
+    SEQUENTIAL = "sequential"
+    PARALLEL = "parallel"
+    CONDITIONAL = "conditional"
+
+
+class WorkflowEdge(Edge):
+    """Compatibility edge that accepts from_node/to_node/edge_type."""
+
+    def __init__(
+        self,
+        from_node: str,
+        to_node: str,
+        edge_type: EdgeType = EdgeType.SEQUENTIAL,
+        condition: Optional[Callable[[Dict[str, Any]], bool]] = None,
+        **kwargs: Any,
+    ) -> None:
+        metadata = dict(kwargs.pop("metadata", {}) or {})
+
+        if edge_type == EdgeType.PARALLEL:
+            metadata["parallel"] = True
+        
+        super().__init__(
+            source=from_node,
+            target=to_node,
+            condition=condition,
+            metadata=metadata,
+            **kwargs,
+        )
+
+
+
 class ConditionalEdge(Edge):
     """Edge with a condition that must be satisfied."""
 
@@ -62,3 +101,33 @@ class ParallelEdge(Edge):
             metadata={"parallel": True, **kwargs.get("metadata", {})},
             **{k: v for k, v in kwargs.items() if k != "metadata"},
         )
+
+
+# Backwards compatible alias for integration tests
+# They import: from genxai.core.graph.edges import Edge, EdgeType
+# and instantiate Edge(from_node=..., to_node=..., edge_type=...)
+_EdgePydantic = Edge
+
+
+def Edge(*args: Any, **kwargs: Any):  # type: ignore
+    """Factory for edges.
+
+    - If called with `source`/`target` it behaves like the pydantic Edge model.
+    - If called with `from_node`/`to_node` (and optional `edge_type`) it returns
+      a WorkflowEdge.
+    """
+
+    if "from_node" in kwargs or "to_node" in kwargs:
+        from_node = kwargs.pop("from_node")
+        to_node = kwargs.pop("to_node")
+        edge_type = kwargs.pop("edge_type", EdgeType.SEQUENTIAL)
+        condition = kwargs.pop("condition", None)
+        return WorkflowEdge(
+            from_node=from_node,
+            to_node=to_node,
+            edge_type=edge_type,
+            condition=condition,
+            **kwargs,
+        )
+
+    return _EdgePydantic(*args, **kwargs)

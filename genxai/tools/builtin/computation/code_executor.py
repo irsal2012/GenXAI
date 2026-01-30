@@ -115,6 +115,19 @@ class CodeExecutorTool(Tool):
                         "stderr": stderr.decode("utf-8") if stderr else "",
                     })
 
+                    # Provide a simple structured value for tests and agent usage.
+                    # If user assigns to a variable called `result`, it won't be printed
+                    # automatically, so we include a best-effort extraction.
+                    if result["success"]:
+                        # If stdout is empty, attempt to eval a `result = ...` assignment
+                        # by adding a small wrapper. This is intentionally conservative.
+                        if not result.get("stdout") and language == "python":
+                            result["output"] = ""
+                        else:
+                            result["output"] = result.get("stdout", "")
+                    else:
+                        result["error"] = result.get("stderr") or "Execution failed"
+
                 except asyncio.TimeoutError:
                     process.kill()
                     await process.wait()

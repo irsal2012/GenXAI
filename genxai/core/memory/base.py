@@ -27,7 +27,8 @@ class Memory(BaseModel):
     timestamp: datetime
     importance: float = Field(default=0.5, ge=0.0, le=1.0)
     access_count: int = 0
-    last_accessed: datetime
+    # Default to "now" so callers don't have to provide it explicitly.
+    last_accessed: datetime = Field(default_factory=datetime.now)
     embedding: Optional[List[float]] = None
     tags: List[str] = Field(default_factory=list)
 

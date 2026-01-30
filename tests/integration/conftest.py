@@ -3,6 +3,7 @@
 import pytest
 import os
 import asyncio
+import importlib.util
 from typing import Dict, Any
 
 from genxai.llm.factory import LLMProviderFactory
@@ -17,10 +18,14 @@ from genxai.core.agent.runtime import AgentRuntime
 @pytest.fixture(scope="session")
 def openai_provider():
     """Create OpenAI provider for integration tests."""
+    if not importlib.util.find_spec("openai"):
+        pytest.skip("openai package not installed (install with: pip install -e '.[llm]')")
+
     api_key = os.getenv("OPENAI_API_KEY")
     if not api_key:
         pytest.skip("OPENAI_API_KEY not set")
-    return LLMProviderFactory.create_provider("openai", api_key=api_key)
+    model = os.getenv("OPENAI_MODEL", "gpt-4")
+    return LLMProviderFactory.create_provider(model=model, api_key=api_key)
 
 
 @pytest.fixture(scope="session")
@@ -368,3 +373,28 @@ def pytest_configure(config):
     config.addinivalue_line(
         "markers", "requires_mongodb: mark test as requiring MongoDB"
     )
+
+
+def pytest_collection_modifyitems(config, items):
+    """Dynamically skip integration tests based on environment/dependencies.
+
+    This makes the integration suite runnable on machines that don't have all
+    external dependencies installed (or all secrets configured).
+
+    To run real LLM integration tests:
+      - install provider deps: `pip install -e '.[llm]'`
+      - export OPENAI_API_KEY
+    """
+
+    openai_installed = bool(importlib.util.find_spec("openai"))
+    has_openai_key = bool(os.getenv("OPENAI_API_KEY"))
+
+    for item in items:
+        if item.get_closest_marker("requires_api_key"):
+            if not (openai_installed and has_openai_key):
+                reason_parts = []
+                if not openai_installed:
+                    reason_parts.append("openai package not installed")
+                if not has_openai_key:
+                    reason_parts.append("OPENAI_API_KEY not set")
+                item.add_marker(pytest.mark.skip(reason="; ".join(reason_parts)))

@@ -70,12 +70,47 @@ class NodeExecutor(Protocol):
 class AgentNode(Node):
     """Node that executes an agent."""
 
-    def __init__(self, id: str, agent_id: str, **kwargs: Any) -> None:
-        """Initialize agent node."""
+    def __init__(
+        self,
+        id: str,
+        agent_id: Optional[str] = None,
+        agent: Optional[Any] = None,
+        task: Optional[str] = None,
+        **kwargs: Any,
+    ) -> None:
+        """Initialize agent node.
+
+        This supports two construction styles:
+        1) Internal graph API: AgentNode(id="x", agent_id="agent_x")
+        2) Integration-test/user API: AgentNode(id="x", agent=<Agent>, task="...")
+
+        When `agent` is provided, we register it into AgentRegistry to make
+        it discoverable by the execution layer.
+        """
+        # Lazy import to avoid circular imports
+        from genxai.core.agent.registry import AgentRegistry
+
+        resolved_agent_id = agent_id
+        if agent is not None:
+            resolved_agent_id = agent.id
+            # Ensure agent is registered so EnhancedGraph can look it up.
+            try:
+                AgentRegistry.register(agent)
+            except Exception:
+                # If already registered, ignore.
+                pass
+
+        if not resolved_agent_id:
+            raise TypeError("AgentNode requires either agent_id or agent")
+
+        data: Dict[str, Any] = {"agent_id": resolved_agent_id}
+        if task is not None:
+            data["task"] = task
+
         super().__init__(
             id=id,
             type=NodeType.AGENT,
-            config=NodeConfig(type=NodeType.AGENT, data={"agent_id": agent_id}),
+            config=NodeConfig(type=NodeType.AGENT, data=data),
             **kwargs,
         )
 

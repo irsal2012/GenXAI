@@ -620,3 +620,41 @@ class Graph:
 
         print("=" * 60)
         print()
+
+
+class WorkflowEngine(Graph):
+    """Public, user-facing workflow engine.
+
+    This is a thin compatibility wrapper around :class:`~genxai.core.graph.engine.Graph`
+    to match the API expected by integration tests and external users.
+    """
+
+    def __init__(self, name: str = "workflow") -> None:
+        super().__init__(name=name)
+
+    async def execute(self, start_node: str, llm_provider: Any = None, **kwargs: Any) -> Dict[str, Any]:
+        """Execute a workflow starting from a given node.
+
+        Notes:
+            - In this open-source runtime, agent execution is provided by EnhancedGraph
+              (see `genxai.core.graph.executor`). WorkflowEngine focuses on graph
+              orchestration and state flow.
+            - Integration tests pass `llm_provider`, but Graph does not need it.
+              It's accepted here for compatibility.
+        """
+        # Initialize state with start node as the only entry point.
+        state: Dict[str, Any] = kwargs.pop("state", {}) if "state" in kwargs else {}
+        input_data = kwargs.pop("input_data", None)
+        if input_data is not None:
+            state["input"] = input_data
+
+        # Ensure max_iterations propagates.
+        max_iterations = kwargs.pop("max_iterations", 100)
+
+        # Execute from specified start node.
+        await self._execute_node(start_node, state, max_iterations)
+        return {
+            "status": "completed",
+            "node_results": {k: v for k, v in state.items() if k not in {"iterations"}},
+            "state": state,
+        }

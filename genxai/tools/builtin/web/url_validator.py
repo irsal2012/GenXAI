@@ -154,5 +154,8 @@ class URLValidatorTool(Tool):
             result["accessible"] is not False if check_accessibility else True
         )
 
+        # Backwards-compatible alias used by unit tests
+        result["valid"] = result["is_valid"]
+
         logger.info(f"URL validation completed for {url}: valid={result['is_valid']}")
         return result

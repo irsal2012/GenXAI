@@ -39,7 +39,8 @@ class RegexMatcherTool(Tool):
                 name="operation",
                 type="string",
                 description="Operation to perform",
-                required=True,
+                required=False,
+                default="findall",
                 enum=["match", "search", "findall", "finditer", "sub", "split"],
             ),
             ToolParameter(
@@ -62,7 +63,7 @@ class RegexMatcherTool(Tool):
         self,
         text: str,
         pattern: str,
-        operation: str,
+        operation: str = "findall",
         replacement: Optional[str] = None,
         flags: Optional[str] = None,
     ) -> Dict[str, Any]:

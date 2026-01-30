@@ -25,7 +25,7 @@ class DirectoryScannerTool(Tool):
 
         parameters = [
             ToolParameter(
-                name="directory_path",
+                name="path",
                 type="string",
                 description="Path to directory to scan",
                 required=True,
@@ -65,7 +65,7 @@ class DirectoryScannerTool(Tool):
 
     async def _execute(
         self,
-        directory_path: str,
+        path: str,
         recursive: bool = True,
         include_hidden: bool = False,
         file_pattern: str = None,
@@ -84,16 +84,16 @@ class DirectoryScannerTool(Tool):
             Dictionary containing scan results
         """
         result: Dict[str, Any] = {
-            "directory_path": directory_path,
+            "path": path,
             "success": False,
         }
 
         try:
-            if not os.path.exists(directory_path):
-                raise FileNotFoundError(f"Directory not found: {directory_path}")
+            if not os.path.exists(path):
+                raise FileNotFoundError(f"Directory not found: {path}")
 
-            if not os.path.isdir(directory_path):
-                raise ValueError(f"Path is not a directory: {directory_path}")
+            if not os.path.isdir(path):
+                raise ValueError(f"Path is not a directory: {path}")
 
             # Scan directory
             files = []
@@ -101,9 +101,9 @@ class DirectoryScannerTool(Tool):
             total_size = 0
 
             if recursive:
-                for root, dirs, filenames in os.walk(directory_path):
+                for root, dirs, filenames in os.walk(path):
                     # Calculate depth
-                    depth = root[len(directory_path):].count(os.sep)
+                    depth = root[len(path):].count(os.sep)
                     if depth >= max_depth:
                         dirs.clear()  # Don't recurse deeper
                         continue
@@ -118,7 +118,7 @@ class DirectoryScannerTool(Tool):
                         directories.append({
                             "name": dirname,
                             "path": dir_path,
-                            "relative_path": os.path.relpath(dir_path, directory_path),
+                            "relative_path": os.path.relpath(dir_path, path),
                             "depth": depth + 1,
                         })
 
@@ -141,7 +141,7 @@ class DirectoryScannerTool(Tool):
                         files.append({
                             "name": filename,
                             "path": file_path,
-                            "relative_path": os.path.relpath(file_path, directory_path),
+                            "relative_path": os.path.relpath(file_path, path),
                             "size": file_size,
                             "extension": Path(filename).suffix,
                             "modified_time": file_stat.st_mtime,
@@ -149,12 +149,12 @@ class DirectoryScannerTool(Tool):
                         })
             else:
                 # Non-recursive scan
-                for item in os.listdir(directory_path):
+                for item in os.listdir(path):
                     # Filter hidden items
                     if not include_hidden and item.startswith('.'):
                         continue
 
-                    item_path = os.path.join(directory_path, item)
+                    item_path = os.path.join(path, item)
 
                     if os.path.isdir(item_path):
                         directories.append({
@@ -205,7 +205,7 @@ class DirectoryScannerTool(Tool):
         except FileNotFoundError as e:
             result["error"] = str(e)
         except PermissionError:
-            result["error"] = f"Permission denied: {directory_path}"
+            result["error"] = f"Permission denied: {path}"
         except Exception as e:
             result["error"] = str(e)
 

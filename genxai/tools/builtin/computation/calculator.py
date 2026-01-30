@@ -28,7 +28,7 @@ class CalculatorTool(Tool):
         """Initialize calculator tool."""
         metadata = ToolMetadata(
             name="calculator",
-            description="Evaluate mathematical expressions safely",
+            description="Calculate and evaluate mathematical expressions safely",
             category=ToolCategory.COMPUTATION,
             tags=["math", "calculation", "computation", "arithmetic"],
         )

@@ -126,7 +126,8 @@ class MemorySystem:
 
     async def clear_short_term(self) -> None:
         """Clear short-term memory."""
-        await self.short_term.clear()
+        # clear() is sync; clear_async() is the async variant.
+        await self.short_term.clear_async()
 
     # ==================== Working Memory ====================
 

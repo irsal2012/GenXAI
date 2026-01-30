@@ -2,6 +2,7 @@
 
 import pytest
 import os
+import importlib.util
 from genxai.core.agent.base import AgentFactory
 from genxai.core.agent.runtime import AgentRuntime
 from genxai.llm.factory import LLMProviderFactory
@@ -9,8 +10,8 @@ from genxai.llm.factory import LLMProviderFactory
 
 @pytest.mark.asyncio
 @pytest.mark.skipif(
-    not os.getenv("OPENAI_API_KEY"),
-    reason="OPENAI_API_KEY not set - skipping real LLM tests"
+    (not os.getenv("OPENAI_API_KEY")) or (not importlib.util.find_spec("openai")),
+    reason="Requires OPENAI_API_KEY and the openai package (pip install -e '.[llm]')"
 )
 async def test_agent_with_real_llm():
     """Test agent execution with real OpenAI LLM."""
@@ -46,8 +47,8 @@ async def test_agent_with_real_llm():
 
 @pytest.mark.asyncio
 @pytest.mark.skipif(
-    not os.getenv("OPENAI_API_KEY"),
-    reason="OPENAI_API_KEY not set - skipping real LLM tests"
+    (not os.getenv("OPENAI_API_KEY")) or (not importlib.util.find_spec("openai")),
+    reason="Requires OPENAI_API_KEY and the openai package (pip install -e '.[llm]')"
 )
 async def test_agent_with_backstory():
     """Test agent with backstory and personality."""
@@ -112,10 +113,11 @@ def test_llm_provider_factory_supports_models():
     assert LLMProviderFactory.supports_model("gpt-4")
     assert LLMProviderFactory.supports_model("gpt-3.5-turbo")
     assert LLMProviderFactory.supports_model("gpt-4-turbo")
-    
-    # These should not be supported yet
-    assert not LLMProviderFactory.supports_model("claude-3-opus")
-    assert not LLMProviderFactory.supports_model("gemini-pro")
+
+    # Additional providers are supported via lazy-loading when their optional
+    # dependencies are installed.
+    assert LLMProviderFactory.supports_model("claude-3-opus")
+    assert LLMProviderFactory.supports_model("gemini-pro")
 
 
 def test_llm_provider_factory_list_providers():
@@ -129,8 +131,8 @@ def test_llm_provider_factory_list_providers():
 
 @pytest.mark.asyncio
 @pytest.mark.skipif(
-    not os.getenv("OPENAI_API_KEY"),
-    reason="OPENAI_API_KEY not set - skipping real LLM tests"
+    (not os.getenv("OPENAI_API_KEY")) or (not importlib.util.find_spec("openai")),
+    reason="Requires OPENAI_API_KEY and the openai package (pip install -e '.[llm]')"
 )
 async def test_agent_deliberative_type():
     """Test deliberative agent with planning instructions."""
@@ -154,8 +156,8 @@ async def test_agent_deliberative_type():
 
 @pytest.mark.asyncio
 @pytest.mark.skipif(
-    not os.getenv("OPENAI_API_KEY"),
-    reason="OPENAI_API_KEY not set - skipping real LLM tests"
+    (not os.getenv("OPENAI_API_KEY")) or (not importlib.util.find_spec("openai")),
+    reason="Requires OPENAI_API_KEY and the openai package (pip install -e '.[llm]')"
 )
 async def test_batch_execution():
     """Test batch execution of multiple tasks."""
