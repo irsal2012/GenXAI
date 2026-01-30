@@ -142,8 +142,9 @@ async def execute_workflow(
     request: Request
 ) -> Dict[str, Any]:
     """Execute a workflow with user's API keys."""
-    workflow = fetch_one("SELECT id FROM workflows WHERE id = ?", (workflow_id,))
-    if not workflow:
+    # Get workflow from database
+    workflow_data = fetch_one("SELECT * FROM workflows WHERE id = ?", (workflow_id,))
+    if not workflow_data:
         raise HTTPException(status_code=404, detail="Workflow not found")
 
     # Extract API keys from request state (set by middleware)
@@ -153,21 +154,38 @@ async def execute_workflow(
     execution_id = f"exec_{uuid.uuid4().hex[:8]}"
     started_at = datetime.utcnow().isoformat()
     
-    # TODO: Implement actual workflow execution with GenXAI engine
-    # For now, this is a placeholder that demonstrates API key availability
-    result = {
-        "message": "Workflow execution placeholder", 
-        "input": input_data,
-        "api_keys_configured": {
-            "openai": openai_api_key is not None,
-            "anthropic": anthropic_api_key is not None
-        }
-    }
+    # Parse workflow nodes and edges
+    nodes = json_loads(workflow_data["nodes"], [])
+    edges = json_loads(workflow_data["edges"], [])
     
-    # When implementing actual execution, use:
-    # from genxai.llm.providers.openai import OpenAIProvider
-    # llm = OpenAIProvider(model="gpt-4", api_key=openai_api_key)
+    # Execute workflow using GenXAI engine
+    try:
+        from studio.backend.services.workflow_executor import execute_studio_workflow
+        
+        execution_result = execute_studio_workflow(
+            nodes=nodes,
+            edges=edges,
+            input_data=input_data,
+            openai_api_key=openai_api_key,
+            anthropic_api_key=anthropic_api_key
+        )
+        
+        status = execution_result.get("status", "completed")
+        logs = [execution_result.get("message", "Execution completed")]
+        
+        if status == "error":
+            logs.append(f"Error: {execution_result.get('error', 'Unknown error')}")
+        
+    except Exception as e:
+        status = "failed"
+        execution_result = {
+            "status": "error",
+            "error": str(e),
+            "message": f"Execution failed: {str(e)}"
+        }
+        logs = [f"Execution failed: {str(e)}"]
 
+    # Save execution to database
     execute(
         """
         INSERT INTO executions (id, workflow_id, status, logs, result, started_at, completed_at)
@@ -176,9 +194,9 @@ async def execute_workflow(
         (
             execution_id,
             workflow_id,
-            "completed",
-            json_dumps(["Execution completed with user API keys"]),
-            json_dumps(result),
+            status,
+            json_dumps(logs),
+            json_dumps(execution_result),
             started_at,
             datetime.utcnow().isoformat(),
         ),
@@ -187,9 +205,9 @@ async def execute_workflow(
     return {
         "id": execution_id,
         "workflow_id": workflow_id,
-        "status": "completed",
-        "logs": ["Execution completed with user API keys"],
-        "result": result,
+        "status": status,
+        "logs": logs,
+        "result": execution_result,
         "started_at": started_at,
         "completed_at": datetime.utcnow().isoformat(),
     }
