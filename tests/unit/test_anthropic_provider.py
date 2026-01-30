@@ -9,7 +9,7 @@ from genxai.llm.base import LLMResponse
 @pytest.fixture
 def mock_anthropic_client():
     """Mock Anthropic client."""
-    with patch("genxai.llm.providers.anthropic.AsyncAnthropic") as mock:
+    with patch("anthropic.AsyncAnthropic") as mock:
         yield mock
 
 

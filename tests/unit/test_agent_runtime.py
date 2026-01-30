@@ -82,6 +82,31 @@ class MockMemory:
     def retrieve_recent(self, limit: int = 5) -> list:
         """Mock retrieve_recent method."""
         return self.recent_memories[:limit]
+    
+    async def get_short_term_context(self, max_tokens: int = 2000) -> str:
+        """Mock get_short_term_context method."""
+        if not self.recent_memories:
+            return ""
+        
+        context_parts = ["Recent context:"]
+        for memory in self.recent_memories:
+            if hasattr(memory, 'content') and isinstance(memory.content, dict):
+                task = memory.content.get("task", "")
+                response = memory.content.get("response", "")
+                context_parts.append(f"- Task: {task}")
+                context_parts.append(f"  Response: {response}")
+        
+        return "\n".join(context_parts)
+    
+    async def add_to_short_term(self, content: Any, metadata: dict) -> str:
+        """Mock add_to_short_term method."""
+        memory_id = f"mem_{len(self.stored_items)}"
+        self.stored_items.append({
+            "id": memory_id,
+            "content": content,
+            "metadata": metadata,
+        })
+        return memory_id
 
 
 @pytest.fixture
@@ -126,7 +151,8 @@ async def test_agent_runtime_initialization(agent, mock_llm_provider):
     assert runtime.agent == agent
     assert runtime._llm_provider == mock_llm_provider
     assert runtime._tools == {}
-    assert runtime._memory is None
+    assert runtime._memory is not None  # Memory system is initialized by default
+    assert runtime._memory.agent_id == agent.id
 
 
 @pytest.mark.asyncio
@@ -194,7 +220,7 @@ async def test_memory_context_formatting(runtime):
     ]
     runtime.set_memory(mock_memory)
     
-    context = runtime.get_memory_context(limit=2)
+    context = await runtime.get_memory_context(limit=2)
     
     assert "Recent context:" in context
     assert "Task 1" in context

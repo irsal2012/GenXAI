@@ -151,11 +151,12 @@ def manage_context_window(
     )
     
     # First, try truncating memory context
-    if memory_tokens > 0:
+    if memory_tokens > 0 and tokens_to_remove > 0:
         memory_reduction = min(memory_tokens, tokens_to_remove)
+        new_memory_tokens = max(0, memory_tokens - memory_reduction)
         memory_context = truncate_to_token_limit(
             memory_context,
-            memory_tokens - memory_reduction,
+            new_memory_tokens,
             preserve_start=False  # Keep most recent memories
         )
         tokens_to_remove -= memory_reduction
@@ -164,19 +165,21 @@ def manage_context_window(
     # If still over limit, truncate system prompt
     if tokens_to_remove > 0 and system_tokens > 500:  # Keep at least 500 tokens
         system_reduction = min(system_tokens - 500, tokens_to_remove)
+        new_system_tokens = max(500, system_tokens - system_reduction)
         system_prompt = truncate_to_token_limit(
             system_prompt,
-            system_tokens - system_reduction,
+            new_system_tokens,
             preserve_start=True  # Keep role/goal at start
         )
         tokens_to_remove -= system_reduction
         logger.debug(f"Truncated system prompt by {system_reduction} tokens")
     
     # If still over limit, truncate user prompt (last resort)
-    if tokens_to_remove > 0:
+    if tokens_to_remove > 0 and user_tokens > 0:
+        new_user_tokens = max(100, user_tokens - tokens_to_remove)  # Keep at least 100 tokens
         user_prompt = truncate_to_token_limit(
             user_prompt,
-            user_tokens - tokens_to_remove,
+            new_user_tokens,
             preserve_start=True  # Keep task description
         )
         logger.warning(f"Had to truncate user prompt by {tokens_to_remove} tokens")

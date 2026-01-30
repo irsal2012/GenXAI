@@ -9,7 +9,7 @@ from genxai.llm.base import LLMResponse
 @pytest.fixture
 def mock_cohere_client():
     """Mock Cohere client."""
-    with patch("genxai.llm.providers.cohere.cohere") as mock:
+    with patch("cohere.AsyncClient") as mock:
         yield mock
 
 

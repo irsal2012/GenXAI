@@ -308,8 +308,9 @@ class AgentRuntime:
                 system_prompt=system_prompt,
             )
 
-            # Update token usage
+            # Update token usage and execution count
             self.agent._total_tokens += response.usage.get("total_tokens", 0)
+            self.agent._execution_count += 1
 
             logger.debug(
                 f"LLM response received for agent {self.agent.id}: "
@@ -507,11 +508,12 @@ class AgentRuntime:
         
         tool_calls = []
         
-        # Try to parse JSON function calls
+        # Try to parse JSON function calls - look for complete JSON objects
         try:
-            # Look for JSON objects in response
-            json_pattern = r'\{[^{}]*"name"[^{}]*"arguments"[^{}]*\}'
-            matches = re.findall(json_pattern, response)
+            # Pattern to match JSON objects with name and arguments fields
+            # This handles nested objects in arguments
+            json_pattern = r'\{[^{}]*"name"\s*:\s*"[^"]+"\s*,\s*"arguments"\s*:\s*\{[^}]*\}\s*\}'
+            matches = re.findall(json_pattern, response, re.DOTALL)
             
             for match in matches:
                 try:
@@ -522,7 +524,18 @@ class AgentRuntime:
                             "arguments": call["arguments"],
                         })
                 except json.JSONDecodeError:
-                    continue
+                    # Try to fix common JSON issues
+                    try:
+                        # Replace single quotes with double quotes
+                        fixed_match = match.replace("'", '"')
+                        call = json.loads(fixed_match)
+                        if "name" in call and "arguments" in call:
+                            tool_calls.append({
+                                "name": call["name"],
+                                "arguments": call["arguments"],
+                            })
+                    except:
+                        continue
         except Exception as e:
             logger.debug(f"Failed to parse JSON tool calls: {e}")
         

@@ -17,14 +17,15 @@ class ShortTermMemory:
     the least recently used items when capacity is reached.
     """
 
-    def __init__(self, config: Optional[MemoryConfig] = None) -> None:
+    def __init__(self, config: Optional[MemoryConfig] = None, capacity: Optional[int] = None) -> None:
         """Initialize short-term memory.
 
         Args:
             config: Memory configuration (uses defaults if not provided)
+            capacity: Override capacity (for backward compatibility)
         """
         self.config = config or MemoryConfig()
-        self.capacity = self.config.short_term_capacity
+        self.capacity = capacity if capacity is not None else self.config.short_term_capacity
         
         # Use OrderedDict for LRU behavior
         self._memories: OrderedDict[str, Memory] = OrderedDict()
@@ -234,6 +235,69 @@ class ShortTermMemory:
     def __contains__(self, memory_id: str) -> bool:
         """Check if memory exists."""
         return memory_id in self._memories
+
+    async def add(self, content: Any, metadata: Optional[Dict[str, Any]] = None) -> str:
+        """Add content to short-term memory.
+        
+        Args:
+            content: Content to store
+            metadata: Optional metadata
+            
+        Returns:
+            Memory ID
+        """
+        import uuid
+        from genxai.core.memory.base import Memory, MemoryType
+        from datetime import datetime
+        
+        memory = Memory(
+            id=str(uuid.uuid4()),
+            content=content,
+            memory_type=MemoryType.SHORT_TERM,
+            importance=0.5,
+            timestamp=datetime.now(),
+            metadata=metadata or {},
+        )
+        
+        self.store(memory)
+        return memory.id
+    
+    async def get_context(self, max_tokens: int = 4000) -> str:
+        """Get formatted context string for LLM.
+        
+        Args:
+            max_tokens: Maximum tokens to include
+            
+        Returns:
+            Formatted context string
+        """
+        recent = self.retrieve_recent(limit=10)
+        
+        if not recent:
+            return ""
+        
+        context_parts = ["Recent context:"]
+        for memory in recent:
+            if isinstance(memory.content, dict):
+                task = memory.content.get("task", "")
+                response = memory.content.get("response", "")
+                context_parts.append(f"- Task: {task}")
+                context_parts.append(f"  Response: {response}")
+            else:
+                context_parts.append(f"- {memory.content}")
+        
+        return "\n".join(context_parts)
+    
+    async def clear_async(self) -> None:
+        """Clear all memories (async version)."""
+        count = len(self._memories)
+        self._memories.clear()
+        logger.info(f"Cleared {count} memories from short-term memory")
+    
+    @property
+    def memories(self) -> List[Memory]:
+        """Get all memories as a list."""
+        return list(self._memories.values())
 
     def __repr__(self) -> str:
         """String representation."""

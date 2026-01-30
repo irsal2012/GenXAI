@@ -9,7 +9,7 @@ from genxai.llm.base import LLMResponse
 @pytest.fixture
 def mock_google_genai():
     """Mock Google Generative AI module."""
-    with patch("genxai.llm.providers.google.genai") as mock:
+    with patch("google.generativeai", create=True) as mock:
         yield mock
 
 
