@@ -357,3 +357,266 @@ class Graph:
     def __repr__(self) -> str:
         """String representation of the graph."""
         return f"Graph(name={self.name}, nodes={len(self.nodes)}, edges={len(self.edges)})"
+
+    def draw_ascii(self) -> str:
+        """Generate ASCII art representation of the graph.
+
+        Returns:
+            String containing ASCII art visualization of the graph
+        """
+        if not self.nodes:
+            return "Empty graph"
+
+        lines = []
+        lines.append(f"Graph: {self.name}")
+        lines.append("=" * 60)
+        lines.append("")
+
+        # Find entry points
+        entry_points = [
+            node_id for node_id in self.nodes if not self.get_incoming_nodes(node_id)
+        ]
+
+        if not entry_points:
+            entry_points = [
+                node_id
+                for node_id, node in self.nodes.items()
+                if node.type == NodeType.INPUT
+            ]
+
+        if not entry_points and self.nodes:
+            entry_points = [next(iter(self.nodes.keys()))]
+
+        # Build tree structure
+        visited = set()
+        for entry in entry_points:
+            self._draw_node_tree(entry, lines, visited, prefix="", is_last=True)
+
+        lines.append("")
+        lines.append("=" * 60)
+        lines.append(f"Total Nodes: {len(self.nodes)} | Total Edges: {len(self.edges)}")
+
+        return "\n".join(lines)
+
+    def _draw_node_tree(
+        self, node_id: str, lines: List[str], visited: Set[str], prefix: str, is_last: bool
+    ) -> None:
+        """Recursively draw node tree structure.
+
+        Args:
+            node_id: Current node ID
+            lines: List to append output lines to
+            visited: Set of visited node IDs
+            prefix: Current line prefix for indentation
+            is_last: Whether this is the last child
+        """
+        if node_id not in self.nodes:
+            return
+
+        node = self.nodes[node_id]
+
+        # Draw current node
+        connector = "└── " if is_last else "├── "
+        status_symbol = {
+            NodeStatus.PENDING: "○",
+            NodeStatus.RUNNING: "◐",
+            NodeStatus.COMPLETED: "●",
+            NodeStatus.FAILED: "✗",
+            NodeStatus.SKIPPED: "⊘",
+        }.get(node.status, "?")
+
+        node_line = f"{prefix}{connector}{status_symbol} {node.id} [{node.type.value}]"
+        lines.append(node_line)
+
+        # Avoid infinite loops in cyclic graphs
+        if node_id in visited:
+            extension = "    " if is_last else "│   "
+            lines.append(f"{prefix}{extension}↻ (cycle detected)")
+            return
+
+        visited.add(node_id)
+
+        # Get outgoing edges
+        outgoing = self.get_outgoing_edges(node_id)
+        if not outgoing:
+            return
+
+        # Group edges by type
+        parallel_edges = [e for e in outgoing if e.metadata.get("parallel", False)]
+        sequential_edges = [e for e in outgoing if not e.metadata.get("parallel", False)]
+
+        # Draw parallel edges
+        if parallel_edges:
+            extension = "    " if is_last else "│   "
+            lines.append(f"{prefix}{extension}║")
+            lines.append(f"{prefix}{extension}╠══ [PARALLEL]")
+
+            for i, edge in enumerate(parallel_edges):
+                is_last_parallel = i == len(parallel_edges) - 1 and not sequential_edges
+                new_prefix = prefix + ("    " if is_last else "│   ")
+                condition_marker = " (conditional)" if edge.condition else ""
+                lines.append(f"{new_prefix}║")
+                self._draw_node_tree(
+                    edge.target, lines, visited.copy(), new_prefix, is_last_parallel
+                )
+
+        # Draw sequential edges
+        for i, edge in enumerate(sequential_edges):
+            is_last_edge = i == len(sequential_edges) - 1
+            new_prefix = prefix + ("    " if is_last else "│   ")
+            condition_marker = " (?)" if edge.condition else ""
+
+            if edge.condition:
+                lines.append(f"{new_prefix}│")
+                lines.append(f"{new_prefix}├── [IF condition]")
+
+            self._draw_node_tree(edge.target, lines, visited.copy(), new_prefix, is_last_edge)
+
+    def to_mermaid(self) -> str:
+        """Generate Mermaid diagram syntax for the graph.
+
+        Returns:
+            String containing Mermaid flowchart syntax
+        """
+        if not self.nodes:
+            return "graph TD\n    empty[Empty Graph]"
+
+        lines = ["graph TD"]
+
+        # Define nodes with appropriate shapes
+        for node_id, node in self.nodes.items():
+            label = f"{node_id}\\n[{node.type.value}]"
+
+            # Choose shape based on node type
+            if node.type == NodeType.INPUT:
+                shape = f'    {node_id}(["{label}"])'
+            elif node.type == NodeType.OUTPUT:
+                shape = f'    {node_id}(["{label}"])'
+            elif node.type == NodeType.CONDITION:
+                shape = f'    {node_id}{{{{{label}}}}}'
+            elif node.type == NodeType.AGENT:
+                shape = f'    {node_id}["{label}"]'
+            elif node.type == NodeType.TOOL:
+                shape = f'    {node_id}["{label}"]'
+            else:
+                shape = f'    {node_id}["{label}"]'
+
+            lines.append(shape)
+
+        lines.append("")
+
+        # Define edges
+        for edge in self.edges:
+            if edge.condition:
+                lines.append(f"    {edge.source} -->|conditional| {edge.target}")
+            elif edge.metadata.get("parallel", False):
+                lines.append(f"    {edge.source} -.parallel.-> {edge.target}")
+            else:
+                lines.append(f"    {edge.source} --> {edge.target}")
+
+        return "\n".join(lines)
+
+    def to_dot(self) -> str:
+        """Generate GraphViz DOT format for the graph.
+
+        Returns:
+            String containing DOT format graph definition
+        """
+        if not self.nodes:
+            return "digraph empty { }"
+
+        lines = [f'digraph "{self.name}" {{']
+        lines.append("    rankdir=TB;")
+        lines.append("    node [fontname=Arial, fontsize=10];")
+        lines.append("    edge [fontname=Arial, fontsize=9];")
+        lines.append("")
+
+        # Define node styles by type
+        node_styles = {
+            NodeType.INPUT: 'shape=ellipse, style=filled, fillcolor=lightblue',
+            NodeType.OUTPUT: 'shape=ellipse, style=filled, fillcolor=lightgreen',
+            NodeType.CONDITION: 'shape=diamond, style=filled, fillcolor=lightyellow',
+            NodeType.AGENT: 'shape=box, style="rounded,filled", fillcolor=lightcoral',
+            NodeType.TOOL: 'shape=box, style=filled, fillcolor=lightgray',
+            NodeType.HUMAN: 'shape=box, style=filled, fillcolor=lightpink',
+            NodeType.SUBGRAPH: 'shape=box3d, style=filled, fillcolor=lavender',
+        }
+
+        # Define nodes
+        for node_id, node in self.nodes.items():
+            style = node_styles.get(node.type, 'shape=box')
+            label = f"{node_id}\\n[{node.type.value}]"
+
+            # Add status indicator
+            if node.status != NodeStatus.PENDING:
+                label += f"\\n({node.status.value})"
+
+            lines.append(f'    {node_id} [label="{label}", {style}];')
+
+        lines.append("")
+
+        # Define edges
+        for edge in self.edges:
+            attrs = []
+
+            if edge.condition:
+                attrs.append('label="conditional"')
+                attrs.append('style=dashed')
+
+            if edge.metadata.get("parallel", False):
+                attrs.append('label="parallel"')
+                attrs.append('color=blue')
+
+            if edge.priority != 0:
+                attrs.append(f'weight={edge.priority}')
+
+            attr_str = ", ".join(attrs) if attrs else ""
+            if attr_str:
+                lines.append(f"    {edge.source} -> {edge.target} [{attr_str}];")
+            else:
+                lines.append(f"    {edge.source} -> {edge.target};")
+
+        lines.append("}")
+
+        return "\n".join(lines)
+
+    def print_structure(self) -> None:
+        """Print a simple text summary of the graph structure."""
+        print(f"\nGraph: {self.name}")
+        print("=" * 60)
+        print(f"Nodes: {len(self.nodes)}")
+        print(f"Edges: {len(self.edges)}")
+        print()
+
+        if self.nodes:
+            print("Node List:")
+            print("-" * 60)
+            for node_id, node in self.nodes.items():
+                status = node.status.value
+                print(f"  • {node_id:20} [{node.type.value:10}] ({status})")
+            print()
+
+        if self.edges:
+            print("Edge List:")
+            print("-" * 60)
+            for edge in self.edges:
+                condition = "conditional" if edge.condition else "unconditional"
+                parallel = " [PARALLEL]" if edge.metadata.get("parallel", False) else ""
+                print(f"  • {edge.source:15} → {edge.target:15} ({condition}){parallel}")
+            print()
+
+        # Find entry and exit points
+        entry_points = [
+            node_id for node_id in self.nodes if not self.get_incoming_nodes(node_id)
+        ]
+        exit_points = [
+            node_id for node_id in self.nodes if not self.get_outgoing_edges(node_id)
+        ]
+
+        if entry_points:
+            print(f"Entry Points: {', '.join(entry_points)}")
+        if exit_points:
+            print(f"Exit Points: {', '.join(exit_points)}")
+
+        print("=" * 60)
+        print()
