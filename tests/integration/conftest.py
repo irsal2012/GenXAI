@@ -5,7 +5,7 @@ import os
 import asyncio
 from typing import Dict, Any
 
-from genxai.llm.factory import LLMFactory
+from genxai.llm.factory import LLMProviderFactory
 from genxai.core.memory.manager import MemorySystem
 from genxai.tools.registry import ToolRegistry
 from genxai.core.agent.base import Agent, AgentConfig, AgentType
@@ -20,7 +20,7 @@ def openai_provider():
     api_key = os.getenv("OPENAI_API_KEY")
     if not api_key:
         pytest.skip("OPENAI_API_KEY not set")
-    return LLMFactory.create("openai", api_key=api_key)
+    return LLMProviderFactory.create_provider("openai", api_key=api_key)
 
 
 @pytest.fixture(scope="session")
@@ -29,7 +29,7 @@ def anthropic_provider():
     api_key = os.getenv("ANTHROPIC_API_KEY")
     if not api_key:
         pytest.skip("ANTHROPIC_API_KEY not set")
-    return LLMFactory.create("anthropic", api_key=api_key)
+    return LLMProviderFactory.create_provider("anthropic", api_key=api_key)
 
 
 @pytest.fixture(scope="session")
@@ -38,7 +38,7 @@ def google_provider():
     api_key = os.getenv("GOOGLE_API_KEY")
     if not api_key:
         pytest.skip("GOOGLE_API_KEY not set")
-    return LLMFactory.create("google", api_key=api_key)
+    return LLMProviderFactory.create_provider("google", api_key=api_key)
 
 
 @pytest.fixture(scope="session")
@@ -47,7 +47,7 @@ def cohere_provider():
     api_key = os.getenv("COHERE_API_KEY")
     if not api_key:
         pytest.skip("COHERE_API_KEY not set")
-    return LLMFactory.create("cohere", api_key=api_key)
+    return LLMProviderFactory.create_provider("cohere", api_key=api_key)
 
 
 @pytest.fixture(scope="session")
