@@ -128,3 +128,149 @@ class LogContext:
         """Exit context."""
         if self.old_factory:
             logging.setLogRecordFactory(self.old_factory)
+
+
+class SensitiveDataFilter(logging.Filter):
+    """Filter to redact sensitive data from logs."""
+    
+    SENSITIVE_PATTERNS = [
+        (r'api[_-]?key["\']?\s*[:=]\s*["\']?([^"\'\\s]+)', 'api_key=***REDACTED***'),
+        (r'password["\']?\s*[:=]\s*["\']?([^"\'\\s]+)', 'password=***REDACTED***'),
+        (r'token["\']?\s*[:=]\s*["\']?([^"\'\\s]+)', 'token=***REDACTED***'),
+        (r'secret["\']?\s*[:=]\s*["\']?([^"\'\\s]+)', 'secret=***REDACTED***'),
+        (r'authorization["\']?\s*[:=]\s*["\']?([^"\'\\s]+)', 'authorization=***REDACTED***'),
+    ]
+    
+    def filter(self, record: logging.LogRecord) -> bool:
+        """Filter and redact sensitive data.
+        
+        Args:
+            record: Log record
+            
+        Returns:
+            True to keep the record
+        """
+        import re
+        
+        message = record.getMessage()
+        
+        for pattern, replacement in self.SENSITIVE_PATTERNS:
+            message = re.sub(pattern, replacement, message, flags=re.IGNORECASE)
+        
+        record.msg = message
+        record.args = ()
+        
+        return True
+
+
+class StructuredLogger:
+    """Structured JSON logger with context."""
+    
+    def __init__(self, name: str):
+        """Initialize structured logger.
+        
+        Args:
+            name: Logger name
+        """
+        self.logger = logging.getLogger(name)
+        self.context: Dict[str, Any] = {}
+    
+    def add_context(self, **kwargs: Any) -> None:
+        """Add context to all log messages.
+        
+        Args:
+            **kwargs: Context key-value pairs
+        """
+        self.context.update(kwargs)
+    
+    def clear_context(self) -> None:
+        """Clear all context."""
+        self.context.clear()
+    
+    def _format_message(self, level: str, message: str, **kwargs: Any) -> str:
+        """Format log message as JSON.
+        
+        Args:
+            level: Log level
+            message: Log message
+            **kwargs: Additional fields
+            
+        Returns:
+            JSON formatted log string
+        """
+        log_entry = {
+            "timestamp": datetime.utcnow().isoformat(),
+            "level": level,
+            "message": message,
+            "context": self.context,
+            **kwargs
+        }
+        return json.dumps(log_entry)
+    
+    def debug(self, message: str, **kwargs: Any) -> None:
+        """Log debug message.
+        
+        Args:
+            message: Log message
+            **kwargs: Additional fields
+        """
+        self.logger.debug(self._format_message("DEBUG", message, **kwargs))
+    
+    def info(self, message: str, **kwargs: Any) -> None:
+        """Log info message.
+        
+        Args:
+            message: Log message
+            **kwargs: Additional fields
+        """
+        self.logger.info(self._format_message("INFO", message, **kwargs))
+    
+    def warning(self, message: str, **kwargs: Any) -> None:
+        """Log warning message.
+        
+        Args:
+            message: Log message
+            **kwargs: Additional fields
+        """
+        self.logger.warning(self._format_message("WARNING", message, **kwargs))
+    
+    def error(self, message: str, **kwargs: Any) -> None:
+        """Log error message.
+        
+        Args:
+            message: Log message
+            **kwargs: Additional fields
+        """
+        self.logger.error(self._format_message("ERROR", message, **kwargs))
+    
+    def critical(self, message: str, **kwargs: Any) -> None:
+        """Log critical message.
+        
+        Args:
+            message: Log message
+            **kwargs: Additional fields
+        """
+        self.logger.critical(self._format_message("CRITICAL", message, **kwargs))
+    
+    def exception(self, message: str, **kwargs: Any) -> None:
+        """Log exception with traceback.
+        
+        Args:
+            message: Log message
+            **kwargs: Additional fields
+        """
+        import traceback
+        kwargs["traceback"] = traceback.format_exc()
+        self.logger.error(self._format_message("ERROR", message, **kwargs))
+
+
+def get_structured_logger(name: str) -> StructuredLogger:
+    """Get a structured logger instance.
+    
+    Args:
+        name: Logger name
+        
+    Returns:
+        StructuredLogger instance
+    """
+    return StructuredLogger(name)
