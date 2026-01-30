@@ -75,7 +75,7 @@ class EnhancedGraph(Graph):
     async def _execute_agent_with_tools(
         self, agent: Agent, task: str, state: Dict[str, Any]
     ) -> Dict[str, Any]:
-        """Execute agent with tool support.
+        """Execute agent with tool support using AgentRuntime.
 
         Args:
             agent: Agent to execute
@@ -87,28 +87,25 @@ class EnhancedGraph(Graph):
         """
         logger.debug(f"Executing agent '{agent.id}' ({agent.config.role})")
         
-        # Check if agent has tools
-        tool_results = {}
+        # Use AgentRuntime for full integration
+        from genxai.core.agent.runtime import AgentRuntime
+        
+        runtime = AgentRuntime(agent=agent, enable_memory=True)
+        
+        # Load tools from registry
         if agent.config.tools:
-            logger.debug(f"Agent has tools: {', '.join(agent.config.tools)}")
-            
-            # Execute tools based on task
+            tools = {}
             for tool_name in agent.config.tools:
                 tool = ToolRegistry.get(tool_name)
                 if tool:
-                    tool_result = await self._execute_tool_for_task(
-                        tool, tool_name, task, state
-                    )
-                    if tool_result:
-                        tool_results[tool_name] = tool_result
+                    tools[tool_name] = tool
+            runtime.set_tools(tools)
+            logger.debug(f"Loaded {len(tools)} tools for agent")
         
-        # Execute agent (placeholder for now, would use LLM with API key)
-        agent_result = await agent.execute(task, context=state)
+        # Execute agent with full runtime support
+        result = await runtime.execute(task, context=state)
         
-        # Combine agent result with tool results
-        agent_result["tool_results"] = tool_results
-        
-        return agent_result
+        return result
 
     async def _execute_tool_for_task(
         self, tool: Any, tool_name: str, task: str, state: Dict[str, Any]

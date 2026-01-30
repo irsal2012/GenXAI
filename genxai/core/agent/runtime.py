@@ -8,6 +8,7 @@ import logging
 from genxai.core.agent.base import Agent
 from genxai.llm.base import LLMProvider
 from genxai.llm.factory import LLMProviderFactory
+from genxai.utils.tokens import manage_context_window
 
 logger = logging.getLogger(__name__)
 
@@ -26,6 +27,7 @@ class AgentRuntime:
         agent: Agent,
         llm_provider: Optional[LLMProvider] = None,
         api_key: Optional[str] = None,
+        enable_memory: bool = True,
     ) -> None:
         """Initialize agent runtime.
 
@@ -33,6 +35,7 @@ class AgentRuntime:
             agent: Agent to execute
             llm_provider: LLM provider instance (optional, will be created if not provided)
             api_key: API key for LLM provider (optional, will use env var if not provided)
+            enable_memory: Whether to initialize memory system
         """
         self.agent = agent
         self._tools: Dict[str, Any] = {}
@@ -54,6 +57,15 @@ class AgentRuntime:
             except Exception as e:
                 logger.warning(f"Failed to create LLM provider for agent {agent.id}: {e}")
                 self._llm_provider = None
+        
+        # Initialize memory system if enabled
+        if enable_memory and agent.config.enable_memory:
+            try:
+                from genxai.core.memory.manager import MemorySystem
+                self._memory = MemorySystem(agent_id=agent.id)
+                logger.info(f"Memory system initialized for agent {agent.id}")
+            except Exception as e:
+                logger.warning(f"Failed to initialize memory system: {e}")
 
     async def execute(
         self,
@@ -109,7 +121,7 @@ class AgentRuntime:
         task: str,
         context: Dict[str, Any],
     ) -> Dict[str, Any]:
-        """Internal execution logic.
+        """Internal execution logic with full LLM integration.
 
         Args:
             task: Task description
@@ -120,14 +132,19 @@ class AgentRuntime:
         """
         logger.info(f"Executing agent {self.agent.id}: {task}")
         
-        # Build prompt
-        prompt = self._build_prompt(task, context)
+        # Get memory context if available
+        memory_context = ""
+        if self.agent.config.enable_memory and self._memory:
+            memory_context = await self.get_memory_context(limit=5)
         
-        # Get LLM response (placeholder - will be implemented with actual LLM)
-        response = await self._get_llm_response(prompt)
+        # Build prompt (without memory context, as it's handled in _get_llm_response)
+        prompt = self._build_prompt(task, context, "")
+        
+        # Get LLM response with retry logic and memory context
+        response = await self._get_llm_response_with_retry(prompt, memory_context)
         
         # Process tools if needed
-        if self.agent.config.tools:
+        if self.agent.config.tools and self._tools:
             response = await self._process_tools(response, context)
         
         # Update memory if enabled
@@ -141,7 +158,23 @@ class AgentRuntime:
             "status": "completed",
             "output": response,
             "context": context,
+            "tokens_used": self.agent._total_tokens,
         }
+        
+        # Store episode in episodic memory
+        if self._memory and hasattr(self._memory, 'episodic') and self._memory.episodic:
+            try:
+                execution_time = time.time() - time.time()  # Will be set by caller
+                await self._memory.store_episode(
+                    task=task,
+                    actions=[{"type": "llm_call", "response": response}],
+                    outcome=result,
+                    duration=execution_time,
+                    success=True,
+                    metadata={"agent_id": self.agent.id},
+                )
+            except Exception as e:
+                logger.warning(f"Failed to store episode: {e}")
         
         # Reflection for learning agents
         if self.agent.config.agent_type == "learning":
@@ -150,38 +183,55 @@ class AgentRuntime:
         
         return result
 
-    def _build_prompt(self, task: str, context: Dict[str, Any]) -> str:
-        """Build prompt for LLM.
+    def _build_prompt(
+        self, 
+        task: str, 
+        context: Dict[str, Any],
+        memory_context: str = ""
+    ) -> str:
+        """Build comprehensive prompt for LLM with memory context.
 
         Args:
             task: Task description
             context: Execution context
+            memory_context: Recent memory context
 
         Returns:
             Formatted prompt
         """
         prompt_parts = []
         
-        # Add role and goal
-        prompt_parts.append(f"You are a {self.agent.config.role}.")
-        prompt_parts.append(f"Your goal is: {self.agent.config.goal}")
+        # Add memory context if available
+        if memory_context:
+            prompt_parts.append(memory_context)
+            prompt_parts.append("")  # Empty line for separation
         
-        # Add backstory if provided
-        if self.agent.config.backstory:
-            prompt_parts.append(f"\nBackground: {self.agent.config.backstory}")
+        # Add available tools with descriptions
+        if self.agent.config.tools and self._tools:
+            prompt_parts.append("Available tools:")
+            for tool_name in self.agent.config.tools:
+                if tool_name in self._tools:
+                    tool = self._tools[tool_name]
+                    tool_desc = getattr(tool, 'metadata', None)
+                    if tool_desc:
+                        prompt_parts.append(f"- {tool_name}: {tool_desc.description}")
+                    else:
+                        prompt_parts.append(f"- {tool_name}")
+            prompt_parts.append("")
         
-        # Add available tools
-        if self.agent.config.tools:
-            tools_str = ", ".join(self.agent.config.tools)
-            prompt_parts.append(f"\nAvailable tools: {tools_str}")
-        
-        # Add context
+        # Add context if provided
         if context:
-            prompt_parts.append(f"\nContext: {context}")
+            prompt_parts.append(f"Context: {context}")
+            prompt_parts.append("")
         
         # Add task
-        prompt_parts.append(f"\nTask: {task}")
-        prompt_parts.append("\nPlease complete the task.")
+        prompt_parts.append(f"Task: {task}")
+        
+        # Add agent type specific instructions
+        if self.agent.config.agent_type == "deliberative":
+            prompt_parts.append("\nThink step by step and plan your approach before responding.")
+        elif self.agent.config.agent_type == "learning":
+            prompt_parts.append("\nConsider past experiences and improve your approach.")
         
         return "\n".join(prompt_parts)
 
@@ -213,11 +263,12 @@ class AgentRuntime:
         
         return "\n".join(system_parts)
 
-    async def _get_llm_response(self, prompt: str) -> str:
-        """Get response from LLM.
+    async def _get_llm_response(self, prompt: str, memory_context: str = "") -> str:
+        """Get response from LLM with context window management.
 
         Args:
             prompt: Prompt to send to LLM
+            memory_context: Memory context to include
 
         Returns:
             LLM response
@@ -237,6 +288,19 @@ class AgentRuntime:
 
             # Build system prompt from agent config
             system_prompt = self._build_system_prompt()
+
+            # Manage context window to fit within model limits
+            system_prompt, prompt, memory_context = manage_context_window(
+                system_prompt=system_prompt,
+                user_prompt=prompt,
+                memory_context=memory_context,
+                model=self.agent.config.llm_model,
+                reserve_tokens=self.agent.config.llm_max_tokens or 1000,
+            )
+
+            # Prepend memory context to prompt if available
+            if memory_context:
+                prompt = f"{memory_context}\n\n{prompt}"
 
             # Call LLM provider
             response = await self._llm_provider.generate(
@@ -259,23 +323,321 @@ class AgentRuntime:
             logger.error(f"LLM call failed for agent {self.agent.id}: {e}")
             raise RuntimeError(f"LLM call failed: {e}") from e
 
+    async def _get_llm_response_with_retry(
+        self,
+        prompt: str,
+        memory_context: str = "",
+        max_retries: int = 3,
+        base_delay: float = 1.0,
+    ) -> str:
+        """Get response from LLM with exponential backoff retry logic.
+
+        Args:
+            prompt: Prompt to send to LLM
+            memory_context: Memory context to include
+            max_retries: Maximum number of retry attempts
+            base_delay: Base delay in seconds for exponential backoff
+
+        Returns:
+            LLM response
+
+        Raises:
+            RuntimeError: If all retries fail
+        """
+        last_error = None
+        
+        for attempt in range(max_retries):
+            try:
+                return await self._get_llm_response(prompt, memory_context)
+            except Exception as e:
+                last_error = e
+                if attempt < max_retries - 1:
+                    # Exponential backoff: 1s, 2s, 4s, etc.
+                    delay = base_delay * (2 ** attempt)
+                    logger.warning(
+                        f"LLM call failed for agent {self.agent.id} "
+                        f"(attempt {attempt + 1}/{max_retries}). "
+                        f"Retrying in {delay}s... Error: {e}"
+                    )
+                    await asyncio.sleep(delay)
+                else:
+                    logger.error(
+                        f"LLM call failed for agent {self.agent.id} "
+                        f"after {max_retries} attempts"
+                    )
+        
+        raise RuntimeError(
+            f"LLM call failed after {max_retries} attempts. Last error: {last_error}"
+        ) from last_error
+
+    async def stream_execute(
+        self,
+        task: str,
+        context: Optional[Dict[str, Any]] = None,
+    ) -> Any:
+        """Execute agent with streaming response.
+
+        Args:
+            task: Task description
+            context: Execution context
+
+        Yields:
+            Response chunks as they arrive
+
+        Raises:
+            RuntimeError: If LLM provider not initialized or doesn't support streaming
+        """
+        if not self._llm_provider:
+            raise RuntimeError(
+                f"Agent {self.agent.id} has no LLM provider. "
+                "Provide an API key or set OPENAI_API_KEY environment variable."
+            )
+
+        logger.info(f"Streaming execution for agent {self.agent.id}: {task}")
+
+        # Get memory context if available
+        memory_context = ""
+        if self.agent.config.enable_memory and self._memory:
+            memory_context = await self.get_memory_context(limit=5)
+
+        # Build prompt
+        prompt = self._build_prompt(task, context or {}, memory_context)
+        system_prompt = self._build_system_prompt()
+
+        try:
+            # Stream from LLM provider
+            full_response = []
+            async for chunk in self._llm_provider.generate_stream(
+                prompt=prompt,
+                system_prompt=system_prompt,
+            ):
+                full_response.append(chunk)
+                yield chunk
+
+            # Update memory after streaming completes
+            complete_response = "".join(full_response)
+            if self.agent.config.enable_memory and self._memory:
+                await self._update_memory(task, complete_response)
+
+        except Exception as e:
+            logger.error(f"Streaming execution failed for agent {self.agent.id}: {e}")
+            raise RuntimeError(f"Streaming execution failed: {e}") from e
+
     async def _process_tools(
         self,
         response: str,
         context: Dict[str, Any],
+        max_iterations: int = 5,
     ) -> str:
-        """Process tool calls in response.
+        """Process tool calls in response with chaining support.
 
         Args:
             response: LLM response
             context: Execution context
+            max_iterations: Maximum tool chaining iterations
 
         Returns:
-            Processed response
+            Processed response with tool results
         """
-        # Placeholder for tool processing
         logger.debug(f"Processing tools for agent {self.agent.id}")
-        return response
+        
+        current_response = response
+        all_tool_results = []
+        iteration = 0
+        
+        # Tool chaining loop
+        while iteration < max_iterations:
+            # Parse tool calls from current response
+            tool_calls = self._parse_tool_calls(current_response)
+            
+            if not tool_calls:
+                # No more tool calls, we're done
+                break
+            
+            logger.info(f"Tool iteration {iteration + 1}: Found {len(tool_calls)} tool calls")
+            
+            # Execute tools in this iteration
+            iteration_results = []
+            for tool_call in tool_calls:
+                try:
+                    result = await self._execute_tool(tool_call, context)
+                    iteration_results.append({
+                        "tool": tool_call["name"],
+                        "success": True,
+                        "result": result,
+                        "iteration": iteration + 1,
+                    })
+                    # Update context with tool result for chaining
+                    context[f"tool_result_{tool_call['name']}"] = result
+                except Exception as e:
+                    logger.error(f"Tool {tool_call['name']} failed: {e}")
+                    iteration_results.append({
+                        "tool": tool_call["name"],
+                        "success": False,
+                        "error": str(e),
+                        "iteration": iteration + 1,
+                    })
+            
+            all_tool_results.extend(iteration_results)
+            
+            # Get next response from LLM with tool results
+            current_response = await self._format_tool_results(current_response, iteration_results)
+            iteration += 1
+        
+        if iteration >= max_iterations:
+            logger.warning(f"Reached max tool chaining iterations ({max_iterations})")
+        
+        return current_response
+    
+    def _parse_tool_calls(self, response: str) -> list[Dict[str, Any]]:
+        """Parse tool calls from LLM response.
+        
+        Supports two formats:
+        1. Function calling: {"name": "tool_name", "arguments": {...}}
+        2. Text format: USE_TOOL: tool_name(arg1="value1", arg2="value2")
+        
+        Args:
+            response: LLM response text
+            
+        Returns:
+            List of tool call dictionaries
+        """
+        import json
+        import re
+        
+        tool_calls = []
+        
+        # Try to parse JSON function calls
+        try:
+            # Look for JSON objects in response
+            json_pattern = r'\{[^{}]*"name"[^{}]*"arguments"[^{}]*\}'
+            matches = re.findall(json_pattern, response)
+            
+            for match in matches:
+                try:
+                    call = json.loads(match)
+                    if "name" in call and "arguments" in call:
+                        tool_calls.append({
+                            "name": call["name"],
+                            "arguments": call["arguments"],
+                        })
+                except json.JSONDecodeError:
+                    continue
+        except Exception as e:
+            logger.debug(f"Failed to parse JSON tool calls: {e}")
+        
+        # Try to parse text-based tool calls
+        text_pattern = r'USE_TOOL:\s*(\w+)\((.*?)\)'
+        matches = re.findall(text_pattern, response, re.DOTALL)
+        
+        for tool_name, args_str in matches:
+            try:
+                # Parse arguments
+                arguments = {}
+                if args_str.strip():
+                    # Parse key="value" pairs
+                    arg_pattern = r'(\w+)=(["\'])(.*?)\2'
+                    arg_matches = re.findall(arg_pattern, args_str)
+                    for key, _, value in arg_matches:
+                        arguments[key] = value
+                
+                tool_calls.append({
+                    "name": tool_name,
+                    "arguments": arguments,
+                })
+            except Exception as e:
+                logger.error(f"Failed to parse tool call {tool_name}: {e}")
+        
+        return tool_calls
+    
+    async def _execute_tool(
+        self,
+        tool_call: Dict[str, Any],
+        context: Dict[str, Any],
+    ) -> Any:
+        """Execute a single tool.
+        
+        Args:
+            tool_call: Tool call dictionary with name and arguments
+            context: Execution context
+            
+        Returns:
+            Tool execution result
+            
+        Raises:
+            ValueError: If tool not found
+            Exception: If tool execution fails
+        """
+        tool_name = tool_call["name"]
+        arguments = tool_call.get("arguments", {})
+        
+        # Check if tool exists
+        if tool_name not in self._tools:
+            raise ValueError(f"Tool '{tool_name}' not found in available tools")
+        
+        tool = self._tools[tool_name]
+        
+        logger.info(f"Executing tool {tool_name} with arguments: {arguments}")
+        
+        # Execute tool
+        try:
+            # Check if tool has async execute method
+            if hasattr(tool, 'execute') and asyncio.iscoroutinefunction(tool.execute):
+                result = await tool.execute(**arguments)
+            elif hasattr(tool, 'execute'):
+                result = tool.execute(**arguments)
+            elif callable(tool):
+                # Tool is a function
+                if asyncio.iscoroutinefunction(tool):
+                    result = await tool(**arguments)
+                else:
+                    result = tool(**arguments)
+            else:
+                raise ValueError(f"Tool {tool_name} is not callable")
+            
+            logger.info(f"Tool {tool_name} executed successfully")
+            return result
+            
+        except Exception as e:
+            logger.error(f"Tool {tool_name} execution failed: {e}")
+            raise
+    
+    async def _format_tool_results(
+        self,
+        original_response: str,
+        tool_results: list[Dict[str, Any]],
+    ) -> str:
+        """Format tool results and get final response from LLM.
+        
+        Args:
+            original_response: Original LLM response with tool calls
+            tool_results: List of tool execution results
+            
+        Returns:
+            Final formatted response
+        """
+        # Build tool results summary
+        results_text = "\n\nTool Execution Results:\n"
+        for result in tool_results:
+            if result["success"]:
+                results_text += f"- {result['tool']}: {result['result']}\n"
+            else:
+                results_text += f"- {result['tool']}: ERROR - {result['error']}\n"
+        
+        # Ask LLM to incorporate tool results into final response
+        follow_up_prompt = (
+            f"Based on the tool execution results below, provide a final response.\n"
+            f"{results_text}\n"
+            f"Provide a clear, concise response incorporating these results."
+        )
+        
+        try:
+            final_response = await self._get_llm_response(follow_up_prompt)
+            return final_response
+        except Exception as e:
+            logger.error(f"Failed to get final response after tool execution: {e}")
+            # Return original response with tool results appended
+            return original_response + results_text
 
     async def _update_memory(self, task: str, response: str) -> None:
         """Update agent memory.
@@ -288,18 +650,17 @@ class AgentRuntime:
             return
         
         try:
-            from genxai.core.memory.base import MemoryType
-            
-            # Store task in memory
-            task_memory_id = self._memory.store(
+            # Store in short-term memory
+            await self._memory.add_to_short_term(
                 content={"task": task, "response": response},
-                memory_type=MemoryType.SHORT_TERM,
-                importance=0.5,
-                tags=["conversation", "task"],
-                metadata={"agent_id": self.agent.id},
+                metadata={"agent_id": self.agent.id, "timestamp": time.time()},
             )
             
-            logger.debug(f"Stored memory {task_memory_id} for agent {self.agent.id}")
+            logger.debug(f"Stored interaction in short-term memory for agent {self.agent.id}")
+            
+            # Consolidate important memories to long-term
+            if hasattr(self._memory, 'consolidate_memories'):
+                await self._memory.consolidate_memories(importance_threshold=0.7)
         except Exception as e:
             logger.error(f"Failed to update memory: {e}")
 
@@ -330,7 +691,7 @@ class AgentRuntime:
         self._memory = memory
         logger.info(f"Memory system set for agent {self.agent.id}")
     
-    def get_memory_context(self, limit: int = 5) -> str:
+    async def get_memory_context(self, limit: int = 5) -> str:
         """Get recent memory context for LLM prompts.
 
         Args:
@@ -343,24 +704,9 @@ class AgentRuntime:
             return ""
         
         try:
-            # Get recent memories
-            recent_memories = self._memory.retrieve_recent(limit=limit)
-            
-            if not recent_memories:
-                return ""
-            
-            # Format memories for context
-            context_parts = ["Recent context:"]
-            for memory in recent_memories:
-                if isinstance(memory.content, dict):
-                    task = memory.content.get("task", "")
-                    response = memory.content.get("response", "")
-                    context_parts.append(f"- Task: {task}")
-                    context_parts.append(f"  Response: {response[:100]}...")
-                else:
-                    context_parts.append(f"- {str(memory.content)[:100]}...")
-            
-            return "\n".join(context_parts)
+            # Get context from short-term memory
+            context = await self._memory.get_short_term_context(max_tokens=2000)
+            return context
         except Exception as e:
             logger.error(f"Failed to get memory context: {e}")
             return ""
