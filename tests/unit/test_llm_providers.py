@@ -1,7 +1,9 @@
 """Enhanced tests for LLM providers."""
 
+import sys
 import pytest
 import os
+from unittest.mock import MagicMock, patch
 from genxai.llm.factory import LLMProviderFactory
 from genxai.llm.providers.openai import OpenAIProvider
 from genxai.llm.providers.anthropic import AnthropicProvider
@@ -10,6 +12,24 @@ from genxai.llm.providers.cohere import CohereProvider
 
 
 # ==================== LLM Factory Tests ====================
+
+
+@pytest.fixture(autouse=True)
+def mock_google_genai():
+    """Stub google genai modules to avoid importing deprecated packages."""
+    mock_genai = MagicMock()
+    mock_genai.GenerativeModel.return_value = MagicMock()
+    mock_google = MagicMock()
+    mock_google.genai = mock_genai
+    with patch.dict(
+        sys.modules,
+        {
+            "google": mock_google,
+            "google.genai": mock_genai,
+            "google.generativeai": mock_genai,
+        },
+    ):
+        yield
 
 def test_llm_factory_create_openai():
     """Test creating OpenAI provider."""

@@ -1,16 +1,29 @@
 """Unit tests for Google Gemini provider."""
 
+import sys
+import warnings
 import pytest
 from unittest.mock import patch, MagicMock, AsyncMock
 from genxai.llm.providers.google import GoogleProvider
 from genxai.llm.base import LLMResponse
 
 
-@pytest.fixture
+@pytest.fixture(autouse=True)
 def mock_google_genai():
     """Mock Google Generative AI module."""
-    with patch("google.generativeai", create=True) as mock:
-        yield mock
+    mock_genai = MagicMock()
+    mock_genai.GenerativeModel.return_value = MagicMock()
+    mock_google = MagicMock()
+    mock_google.genai = mock_genai
+    with patch.dict(
+        sys.modules,
+        {
+            "google": mock_google,
+            "google.genai": mock_genai,
+            "google.generativeai": mock_genai,
+        },
+    ):
+        yield mock_genai
 
 
 def test_google_provider_init():

@@ -135,7 +135,6 @@ async def test_agent_without_api_key_fails():
             await runtime.execute(task="Hello")
 
 
-@pytest.mark.asyncio
 def test_llm_provider_factory():
     """Test LLM provider factory."""
     # Test provider creation

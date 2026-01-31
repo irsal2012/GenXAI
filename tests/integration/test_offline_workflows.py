@@ -6,6 +6,7 @@ import pytest
 from typing import Any, AsyncIterator, Dict, List
 
 from genxai.core.agent.base import AgentFactory
+from genxai.core.agent.registry import AgentRegistry
 from genxai.core.agent.runtime import AgentRuntime
 from genxai.core.graph.engine import Graph, GraphExecutionError
 from genxai.core.graph.nodes import InputNode, OutputNode, AgentNode
@@ -83,10 +84,10 @@ async def test_offline_workflow_graph_executes():
 
     # Inject runtime directly for this test.
     runtime.set_memory(MemorySystem(agent_id=agent.id))
-    result = await graph.run(input_data={"message": "hello"})
+    state = await graph.run(input_data={"message": "hello"}, llm_provider=StubLLMProvider())
 
-    assert "input" in result
-    assert "agent" in result
+    assert "input" in state
+    assert "agent" in state
 
 
 @pytest.mark.integration
@@ -129,6 +130,21 @@ def test_tool_registry_offline():
 @pytest.mark.asyncio
 async def test_offline_branching_workflow():
     """Ensure conditional branching executes the expected path."""
+    agent_a = AgentFactory.create_agent(
+        id="agent_a",
+        role="Branch A Agent",
+        goal="Handle branch A",
+        llm_model="stub",
+    )
+    agent_b = AgentFactory.create_agent(
+        id="agent_b",
+        role="Branch B Agent",
+        goal="Handle branch B",
+        llm_model="stub",
+    )
+    AgentRegistry.register(agent_a)
+    AgentRegistry.register(agent_b)
+
     graph = Graph(name="offline_branching")
     graph.add_node(InputNode())
     graph.add_node(AgentNode(id="branch_a", agent_id="agent_a"))
@@ -140,7 +156,7 @@ async def test_offline_branching_workflow():
     graph.add_edge(Edge(source="branch_a", target="output"))
     graph.add_edge(Edge(source="branch_b", target="output"))
 
-    state = await graph.run(input_data={"route": "A"})
+    state = await graph.run(input_data={"route": "A"}, llm_provider=StubLLMProvider())
     assert "branch_a" in state
     assert "branch_b" not in state
 
@@ -149,6 +165,21 @@ async def test_offline_branching_workflow():
 @pytest.mark.asyncio
 async def test_offline_parallel_workflow():
     """Ensure parallel edges execute concurrently."""
+    agent_1 = AgentFactory.create_agent(
+        id="worker_1",
+        role="Worker 1",
+        goal="Handle parallel work",
+        llm_model="stub",
+    )
+    agent_2 = AgentFactory.create_agent(
+        id="worker_2",
+        role="Worker 2",
+        goal="Handle parallel work",
+        llm_model="stub",
+    )
+    AgentRegistry.register(agent_1)
+    AgentRegistry.register(agent_2)
+
     graph = Graph(name="offline_parallel")
     graph.add_node(InputNode())
     graph.add_node(AgentNode(id="worker_1", agent_id="worker_1"))
@@ -160,7 +191,7 @@ async def test_offline_parallel_workflow():
     graph.add_edge(Edge(source="worker_1", target="output"))
     graph.add_edge(Edge(source="worker_2", target="output"))
 
-    state = await graph.run(input_data={"task": "parallel"})
+    state = await graph.run(input_data={"task": "parallel"}, llm_provider=StubLLMProvider())
     assert "worker_1" in state
     assert "worker_2" in state
 
@@ -169,6 +200,14 @@ async def test_offline_parallel_workflow():
 @pytest.mark.asyncio
 async def test_offline_cyclic_workflow_guard():
     """Ensure cyclic workflows do not re-run completed nodes endlessly."""
+    loop_agent = AgentFactory.create_agent(
+        id="loop",
+        role="Loop Agent",
+        goal="Cycle through the workflow",
+        llm_model="stub",
+    )
+    AgentRegistry.register(loop_agent)
+
     graph = Graph(name="offline_cycle")
     graph.add_node(InputNode())
     graph.add_node(AgentNode(id="loop", agent_id="loop"))
@@ -176,7 +215,11 @@ async def test_offline_cyclic_workflow_guard():
     graph.add_edge(Edge(source="input", target="loop"))
     graph.add_edge(Edge(source="loop", target="loop"))
 
-    state = await graph.run(input_data={"task": "loop"}, max_iterations=3)
+    state = await graph.run(
+        input_data={"task": "loop"},
+        max_iterations=3,
+        llm_provider=StubLLMProvider(),
+    )
     assert state["iterations"] <= 3
 
 
@@ -184,6 +227,21 @@ async def test_offline_cyclic_workflow_guard():
 @pytest.mark.asyncio
 async def test_offline_edge_priority_ordering():
     """Ensure sequential edges respect priority ordering (lower priority runs first)."""
+    first_agent = AgentFactory.create_agent(
+        id="first",
+        role="First Agent",
+        goal="Run first",
+        llm_model="stub",
+    )
+    second_agent = AgentFactory.create_agent(
+        id="second",
+        role="Second Agent",
+        goal="Run second",
+        llm_model="stub",
+    )
+    AgentRegistry.register(first_agent)
+    AgentRegistry.register(second_agent)
+
     graph = Graph(name="offline_priority")
     graph.add_node(InputNode())
     graph.add_node(AgentNode(id="first", agent_id="first"))
@@ -195,7 +253,7 @@ async def test_offline_edge_priority_ordering():
     graph.add_edge(Edge(source="first", target="output"))
     graph.add_edge(Edge(source="second", target="output"))
 
-    state = await graph.run(input_data={"task": "priority"})
+    state = await graph.run(input_data={"task": "priority"}, llm_provider=StubLLMProvider())
     ordered = [key for key in state.keys() if key in {"first", "second"}]
     assert ordered == ["first", "second"]
 
@@ -204,6 +262,21 @@ async def test_offline_edge_priority_ordering():
 @pytest.mark.asyncio
 async def test_offline_conditional_metadata_parallel():
     """Ensure conditional + parallel edge metadata is honored."""
+    allowed_agent = AgentFactory.create_agent(
+        id="allowed",
+        role="Allowed Agent",
+        goal="Run when allowed",
+        llm_model="stub",
+    )
+    blocked_agent = AgentFactory.create_agent(
+        id="blocked",
+        role="Blocked Agent",
+        goal="Run when blocked",
+        llm_model="stub",
+    )
+    AgentRegistry.register(allowed_agent)
+    AgentRegistry.register(blocked_agent)
+
     graph = Graph(name="offline_conditional_parallel")
     graph.add_node(InputNode())
     graph.add_node(AgentNode(id="allowed", agent_id="allowed"))
@@ -229,6 +302,6 @@ async def test_offline_conditional_metadata_parallel():
     graph.add_edge(Edge(source="allowed", target="output"))
     graph.add_edge(Edge(source="blocked", target="output"))
 
-    state = await graph.run(input_data={"run": True})
+    state = await graph.run(input_data={"run": True}, llm_provider=StubLLMProvider())
     assert "allowed" in state
     assert "blocked" not in state

@@ -72,6 +72,7 @@ class SQLQueryTool(Tool):
         Returns:
             Dictionary containing query results
         """
+        engine = None
         try:
             from sqlalchemy import create_engine, text
             from sqlalchemy.exc import SQLAlchemyError
@@ -136,6 +137,9 @@ class SQLQueryTool(Tool):
             result["error"] = str(e)
         except Exception as e:
             result["error"] = f"Unexpected error: {str(e)}"
+        finally:
+            if engine is not None:
+                engine.dispose()
 
         logger.info(f"SQL query executed: success={result['success']}")
         return result

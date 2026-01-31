@@ -61,6 +61,7 @@ class DatabaseInspectorTool(Tool):
         Returns:
             Dictionary containing inspection results
         """
+        engine = None
         try:
             from sqlalchemy import create_engine, inspect
             from sqlalchemy.exc import SQLAlchemyError
@@ -148,6 +149,9 @@ class DatabaseInspectorTool(Tool):
             result["error"] = f"Database error: {str(e)}"
         except Exception as e:
             result["error"] = str(e)
+        finally:
+            if engine is not None:
+                engine.dispose()
 
         logger.info(f"Database inspection ({operation}) completed: success={result['success']}")
         return result

@@ -1,8 +1,10 @@
 """Google Gemini LLM provider implementation."""
 
 from typing import Any, Dict, Optional, AsyncIterator
+import importlib
 import os
 import logging
+import warnings
 
 from genxai.llm.base import LLMProvider, LLMResponse
 
@@ -42,8 +44,44 @@ class GoogleProvider(LLMProvider):
     def _initialize_client(self) -> None:
         """Initialize Google Generative AI client."""
         try:
-            import google.generativeai as genai
-            
+            genai = importlib.import_module("google.genai")
+
+            if hasattr(genai, "configure"):
+                genai.configure(api_key=self.api_key)
+
+            if hasattr(genai, "GenerativeModel"):
+                self._client = genai
+                self._model_instance = genai.GenerativeModel(self.model)
+                logger.info(f"Google Gemini client initialized with model: {self.model}")
+                return
+
+            if hasattr(genai, "Client"):
+                self._client = genai.Client(api_key=self.api_key)
+                models_attr = getattr(self._client, "models", None)
+                if models_attr and hasattr(models_attr, "get"):
+                    self._model_instance = models_attr.get(self.model)
+                elif hasattr(self._client, "get_model"):
+                    self._model_instance = self._client.get_model(self.model)
+                else:
+                    raise RuntimeError("google.genai client does not expose a model accessor")
+                logger.info(f"Google Gemini client initialized with model: {self.model}")
+                return
+
+            raise RuntimeError("google.genai does not expose a known client API")
+        except ImportError:
+            with warnings.catch_warnings():
+                warnings.filterwarnings(
+                    "ignore",
+                    category=FutureWarning,
+                    module=r"google\.generativeai",
+                )
+                warnings.filterwarnings(
+                    "ignore",
+                    message=r"All support for the `google.generativeai` package has ended.*",
+                    category=FutureWarning,
+                )
+                genai = importlib.import_module("google.generativeai")
+
             genai.configure(api_key=self.api_key)
             self._client = genai
             self._model_instance = genai.GenerativeModel(self.model)
@@ -51,7 +89,7 @@ class GoogleProvider(LLMProvider):
         except ImportError:
             logger.error(
                 "Google Generative AI package not installed. "
-                "Install with: pip install google-generativeai"
+                "Install with: pip install google-genai"
             )
             self._client = None
             self._model_instance = None

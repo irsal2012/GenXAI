@@ -1,9 +1,40 @@
 """Unit tests for graph components."""
 
 import pytest
+from typing import Any, AsyncIterator, Optional
+
+from genxai.core.agent.base import AgentFactory
+from genxai.core.agent.registry import AgentRegistry
 from genxai.core.graph.nodes import Node, NodeType, NodeConfig, InputNode, OutputNode, AgentNode
 from genxai.core.graph.edges import Edge, ConditionalEdge
 from genxai.core.graph.engine import Graph, GraphExecutionError
+from genxai.llm.base import LLMProvider, LLMResponse
+
+
+class MockLLMProvider(LLMProvider):
+    """Deterministic mock LLM provider for graph tests."""
+
+    def __init__(self) -> None:
+        super().__init__(model="mock-model", temperature=0.0)
+
+    async def generate(
+        self,
+        prompt: str,
+        system_prompt: Optional[str] = None,
+        **kwargs: Any,
+    ) -> LLMResponse:
+        usage = {"prompt_tokens": 5, "completion_tokens": 3, "total_tokens": 8}
+        self._update_stats(usage)
+        return LLMResponse(content="Mock response", model=self.model, usage=usage)
+
+    async def generate_stream(
+        self,
+        prompt: str,
+        system_prompt: Optional[str] = None,
+        **kwargs: Any,
+    ) -> AsyncIterator[str]:
+        yield "Mock "
+        yield "response"
 
 
 class TestNode:
@@ -227,6 +258,21 @@ class TestGraph:
     @pytest.mark.asyncio
     async def test_conditional_edge_execution(self) -> None:
         """Test graph execution with conditional edges."""
+        agent1 = AgentFactory.create_agent(
+            id="test_agent",
+            role="Agent 1",
+            goal="Test conditional edge",
+            llm_model="mock-model",
+        )
+        agent2 = AgentFactory.create_agent(
+            id="test_agent2",
+            role="Agent 2",
+            goal="Test conditional edge",
+            llm_model="mock-model",
+        )
+        AgentRegistry.register(agent1)
+        AgentRegistry.register(agent2)
+
         graph = Graph(name="conditional_test")
         node1 = InputNode()
         node2 = AgentNode(id="agent1", agent_id="test_agent")
@@ -246,5 +292,8 @@ class TestGraph:
         )
         graph.add_edge(Edge(source="agent2", target="output"))
 
-        result = await graph.run(input_data={"value": 10})
+        result = await graph.run(
+            input_data={"value": 10},
+            llm_provider=MockLLMProvider(),
+        )
         assert "input" in result
