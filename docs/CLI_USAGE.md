@@ -128,6 +128,7 @@ genxai tool export <tool_name> --format py --output ./tool.py
 ```bash
 # Export all schemas to a file (JSON)
 genxai tool export-schema --output tool_schemas.json
+# Output includes schema bundle version
 
 # Export all schemas to YAML
 genxai tool export-schema --format yaml --output tool_schemas.yaml
@@ -298,6 +299,11 @@ If tool import fails:
 1. Validate the JSON file format
 2. Check that the tool doesn't already exist
 3. Ensure all required fields are present
+
+### Schema Export Errors
+
+- **Invalid category**: run `genxai tool export-schema --category <category>` using a valid category value.
+- **YAML export requires PyYAML**: install with `pip install PyYAML` when using `--format yaml`.
 
 ### Permission Errors
 

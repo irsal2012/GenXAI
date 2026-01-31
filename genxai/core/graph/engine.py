@@ -211,6 +211,7 @@ class Graph:
         max_iterations: int = 100,
         state: Optional[Dict[str, Any]] = None,
         resume_from: Optional[WorkflowCheckpoint] = None,
+        llm_provider: Any = None,
     ) -> Dict[str, Any]:
         """Execute the graph workflow.
 
@@ -265,6 +266,9 @@ class Graph:
 
         logger.info(f"Starting graph execution: {self.name}")
         logger.debug(f"Entry points: {entry_points}")
+
+        if llm_provider is not None:
+            state["llm_provider"] = llm_provider
 
         # Execute from entry points
         try:
@@ -430,7 +434,8 @@ class Graph:
 
         task = node.config.data.get("task") or state.get("task") or "Process input"
 
-        runtime = AgentRuntime(agent=agent, enable_memory=True)
+        llm_provider = state.get("llm_provider")
+        runtime = AgentRuntime(agent=agent, llm_provider=llm_provider, enable_memory=True)
         if agent.config.tools:
             tools: Dict[str, Any] = {}
             for tool_name in agent.config.tools:
@@ -795,6 +800,9 @@ class WorkflowEngine(Graph):
 
         # Ensure max_iterations propagates.
         max_iterations = kwargs.pop("max_iterations", 100)
+
+        if llm_provider is not None:
+            state["llm_provider"] = llm_provider
 
         # Execute from specified start node.
         await self._execute_node(start_node, state, max_iterations)

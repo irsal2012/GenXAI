@@ -2,8 +2,11 @@
 
 import pytest
 import os
+import sys
 import asyncio
 import importlib.util
+from pathlib import Path
+from dotenv import load_dotenv
 from typing import Dict, Any
 
 from genxai.llm.factory import LLMProviderFactory
@@ -12,6 +15,15 @@ from genxai.tools.registry import ToolRegistry
 from genxai.core.agent.base import Agent, AgentConfig, AgentType
 from genxai.core.agent.runtime import AgentRuntime
 
+TESTS_ROOT = Path(__file__).resolve().parents[1]
+if str(TESTS_ROOT) not in sys.path:
+    sys.path.insert(0, str(TESTS_ROOT))
+
+from utils.mock_llm import MockLLMProvider
+
+
+# Load environment variables from .env if present
+load_dotenv()
 
 # ==================== LLM Provider Fixtures ====================
 
@@ -59,6 +71,12 @@ def cohere_provider():
 def default_llm_provider(openai_provider):
     """Default LLM provider for tests (OpenAI)."""
     return openai_provider
+
+
+@pytest.fixture(scope="session")
+def mock_llm_provider():
+    """Mock LLM provider for tests."""
+    return MockLLMProvider()
 
 
 # ==================== Memory System Fixtures ====================

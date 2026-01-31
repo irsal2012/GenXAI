@@ -1,7 +1,7 @@
 """Database models for tools."""
 
 from sqlalchemy import Column, Integer, String, Text, JSON, DateTime
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import declarative_base
 from datetime import datetime
 
 Base = declarative_base()
