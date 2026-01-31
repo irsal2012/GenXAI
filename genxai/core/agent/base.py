@@ -1,7 +1,7 @@
 """Base agent class and configuration."""
 
 from typing import Any, Dict, List, Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from enum import Enum
 import logging
 
@@ -20,6 +20,8 @@ class AgentType(str, Enum):
 
 class AgentConfig(BaseModel):
     """Configuration for an agent."""
+
+    model_config = ConfigDict(use_enum_values=True)
 
     role: str = Field(..., description="Role of the agent")
     goal: str = Field(..., description="Goal the agent should achieve")
@@ -51,14 +53,12 @@ class AgentConfig(BaseModel):
     # Metadata
     metadata: Dict[str, Any] = Field(default_factory=dict)
 
-    class Config:
-        """Pydantic configuration."""
-
-        use_enum_values = True
 
 
 class Agent(BaseModel):
     """Base agent class."""
+
+    model_config = ConfigDict(arbitrary_types_allowed=True, extra="allow")
 
     id: str = Field(..., description="Unique agent identifier")
     config: AgentConfig
@@ -68,11 +68,6 @@ class Agent(BaseModel):
     _total_tokens: int = 0
     _last_result: Optional[Any] = None
 
-    class Config:
-        """Pydantic configuration."""
-
-        arbitrary_types_allowed = True
-        underscore_attrs_are_private = True
 
     def __init__(self, id: str, config: AgentConfig, **kwargs: Any) -> None:
         """Initialize agent.

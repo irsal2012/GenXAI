@@ -1,9 +1,10 @@
 """Agent runtime for executing agents with LLM integration."""
 
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, List
 import asyncio
 import time
 import logging
+import json
 
 from genxai.core.agent.base import Agent
 from genxai.llm.base import LLMProvider
@@ -165,11 +166,13 @@ class AgentRuntime:
         prompt = self._build_prompt(task, context, "")
         
         # Get LLM response with retry logic and memory context
-        response = await self._get_llm_response_with_retry(prompt, memory_context)
-        
-        # Process tools if needed
-        if self.agent.config.tools and self._tools:
-            response = await self._process_tools(response, context)
+        if self.agent.config.tools and self._tools and self._provider_supports_tools():
+            response = await self._get_llm_response_with_tools(prompt, memory_context, context)
+        else:
+            response = await self._get_llm_response_with_retry(prompt, memory_context)
+            # Process tools if needed (legacy parsing)
+            if self.agent.config.tools and self._tools:
+                response = await self._process_tools(response, context)
         
         # Update memory if enabled
         if self.agent.config.enable_memory and self._memory:
@@ -416,6 +419,162 @@ class AgentRuntime:
         raise RuntimeError(
             f"LLM call failed after {max_retries} attempts. Last error: {last_error}"
         ) from last_error
+
+    def _provider_supports_tools(self) -> bool:
+        """Check if the configured provider supports schema-based tool calling."""
+        if not self._llm_provider:
+            return False
+        return self._llm_provider.__class__.__name__ == "OpenAIProvider"
+
+    def _build_tool_schemas(self) -> List[Dict[str, Any]]:
+        """Build OpenAI-compatible tool schemas from registered tools."""
+        schemas: List[Dict[str, Any]] = []
+        for tool in self._tools.values():
+            if hasattr(tool, "get_schema"):
+                schema = tool.get_schema()
+                parameters = schema.get("parameters") or {
+                    "type": "object",
+                    "properties": {},
+                    "required": [],
+                }
+                schemas.append(
+                    {
+                        "type": "function",
+                        "function": {
+                            "name": schema.get("name", tool.metadata.name),
+                            "description": schema.get("description", ""),
+                            "parameters": parameters,
+                        },
+                    }
+                )
+            else:
+                schemas.append(
+                    {
+                        "type": "function",
+                        "function": {
+                            "name": tool.metadata.name,
+                            "description": tool.metadata.description,
+                            "parameters": {"type": "object", "properties": {}},
+                        },
+                    }
+                )
+        return schemas
+
+    async def _get_llm_response_with_tools(
+        self,
+        prompt: str,
+        memory_context: str,
+        context: Dict[str, Any],
+    ) -> str:
+        """Get response from LLM using schema-based tool calling."""
+        if not self._llm_provider:
+            raise RuntimeError(
+                f"Agent {self.agent.id} has no LLM provider. "
+                "Provide an API key or set OPENAI_API_KEY environment variable."
+            )
+
+        system_prompt = self._build_system_prompt()
+        system_prompt, prompt, memory_context = manage_context_window(
+            system_prompt=system_prompt,
+            user_prompt=prompt,
+            memory_context=memory_context,
+            model=self.agent.config.llm_model,
+            reserve_tokens=self.agent.config.llm_max_tokens or 1000,
+        )
+
+        if memory_context:
+            prompt = f"{memory_context}\n\n{prompt}"
+
+        tool_schemas = self._build_tool_schemas()
+        messages: List[Dict[str, Any]] = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": prompt},
+        ]
+
+        response = await self._llm_provider.generate_chat(
+            messages=messages,
+            tools=tool_schemas,
+            tool_choice="auto",
+        )
+
+        tool_calls = self._extract_tool_calls(response.metadata.get("tool_calls"))
+        if not tool_calls:
+            return response.content
+
+        tool_messages: List[Dict[str, Any]] = []
+        for call in tool_calls:
+            result = await self._execute_tool(
+                {"name": call["name"], "arguments": call["arguments"]},
+                context,
+            )
+            serialized = self._serialize_tool_result(result)
+            tool_messages.append(
+                {
+                    "role": "tool",
+                    "tool_call_id": call["id"],
+                    "content": json.dumps(serialized, default=str),
+                }
+            )
+
+        assistant_message = {
+            "role": "assistant",
+            "content": response.content or "",
+            "tool_calls": [call["raw"] for call in tool_calls],
+        }
+        messages.append(assistant_message)
+        messages.extend(tool_messages)
+
+        final_response = await self._llm_provider.generate_chat(
+            messages=messages,
+            tools=tool_schemas,
+            tool_choice="none",
+        )
+        return final_response.content
+
+    def _extract_tool_calls(self, raw_calls: Any) -> List[Dict[str, Any]]:
+        """Normalize tool calls returned by the LLM provider."""
+        if not raw_calls:
+            return []
+
+        tool_calls: List[Dict[str, Any]] = []
+        for call in raw_calls:
+            normalized = call
+            if hasattr(call, "model_dump"):
+                normalized = call.model_dump()
+            elif hasattr(call, "dict"):
+                normalized = call.dict()
+            elif hasattr(call, "__dict__"):
+                normalized = call.__dict__
+
+            function_payload = normalized.get("function") if isinstance(normalized, dict) else None
+            if not function_payload:
+                continue
+
+            name = function_payload.get("name")
+            arguments_raw = function_payload.get("arguments", "{}")
+            try:
+                arguments = json.loads(arguments_raw) if isinstance(arguments_raw, str) else arguments_raw
+            except json.JSONDecodeError:
+                arguments = {}
+
+            tool_calls.append(
+                {
+                    "id": normalized.get("id") or f"tool_call_{name}",
+                    "name": name,
+                    "arguments": arguments or {},
+                    "raw": normalized,
+                }
+            )
+
+        return tool_calls
+
+    def _serialize_tool_result(self, result: Any) -> Any:
+        """Convert tool result into JSON-serializable data."""
+        if hasattr(result, "model_dump"):
+            return result.model_dump()
+        if hasattr(result, "dict"):
+            return result.dict()
+        return result
 
     async def stream_execute(
         self,

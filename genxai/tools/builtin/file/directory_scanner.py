@@ -49,6 +49,7 @@ class DirectoryScannerTool(Tool):
                 type="string",
                 description="File pattern to match (e.g., '*.py', '*.txt')",
                 required=False,
+                pattern=r"^\*?\.\w+$",
             ),
             ToolParameter(
                 name="max_depth",

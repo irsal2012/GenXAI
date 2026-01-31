@@ -26,6 +26,7 @@ class WebhookCallerTool(Tool):
                 name="url",
                 type="string",
                 description="Webhook URL",
+                pattern=r"^https?://",
                 required=True,
             ),
             ToolParameter(

@@ -50,6 +50,62 @@ Shows all GenXAI features with detailed explanations.
 
 **Note:** This example is educational but uses simulated execution.
 
+### 4. `llm_agent_example.py` - LLM Agent Variations
+
+Demonstrates:
+- Basic agent execution with real LLMs
+- Personality/backstory
+- Deliberative agent behavior
+- Batch execution
+
+### 5. `agent_with_tools_example.py` - Tool-Enabled Agent
+
+Shows how to register and attach tools to a runtime.
+
+### 6. `agent_registry_example.py` - Agent Registry Basics
+
+Register agents globally and retrieve them by ID.
+
+### 7. `memory_system_example.py` - Memory System Overview
+
+Exercises short-term, long-term, semantic, and procedural memories.
+
+### 8. `tool_registry_example.py` - Tool Registry Stats
+
+Lists built-in tools and prints a tool schema.
+
+### 9. `tool_execution_example.py` - Run a Built-in Tool
+
+Executes the calculator tool without an LLM.
+
+### 10. `graph_visualization_example.py` - Workflow Visualization
+
+Generates ASCII, Mermaid, and DOT outputs from a graph.
+
+### 11. `workflow_engine_example.py` - WorkflowEngine Wrapper
+
+Demonstrates the compatibility `WorkflowEngine` execute call.
+
+### 12. `routed_llm_provider_example.py` - Routed LLM Provider
+
+Shows a primary model with fallback providers.
+
+### 13. `agent_with_memory_tools_example.py` - Tools + Memory Runtime
+
+Combines tool execution and memory context in a single agent.
+
+### 14. `function_calling_tools_example.py` - Schema-Based Tool Calling
+
+Uses OpenAI function calling to select tools via schemas.
+
+### 15. `simple_workflow.py` - Intro Workflow
+
+Basic graph setup example.
+
+### 16. `end_to_end_example.py` - Full Walkthrough
+
+Comprehensive end-to-end flow.
+
 ## Key Differences
 
 | Feature | testable_workflow.py | simple_workflow.py | end_to_end_example.py |

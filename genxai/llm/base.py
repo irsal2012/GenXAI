@@ -1,7 +1,7 @@
 """Base LLM provider interface."""
 
 from typing import Any, Dict, List, Optional, AsyncIterator
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from abc import ABC, abstractmethod
 import logging
 
@@ -11,16 +11,14 @@ logger = logging.getLogger(__name__)
 class LLMResponse(BaseModel):
     """Response from LLM provider."""
 
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
     content: str = Field(..., description="Generated content")
     model: str = Field(..., description="Model used")
     usage: Dict[str, int] = Field(default_factory=dict, description="Token usage")
     finish_reason: Optional[str] = Field(None, description="Reason for completion")
     metadata: Dict[str, Any] = Field(default_factory=dict, description="Additional metadata")
 
-    class Config:
-        """Pydantic configuration."""
-
-        arbitrary_types_allowed = True
 
 
 class LLMProvider(ABC):

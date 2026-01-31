@@ -18,6 +18,7 @@ GenXAI now has **full LLM integration** with agents! Agents can now call real LL
 ✅ **Token Tracking** - Automatic tracking of token usage per agent  
 ✅ **Error Handling** - Graceful fallbacks and clear error messages  
 ✅ **Multiple Models** - Support for GPT-4, GPT-3.5-turbo, and more  
+✅ **Schema-Based Tool Calling** - OpenAI function calling with tool schemas
 
 ---
 
@@ -299,6 +300,37 @@ for task, result in zip(tasks, results):
 ```
 
 ---
+
+## Schema-Based Tool Calling (OpenAI)
+
+GenXAI can pass tool schemas directly to OpenAI models that support function
+calling. This avoids brittle regex parsing and lets models call tools via the
+native tool calling API.
+
+```python
+import os
+from genxai.core.agent.base import AgentFactory
+from genxai.core.agent.runtime import AgentRuntime
+from genxai.tools.registry import ToolRegistry
+from genxai.tools.builtin import *  # noqa: F403 - auto-register tools
+
+agent = AgentFactory.create_agent(
+    id="tool_agent",
+    role="Math Helper",
+    goal="Use tools when needed",
+    tools=["calculator"],
+    llm_model="gpt-4",
+)
+
+runtime = AgentRuntime(agent=agent, api_key=os.getenv("OPENAI_API_KEY"))
+tools = {tool.metadata.name: tool for tool in ToolRegistry.list_all()}
+runtime.set_tools(tools)
+
+result = await runtime.execute(
+    task="Use the calculator tool to compute 42 * 7."
+)
+print(result["output"])
+```
 
 ## API Reference
 
@@ -720,7 +752,7 @@ pip install cohere
 - [ ] **AWS Bedrock** - Claude, Llama via AWS
 - [ ] **Response Caching** - Cache LLM responses for repeated queries
 - [ ] **Streaming UI** - Real-time streaming in Studio
-- [ ] **Function Calling** - Native tool use with OpenAI function calling
+- [x] **Function Calling** - Native tool use with OpenAI function calling
 - [ ] **Cost Tracking** - Detailed cost analysis per agent/task
 - [ ] **Rate Limiting** - Automatic rate limit handling
 - [ ] **Retry Logic** - Exponential backoff for failures

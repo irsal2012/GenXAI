@@ -10,6 +10,8 @@ from rich import print as rprint
 
 from genxai.tools.persistence import ToolService
 from genxai.tools.base import ToolCategory
+from genxai.tools.registry import ToolRegistry
+from genxai.tools.builtin import *  # noqa: F403 - register built-in tools
 
 console = Console()
 
@@ -221,6 +223,49 @@ Category: {tool_model.category}
         
     except Exception as e:
         console.print(f"[red]Error exporting tool: {e}[/red]")
+        raise click.Abort()
+
+
+@tool.command("export-schema")
+@click.option('--output', '-o', help='Output file path', default='tool_schemas.json')
+@click.option('--category', help='Filter by category')
+@click.option('--stdout', is_flag=True, help='Print schema bundle to stdout')
+@click.option('--format', 'output_format', type=click.Choice(['json', 'yaml']), default='json', help='Output format')
+def export_schema(output: str, category: Optional[str], stdout: bool, output_format: str):
+    """Export consolidated tool schema bundle to JSON."""
+    try:
+        category_filter = ToolCategory(category) if category else None
+        bundle = ToolRegistry.export_schema_bundle(category=category_filter)
+
+        if stdout:
+            if output_format == 'yaml':
+                try:
+                    import yaml
+                except ImportError as exc:
+                    raise ImportError(
+                        "PyYAML is required for YAML output. Install with: pip install PyYAML"
+                    ) from exc
+                click.echo(yaml.safe_dump(bundle, sort_keys=False))
+            else:
+                click.echo(json.dumps(bundle, indent=2))
+            return
+
+        if output_format == 'yaml' and not output.lower().endswith((".yaml", ".yml")):
+            output = f"{output}.yaml"
+
+        export_path = ToolRegistry.export_schema_bundle_to_file(
+            output,
+            category=category_filter,
+        )
+        console.print(
+            f"[green]✓ Tool schema bundle (v{ToolRegistry.SCHEMA_VERSION}) exported to {export_path}[/green]"
+        )
+    except ValueError:
+        console.print(f"[red]Invalid category: {category}[/red]")
+        console.print(f"Valid categories: {', '.join([c.value for c in ToolCategory])}")
+        raise click.Abort()
+    except Exception as e:
+        console.print(f"[red]Error exporting tool schemas: {e}[/red]")
         raise click.Abort()
 
 

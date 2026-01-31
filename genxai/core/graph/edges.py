@@ -2,11 +2,13 @@
 
 from enum import Enum
 from typing import Any, Callable, Dict, Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 
 
 class Edge(BaseModel):
     """Edge connecting two nodes in the graph."""
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
     source: str
     target: str
@@ -14,10 +16,6 @@ class Edge(BaseModel):
     metadata: Dict[str, Any] = Field(default_factory=dict)
     priority: int = 0  # For ordering multiple edges from same source
 
-    class Config:
-        """Pydantic configuration."""
-
-        arbitrary_types_allowed = True
 
     def __repr__(self) -> str:
         """String representation of the edge."""

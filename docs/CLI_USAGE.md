@@ -123,6 +123,25 @@ genxai tool export <tool_name> --output ./backup/tool.json
 genxai tool export <tool_name> --format py --output ./tool.py
 ```
 
+### Export Tool Schema Bundle
+
+```bash
+# Export all schemas to a file (JSON)
+genxai tool export-schema --output tool_schemas.json
+
+# Export all schemas to YAML
+genxai tool export-schema --format yaml --output tool_schemas.yaml
+
+# Export only web tool schemas
+genxai tool export-schema --category web --output web_tool_schemas.json
+
+# Print schemas to stdout (JSON default)
+genxai tool export-schema --stdout
+
+# Print schemas to stdout as YAML
+genxai tool export-schema --stdout --format yaml
+```
+
 ### Import Tool
 
 Import a tool from a JSON file:

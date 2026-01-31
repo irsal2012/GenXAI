@@ -1,7 +1,7 @@
 """Base memory classes and types."""
 
 from typing import Any, Dict, List, Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from datetime import datetime
 from enum import Enum
 
@@ -20,6 +20,8 @@ class MemoryType(str, Enum):
 class Memory(BaseModel):
     """Base memory unit."""
 
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
     id: str
     type: MemoryType
     content: Any
@@ -32,10 +34,6 @@ class Memory(BaseModel):
     embedding: Optional[List[float]] = None
     tags: List[str] = Field(default_factory=list)
 
-    class Config:
-        """Pydantic configuration."""
-
-        arbitrary_types_allowed = True
 
     def __repr__(self) -> str:
         """String representation."""
@@ -44,6 +42,8 @@ class Memory(BaseModel):
 
 class MemoryConfig(BaseModel):
     """Configuration for memory system."""
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
     # Capacity settings
     short_term_capacity: int = Field(default=20, ge=1)
@@ -70,7 +70,3 @@ class MemoryConfig(BaseModel):
     embedding_model: str = "text-embedding-ada-002"
     embedding_dimension: int = 1536
 
-    class Config:
-        """Pydantic configuration."""
-
-        arbitrary_types_allowed = True

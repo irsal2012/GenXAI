@@ -28,6 +28,7 @@ class APICallerTool(Tool):
                 type="string",
                 description="API endpoint URL",
                 required=True,
+                pattern=r"^https?://",
             ),
             ToolParameter(
                 name="method",

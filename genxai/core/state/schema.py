@@ -1,20 +1,18 @@
 """State schema definition and validation."""
 
 from typing import Any, Dict, Optional, Type
-from pydantic import BaseModel, Field, create_model
+from pydantic import BaseModel, Field, create_model, ConfigDict
 
 
 class StateSchema(BaseModel):
     """Schema for workflow state."""
 
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
     fields: Dict[str, Type[Any]] = Field(default_factory=dict)
     required_fields: set[str] = Field(default_factory=set)
     metadata: Dict[str, Any] = Field(default_factory=dict)
 
-    class Config:
-        """Pydantic configuration."""
-
-        arbitrary_types_allowed = True
 
     def validate_state(self, state: Dict[str, Any]) -> bool:
         """Validate state against schema.

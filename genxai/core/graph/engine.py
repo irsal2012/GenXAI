@@ -9,6 +9,9 @@ import copy
 from pathlib import Path
 
 from genxai.core.graph.nodes import Node, NodeStatus, NodeType
+from genxai.core.agent.registry import AgentRegistry
+from genxai.core.agent.runtime import AgentRuntime
+from genxai.tools.registry import ToolRegistry
 from genxai.core.graph.edges import Edge
 from genxai.core.graph.checkpoints import (
     WorkflowCheckpoint,
@@ -383,8 +386,6 @@ class Graph:
     async def _execute_node_logic(self, node: Node, state: Dict[str, Any]) -> Any:
         """Execute the actual logic of a node.
 
-        This is a placeholder that will be replaced with actual node executors.
-
         Args:
             node: Node to execute
             state: Current state
@@ -392,14 +393,84 @@ class Graph:
         Returns:
             Result of node execution
         """
-        # Placeholder implementation
         if node.type == NodeType.INPUT:
             return copy.deepcopy(state.get("input"))
-        elif node.type == NodeType.OUTPUT:
+
+        if node.type == NodeType.OUTPUT:
             return copy.deepcopy(state)
-        else:
-            # For now, just return a placeholder
-            return {"node_id": node.id, "type": node.type.value}
+
+        if node.type == NodeType.AGENT:
+            return await self._execute_agent_node(node, state)
+
+        if node.type == NodeType.TOOL:
+            return await self._execute_tool_node(node, state)
+
+        # Default fallback for unsupported nodes
+        return {"node_id": node.id, "type": node.type.value}
+
+    async def _execute_agent_node(self, node: Node, state: Dict[str, Any]) -> Dict[str, Any]:
+        """Execute an AgentNode using AgentRuntime.
+
+        Args:
+            node: Agent node to execute
+            state: Current workflow state
+
+        Returns:
+            Agent execution result
+        """
+        agent_id = node.config.data.get("agent_id")
+        if not agent_id:
+            raise GraphExecutionError(
+                f"Agent node '{node.id}' missing agent_id in config.data"
+            )
+
+        agent = AgentRegistry.get(agent_id)
+        if agent is None:
+            raise GraphExecutionError(f"Agent '{agent_id}' not found in registry")
+
+        task = node.config.data.get("task") or state.get("task") or "Process input"
+
+        runtime = AgentRuntime(agent=agent, enable_memory=True)
+        if agent.config.tools:
+            tools: Dict[str, Any] = {}
+            for tool_name in agent.config.tools:
+                tool = ToolRegistry.get(tool_name)
+                if tool:
+                    tools[tool_name] = tool
+            runtime.set_tools(tools)
+
+        return await runtime.execute(task, context=state)
+
+    async def _execute_tool_node(self, node: Node, state: Dict[str, Any]) -> Any:
+        """Execute a ToolNode using ToolRegistry.
+
+        Args:
+            node: Tool node to execute
+            state: Current workflow state
+
+        Returns:
+            Tool execution result
+        """
+        tool_name = node.config.data.get("tool_name")
+        if not tool_name:
+            raise GraphExecutionError(
+                f"Tool node '{node.id}' missing tool_name in config.data"
+            )
+
+        tool = ToolRegistry.get(tool_name)
+        if tool is None:
+            raise GraphExecutionError(f"Tool '{tool_name}' not found in registry")
+
+        tool_params = node.config.data.get("tool_params", {})
+        if tool_params is None:
+            tool_params = {}
+        if not isinstance(tool_params, dict):
+            raise GraphExecutionError(
+                f"Tool node '{node.id}' tool_params must be a dict"
+            )
+
+        result = await tool.execute(**tool_params)
+        return result.model_dump() if hasattr(result, "model_dump") else result
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert graph to dictionary representation.
@@ -413,7 +484,7 @@ class Graph:
                 {
                     "id": node.id,
                     "type": node.type.value,
-                    "config": node.config.dict(),
+                    "config": node.config.model_dump(),
                     "status": node.status.value,
                 }
                 for node in self.nodes.values()
@@ -711,9 +782,8 @@ class WorkflowEngine(Graph):
         """Execute a workflow starting from a given node.
 
         Notes:
-            - In this open-source runtime, agent execution is provided by EnhancedGraph
-              (see `genxai.core.graph.executor`). WorkflowEngine focuses on graph
-              orchestration and state flow.
+            - WorkflowEngine uses the core Graph execution pipeline, which now
+              executes AgentNode + ToolNode via AgentRuntime/ToolRegistry.
             - Integration tests pass `llm_provider`, but Graph does not need it.
               It's accepted here for compatibility.
         """

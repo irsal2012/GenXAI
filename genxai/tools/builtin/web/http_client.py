@@ -27,6 +27,7 @@ class HTTPClientTool(Tool):
                 type="string",
                 description="Target URL",
                 required=True,
+                pattern=r"^https?://",
             ),
             ToolParameter(
                 name="method",

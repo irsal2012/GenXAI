@@ -1,7 +1,7 @@
 """Message bus for agent-to-agent communication."""
 
 from typing import Any, Dict, List, Optional, Callable
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from datetime import datetime
 from collections import defaultdict
 import asyncio
@@ -13,6 +13,8 @@ logger = logging.getLogger(__name__)
 class Message(BaseModel):
     """Message for agent communication."""
 
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
     id: str
     sender: str
     recipient: Optional[str] = None  # None for broadcast
@@ -22,10 +24,6 @@ class Message(BaseModel):
     timestamp: datetime = Field(default_factory=datetime.now)
     reply_to: Optional[str] = None
 
-    class Config:
-        """Pydantic configuration."""
-
-        arbitrary_types_allowed = True
 
 
 class MessageBus:

@@ -1,7 +1,7 @@
 """Base tool classes for GenXAI."""
 
 from typing import Any, Dict, List, Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from enum import Enum
 from abc import ABC, abstractmethod
 import time
@@ -32,6 +32,8 @@ class ToolCategory(str, Enum):
 class ToolParameter(BaseModel):
     """Tool parameter definition."""
 
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
     name: str
     type: str  # string, number, boolean, array, object
     description: str
@@ -42,10 +44,6 @@ class ToolParameter(BaseModel):
     max_value: Optional[float] = None
     pattern: Optional[str] = None  # Regex pattern for strings
 
-    class Config:
-        """Pydantic configuration."""
-
-        arbitrary_types_allowed = True
 
 
 class ToolMetadata(BaseModel):
@@ -64,16 +62,14 @@ class ToolMetadata(BaseModel):
 class ToolResult(BaseModel):
     """Tool execution result."""
 
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
     success: bool
     data: Any
     error: Optional[str] = None
     metadata: Dict[str, Any] = Field(default_factory=dict)
     execution_time: float = 0.0
 
-    class Config:
-        """Pydantic configuration."""
-
-        arbitrary_types_allowed = True
 
 
 class Tool(ABC):
@@ -292,6 +288,27 @@ class Tool(ABC):
         Returns:
             Tool schema dictionary
         """
+        def _build_param_schema(param: ToolParameter) -> Dict[str, Any]:
+            schema: Dict[str, Any] = {
+                "type": param.type,
+                "description": param.description,
+            }
+
+            if param.enum:
+                schema["enum"] = param.enum
+            if param.default is not None:
+                schema["default"] = param.default
+            if param.pattern:
+                schema["pattern"] = param.pattern
+
+            if param.type == "number":
+                if param.min_value is not None:
+                    schema["minimum"] = param.min_value
+                if param.max_value is not None:
+                    schema["maximum"] = param.max_value
+
+            return schema
+
         return {
             "name": self.metadata.name,
             "description": self.metadata.description,
@@ -299,16 +316,7 @@ class Tool(ABC):
             "parameters": {
                 "type": "object",
                 "properties": {
-                    param.name: {
-                        "type": param.type,
-                        "description": param.description,
-                        **({"enum": param.enum} if param.enum else {}),
-                        **(
-                            {"default": param.default}
-                            if param.default is not None
-                            else {}
-                        ),
-                    }
+                    param.name: _build_param_schema(param)
                     for param in self.parameters
                 },
                 "required": [p.name for p in self.parameters if p.required],

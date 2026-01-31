@@ -29,6 +29,7 @@ class URLValidatorTool(Tool):
                 type="string",
                 description="URL to validate",
                 required=True,
+                pattern=r"^https?://",
             ),
             ToolParameter(
                 name="check_accessibility",

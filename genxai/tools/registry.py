@@ -1,6 +1,6 @@
 """Tool registry for managing available tools."""
 
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 import logging
 
 from genxai.tools.base import Tool, ToolCategory
@@ -11,6 +11,7 @@ logger = logging.getLogger(__name__)
 class ToolRegistry:
     """Central registry for all tools."""
 
+    SCHEMA_VERSION = "1.0"
     _instance: Optional["ToolRegistry"] = None
     _tools: Dict[str, Tool] = {}
 
@@ -144,6 +145,64 @@ class ToolRegistry:
         """Clear all registered tools."""
         cls._tools.clear()
         logger.info("Cleared all tools from registry")
+
+    @classmethod
+    def export_schema_bundle(cls, category: Optional[ToolCategory] = None) -> Dict[str, Any]:
+        """Export a consolidated schema bundle for all registered tools.
+
+        Returns:
+            Dictionary containing tool schemas and metadata.
+        """
+        tools = [
+            tool.get_schema()
+            for tool in cls._tools.values()
+            if not category or tool.metadata.category == category
+        ]
+        categories = {}
+        for tool in cls._tools.values():
+            if category and tool.metadata.category != category:
+                continue
+            category = tool.metadata.category.value
+            categories[category] = categories.get(category, 0) + 1
+
+        return {
+            "schema_version": cls.SCHEMA_VERSION,
+            "tool_count": len(tools),
+            "categories": categories,
+            "tools": tools,
+        }
+
+    @classmethod
+    def export_schema_bundle_to_file(
+        cls,
+        path: str,
+        category: Optional[ToolCategory] = None,
+    ) -> str:
+        """Export tool schemas to a JSON file.
+
+        Args:
+            path: Output file path
+
+        Returns:
+            Absolute path to the exported file
+        """
+        from pathlib import Path
+
+        output_path = Path(path)
+        bundle = cls.export_schema_bundle(category=category)
+        if output_path.suffix.lower() in {".yaml", ".yml"}:
+            try:
+                import yaml
+            except ImportError as exc:
+                raise ImportError(
+                    "PyYAML is required for YAML output. Install with: pip install PyYAML"
+                ) from exc
+            output_path.write_text(yaml.safe_dump(bundle, sort_keys=False))
+        else:
+            import json
+
+            output_path.write_text(json.dumps(bundle, indent=2))
+        return str(output_path.resolve())
 
     @classmethod
     def get_stats(cls) -> Dict[str, any]:

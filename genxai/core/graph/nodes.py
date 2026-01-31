@@ -2,7 +2,7 @@
 
 from enum import Enum
 from typing import Any, Dict, Optional, Protocol
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 
 
 class NodeType(str, Enum):
@@ -19,6 +19,8 @@ class NodeType(str, Enum):
 
 class NodeConfig(BaseModel):
     """Configuration for a node."""
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
     type: NodeType
     data: Dict[str, Any] = Field(default_factory=dict)
@@ -38,6 +40,8 @@ class NodeStatus(str, Enum):
 class Node(BaseModel):
     """Base node in the execution graph."""
 
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
     id: str
     type: NodeType
     config: NodeConfig
@@ -45,10 +49,6 @@ class Node(BaseModel):
     result: Optional[Any] = None
     error: Optional[str] = None
 
-    class Config:
-        """Pydantic configuration."""
-
-        arbitrary_types_allowed = True
 
     def __repr__(self) -> str:
         """String representation of the node."""

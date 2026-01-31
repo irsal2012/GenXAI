@@ -97,6 +97,12 @@ class OpenAIProvider(LLMProvider):
         if self.max_tokens:
             params["max_tokens"] = kwargs.get("max_tokens", self.max_tokens)
 
+        # Tool calling parameters
+        if "tools" in kwargs:
+            params["tools"] = kwargs["tools"]
+        if "tool_choice" in kwargs:
+            params["tool_choice"] = kwargs["tool_choice"]
+
         # Add additional parameters
         for key in ["top_p", "frequency_penalty", "presence_penalty", "stop"]:
             if key in kwargs:
@@ -107,7 +113,8 @@ class OpenAIProvider(LLMProvider):
             response = await self._client.chat.completions.create(**params)
 
             # Extract response
-            content = response.choices[0].message.content or ""
+            message = response.choices[0].message
+            content = message.content or ""
             finish_reason = response.choices[0].finish_reason
 
             # Extract usage
@@ -125,7 +132,10 @@ class OpenAIProvider(LLMProvider):
                 model=response.model,
                 usage=usage,
                 finish_reason=finish_reason,
-                metadata={"response_id": response.id},
+                metadata={
+                    "response_id": response.id,
+                    "tool_calls": message.tool_calls if hasattr(message, "tool_calls") else None,
+                },
             )
 
         except Exception as e:
@@ -210,10 +220,17 @@ class OpenAIProvider(LLMProvider):
         if self.max_tokens:
             params["max_tokens"] = kwargs.get("max_tokens", self.max_tokens)
 
+        # Tool calling parameters
+        if "tools" in kwargs:
+            params["tools"] = kwargs["tools"]
+        if "tool_choice" in kwargs:
+            params["tool_choice"] = kwargs["tool_choice"]
+
         try:
             response = await self._client.chat.completions.create(**params)
 
-            content = response.choices[0].message.content or ""
+            message = response.choices[0].message
+            content = message.content or ""
             finish_reason = response.choices[0].finish_reason
 
             usage = {
@@ -229,7 +246,10 @@ class OpenAIProvider(LLMProvider):
                 model=response.model,
                 usage=usage,
                 finish_reason=finish_reason,
-                metadata={"response_id": response.id},
+                metadata={
+                    "response_id": response.id,
+                    "tool_calls": message.tool_calls if hasattr(message, "tool_calls") else None,
+                },
             )
 
         except Exception as e:

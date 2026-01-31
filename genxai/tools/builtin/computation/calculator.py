@@ -38,6 +38,7 @@ class CalculatorTool(Tool):
                 name="expression",
                 type="string",
                 description="Mathematical expression to evaluate (e.g., '2 + 2', '10 * 5 + 3')",
+                pattern=r"^[0-9+\-*/().\s]+$",
             )
         ]
 
@@ -83,8 +84,6 @@ class CalculatorTool(Tool):
         """
         if isinstance(node, ast.Constant):  # Python 3.8+
             return float(node.value)
-        elif isinstance(node, ast.Num):  # Python 3.7 compatibility
-            return float(node.n)
         elif isinstance(node, ast.BinOp):
             left = self._eval_node(node.left)
             right = self._eval_node(node.right)

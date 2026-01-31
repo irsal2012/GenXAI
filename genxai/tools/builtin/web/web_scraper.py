@@ -29,6 +29,7 @@ class WebScraperTool(Tool):
                 type="string",
                 description="URL of the web page to scrape",
                 required=True,
+                pattern=r"^https?://",
             ),
             ToolParameter(
                 name="selector",
