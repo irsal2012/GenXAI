@@ -43,6 +43,10 @@ class LLMProviderFactory:
         "cohere": "genxai.llm.providers.cohere.CohereProvider",
         "command": "genxai.llm.providers.cohere.CohereProvider",
         "command-r": "genxai.llm.providers.cohere.CohereProvider",
+        "ollama": "genxai.llm.providers.ollama.OllamaProvider",
+        "llama3": "genxai.llm.providers.ollama.OllamaProvider",
+        "mistral": "genxai.llm.providers.ollama.OllamaProvider",
+        "phi3": "genxai.llm.providers.ollama.OllamaProvider",
     }
 
     @classmethod
@@ -262,6 +266,11 @@ class LLMProviderFactory:
             if provider_class:
                 cls._providers[model] = provider_class
                 return provider_class
+        elif model_lower.startswith("llama") or model_lower.startswith("mistral") or model_lower.startswith("phi"):
+            provider_class = cls._load_provider_class("genxai.llm.providers.ollama.OllamaProvider")
+            if provider_class:
+                cls._providers[model] = provider_class
+                return provider_class
 
         return None
 
@@ -285,6 +294,8 @@ class LLMProviderFactory:
             return os.getenv("GOOGLE_API_KEY")
         elif provider_name == "CohereProvider":
             return os.getenv("COHERE_API_KEY")
+        elif provider_name == "OllamaProvider":
+            return os.getenv("OLLAMA_API_KEY")
         
         return None
 
@@ -303,7 +314,7 @@ class LLMProviderFactory:
 
         The unit tests expect these high-level names (not model aliases).
         """
-        return ["openai", "anthropic", "google", "cohere"]
+        return ["openai", "anthropic", "google", "cohere", "ollama"]
 
     @classmethod
     def supports_model(cls, model: str) -> bool:

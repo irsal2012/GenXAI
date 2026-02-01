@@ -337,6 +337,8 @@ open htmlcov/index.html
 - Read [ARCHITECTURE.md](../ARCHITECTURE.md) for system design
 - Check [examples/](../examples/) for more examples
 - See [docs/](../docs/) for detailed documentation
+- Explore [no-code templates](../examples/nocode/README.md)
+- Run [benchmarks](./BENCHMARKING.md)
 
 ### Explore Features
 - **Graph Patterns**: See `examples/patterns/` for workflow patterns

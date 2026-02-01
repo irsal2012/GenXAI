@@ -75,6 +75,10 @@ def test_supports_model():
     assert LLMProviderFactory.supports_model("command")
     assert LLMProviderFactory.supports_model("command-r")
     
+    # Ollama/local models
+    assert LLMProviderFactory.supports_model("ollama")
+    assert LLMProviderFactory.supports_model("llama3")
+    
     # Unknown model
     assert not LLMProviderFactory.supports_model("unknown-model")
 
@@ -90,6 +94,12 @@ def test_list_available_providers():
     assert "openai" in providers
     assert "gpt-4" in providers
     assert "gpt-3.5-turbo" in providers
+
+
+def test_list_providers_includes_ollama():
+    """Ensure Ollama shows up in canonical providers list."""
+    providers = LLMProviderFactory.list_providers()
+    assert "ollama" in providers
 
 
 def test_register_custom_provider():

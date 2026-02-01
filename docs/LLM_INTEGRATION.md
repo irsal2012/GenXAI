@@ -127,7 +127,7 @@ runtime = AgentRuntime(agent=agent, llm_provider=provider)
 - Any model starting with `command-`
 
 Coming soon:
-- Local models (Ollama, LM Studio)
+- LM Studio integration
 - Azure OpenAI
 - AWS Bedrock
 
@@ -139,6 +139,7 @@ Coming soon:
 | **Anthropic** | Long context, safety | Analysis, research | $$$ | Medium |
 | **Google** | Multi-modal, free tier | Vision tasks, prototyping | $$ | Fast |
 | **Cohere** | Retrieval, embeddings | Search, RAG applications | $$ | Fast |
+| **Ollama** | Local models, offline | Private/on-prem | $ | Fast |
 
 ### Using Different Providers
 
@@ -207,6 +208,28 @@ os.environ["COHERE_API_KEY"] = "..."
 runtime = AgentRuntime(agent=agent)
 result = await runtime.execute(
     task="Search for recent AI developments"
+)
+```
+
+#### Ollama (Local) Example
+
+```python
+# Create agent with Ollama (local)
+agent = AgentFactory.create_agent(
+    id="local_agent",
+    role="Local Analyst",
+    goal="Process requests locally",
+    llm_model="llama3",  # Ollama model name
+    temperature=0.6,
+)
+
+# Optional: customize Ollama base URL
+import os
+os.environ["OLLAMA_BASE_URL"] = "http://localhost:11434"
+
+runtime = AgentRuntime(agent=agent)
+result = await runtime.execute(
+    task="Summarize this report in 3 bullets."
 )
 ```
 
@@ -393,6 +416,10 @@ export GOOGLE_API_KEY="AIza..."
 
 # Cohere
 export COHERE_API_KEY="..."
+
+# Ollama (optional)
+export OLLAMA_BASE_URL="http://localhost:11434"
+export OLLAMA_API_KEY=""  # Usually not needed
 ```
 
 ### Getting API Keys
@@ -742,12 +769,13 @@ pip install cohere
 - [x] **Anthropic Claude** - Claude 3 Opus, Sonnet, Haiku
 - [x] **Google Gemini** - Gemini Pro, Ultra, Vision
 - [x] **Cohere** - Command, Command-R, Command-R-Plus
+- [x] **Ollama** - Local models (llama3, mistral, phi3)
 - [x] **Provider Factory** - Automatic provider selection
 - [x] **Lazy Loading** - Efficient provider initialization
 
 ### Coming Soon
 
-- [ ] **Local Models** - Ollama, LM Studio integration
+- [ ] **LM Studio** - Local model integration
 - [ ] **Azure OpenAI** - Enterprise OpenAI deployment
 - [ ] **AWS Bedrock** - Claude, Llama via AWS
 - [ ] **Response Caching** - Cache LLM responses for repeated queries
@@ -829,6 +857,9 @@ pip install google-generativeai
 
 # Cohere only
 pip install cohere
+
+# Ollama (local HTTP client)
+pip install httpx
 ```
 
 ---
@@ -897,10 +928,11 @@ else:
 
 **Status:** ✅ **PRODUCTION READY**
 
-GenXAI now supports **4 major LLM providers** with **15+ models**! 🚀
+GenXAI now supports **5 major LLM providers** with **15+ models**! 🚀
 
 **Multi-Provider Support:**
 - ✅ OpenAI (GPT-4, GPT-3.5-turbo)
 - ✅ Anthropic (Claude 3 Opus, Sonnet, Haiku)
 - ✅ Google (Gemini Pro, Ultra, Vision)
 - ✅ Cohere (Command, Command-R, Command-R-Plus)
+- ✅ **Ollama** - Local models (llama3, mistral, phi3)

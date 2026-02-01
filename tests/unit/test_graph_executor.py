@@ -7,6 +7,8 @@ from genxai.core.graph.edges import Edge
 from genxai.core.agent.base import AgentFactory
 from genxai.core.agent.registry import AgentRegistry
 from genxai.tools.registry import ToolRegistry
+from genxai.core.graph.engine import GraphExecutionError, Graph
+from genxai.core.graph.nodes import ToolNode
 
 
 def test_workflow_executor_initialization():
@@ -285,3 +287,48 @@ async def test_workflow_executor_cleanup():
     
     # Verify registry was cleared
     assert len(AgentRegistry.list_all()) == 0
+
+
+@pytest.mark.asyncio
+async def test_graph_run_with_no_entry_point():
+    """Graph should error when no entry point exists."""
+    graph = Graph(name="empty")
+
+    with pytest.raises(GraphExecutionError):
+        await graph.run(input_data={})
+
+
+@pytest.mark.asyncio
+async def test_graph_max_iterations_exceeded():
+    """Graph should raise when max iterations exceeded."""
+    graph = Graph(name="loop")
+    graph.add_node(InputNode(id="start"))
+    graph.add_node(OutputNode(id="end"))
+    graph.add_edge(Edge(source="start", target="end"))
+    graph.add_edge(Edge(source="end", target="start"))
+
+    with pytest.raises(GraphExecutionError):
+        await graph.run(input_data={}, max_iterations=1)
+
+
+@pytest.mark.asyncio
+async def test_tool_node_missing_tool_name():
+    """Tool node without tool_name should raise GraphExecutionError."""
+    graph = Graph(name="tool-missing")
+    tool_node = ToolNode(id="tool", tool_name=None)
+    graph.add_node(tool_node)
+
+    with pytest.raises(GraphExecutionError):
+        await graph._execute_tool_node(tool_node, {})
+
+
+@pytest.mark.asyncio
+async def test_tool_node_missing_tool_in_registry():
+    """Tool node should error when tool is not in registry."""
+    graph = Graph(name="tool-missing-registry")
+    tool_node = ToolNode(id="tool", tool_name="calculator")
+    graph.add_node(tool_node)
+    ToolRegistry.clear()
+
+    with pytest.raises(GraphExecutionError):
+        await graph._execute_tool_node(tool_node, {})

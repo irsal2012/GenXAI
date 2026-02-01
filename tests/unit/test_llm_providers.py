@@ -9,6 +9,7 @@ from genxai.llm.providers.openai import OpenAIProvider
 from genxai.llm.providers.anthropic import AnthropicProvider
 from genxai.llm.providers.google import GoogleProvider
 from genxai.llm.providers.cohere import CohereProvider
+from genxai.llm.providers.ollama import OllamaProvider
 
 
 # ==================== LLM Factory Tests ====================
@@ -72,6 +73,7 @@ def test_llm_factory_list_providers():
     assert "anthropic" in providers
     assert "google" in providers
     assert "cohere" in providers
+    assert "ollama" in providers
 
 
 # ==================== OpenAI Provider Tests ====================
@@ -157,7 +159,8 @@ def test_all_providers_have_generate_method():
         OpenAIProvider(api_key="test"),
         AnthropicProvider(api_key="test"),
         GoogleProvider(api_key="test"),
-        CohereProvider(api_key="test")
+        CohereProvider(api_key="test"),
+        OllamaProvider()
     ]
     
     for provider in providers:
@@ -170,7 +173,8 @@ def test_all_providers_have_api_key():
         OpenAIProvider(api_key="test_key"),
         AnthropicProvider(api_key="test_key"),
         GoogleProvider(api_key="test_key"),
-        CohereProvider(api_key="test_key")
+        CohereProvider(api_key="test_key"),
+        OllamaProvider(api_key="test_key")
     ]
     
     for provider in providers:
@@ -183,7 +187,8 @@ def test_all_providers_have_model():
         OpenAIProvider(api_key="test"),
         AnthropicProvider(api_key="test"),
         GoogleProvider(api_key="test"),
-        CohereProvider(api_key="test")
+        CohereProvider(api_key="test"),
+        OllamaProvider()
     ]
     
     for provider in providers:
