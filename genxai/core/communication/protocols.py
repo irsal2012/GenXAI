@@ -1,7 +1,7 @@
 """Communication protocols for agent interaction."""
 
 from enum import Enum
-from typing import Protocol as TypingProtocol, Any
+from typing import Protocol as TypingProtocol, Any, Dict, List
 
 
 class CommunicationProtocol(str, Enum):
@@ -25,4 +25,11 @@ class MessageHandler(TypingProtocol):
         Args:
             message: Message to handle
         """
+        ...
+
+
+class CollaborationProtocol(TypingProtocol):
+    """Protocol for collaboration strategies."""
+
+    async def run(self, inputs: List[Any], metadata: Dict[str, Any]) -> Any:
         ...

@@ -5,6 +5,7 @@ from genxai.core.execution.queue import (
     QueueTask,
     InMemoryQueueBackend,
     WorkerQueueEngine,
+    RedisQueueBackend,
     RQQueueBackend,
 )
 from genxai.core.execution.metadata import ExecutionRecord, ExecutionStore
@@ -14,6 +15,7 @@ __all__ = [
     "QueueTask",
     "InMemoryQueueBackend",
     "WorkerQueueEngine",
+    "RedisQueueBackend",
     "RQQueueBackend",
     "ExecutionRecord",
     "ExecutionStore",

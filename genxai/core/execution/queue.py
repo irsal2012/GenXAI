@@ -7,6 +7,7 @@ from dataclasses import dataclass, field
 from typing import Any, Awaitable, Callable, Optional, Protocol
 import uuid
 import logging
+import json
 
 logger = logging.getLogger(__name__)
 
@@ -17,7 +18,7 @@ class QueueTask:
 
     task_id: str
     payload: dict[str, Any]
-    handler: Callable[[dict[str, Any]], Awaitable[Any]]
+    handler: Optional[Callable[[dict[str, Any]], Awaitable[Any]]]
     metadata: dict[str, Any] = field(default_factory=dict)
 
 
@@ -59,6 +60,7 @@ class WorkerQueueEngine:
         worker_count: int = 2,
         max_retries: int = 3,
         backoff_seconds: float = 0.5,
+        handler_registry: Optional[dict[str, Callable[[dict[str, Any]], Awaitable[Any]]]] = None,
     ) -> None:
         self._backend = backend or InMemoryQueueBackend()
         self._worker_count = worker_count
@@ -66,6 +68,15 @@ class WorkerQueueEngine:
         self._backoff_seconds = backoff_seconds
         self._workers: list[asyncio.Task[None]] = []
         self._running = False
+        self._handler_registry = handler_registry or {}
+
+    def register_handler(
+        self,
+        name: str,
+        handler: Callable[[dict[str, Any]], Awaitable[Any]],
+    ) -> None:
+        """Register a handler by name for distributed queue backends."""
+        self._handler_registry[name] = handler
 
     async def start(self) -> None:
         if self._running:
@@ -87,16 +98,21 @@ class WorkerQueueEngine:
     async def enqueue(
         self,
         payload: dict[str, Any],
-        handler: Callable[[dict[str, Any]], Awaitable[Any]],
+        handler: Optional[Callable[[dict[str, Any]], Awaitable[Any]]] = None,
         metadata: Optional[dict[str, Any]] = None,
         run_id: Optional[str] = None,
+        handler_name: Optional[str] = None,
     ) -> str:
         task_id = run_id or str(uuid.uuid4())
+        if handler is None and handler_name:
+            handler = self._handler_registry.get(handler_name)
+        if handler is None:
+            raise ValueError("Handler must be provided or registered via handler_name")
         task = QueueTask(
             task_id=task_id,
             payload=payload,
             handler=handler,
-            metadata=metadata or {},
+            metadata={**(metadata or {}), "handler_name": handler_name},
         )
         await self._backend.put(task)
         return task_id
@@ -115,16 +131,62 @@ class WorkerQueueEngine:
                 logger.error("Worker %s failed: %s", worker_id, exc)
 
     async def _execute_with_retry(self, task: QueueTask) -> None:
+        handler = task.handler
+        if handler is None:
+            handler_name = task.metadata.get("handler_name")
+            handler = self._handler_registry.get(handler_name) if handler_name else None
+        if handler is None:
+            raise ValueError(f"No handler registered for task {task.task_id}")
         attempts = 0
         while True:
             try:
-                await task.handler(task.payload)
+                await handler(task.payload)
                 return
             except Exception as exc:
                 attempts += 1
                 if attempts > self._max_retries:
                     raise exc
                 await asyncio.sleep(self._backoff_seconds * attempts)
+
+
+class RedisQueueBackend:
+    """Redis-backed queue backend for distributed execution.
+
+    Stores serialized QueueTask payloads in a Redis list and uses BLPOP to
+    retrieve work items.
+    """
+
+    def __init__(self, url: str, queue_name: str = "genxai:queue") -> None:
+        try:
+            import redis.asyncio as redis  # type: ignore
+        except Exception as exc:
+            raise ImportError(
+                "redis package is required for RedisQueueBackend. Install with: pip install redis"
+            ) from exc
+
+        self._redis = redis.from_url(url)
+        self._queue_name = queue_name
+
+    async def put(self, task: QueueTask) -> None:
+        payload = {
+            "task_id": task.task_id,
+            "payload": task.payload,
+            "metadata": task.metadata,
+        }
+        await self._redis.rpush(self._queue_name, json.dumps(payload))
+
+    async def get(self) -> QueueTask:
+        _, raw = await self._redis.blpop(self._queue_name)
+        data = json.loads(raw)
+        return QueueTask(
+            task_id=data["task_id"],
+            payload=data["payload"],
+            handler=None,
+            metadata=data.get("metadata", {}),
+        )
+
+    def qsize(self) -> int:
+        return int(self._redis.llen(self._queue_name))
 
 
 class RQQueueBackend:

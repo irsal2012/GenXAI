@@ -10,6 +10,9 @@ import logging
 from genxai.observability.metrics import record_tool_execution
 from genxai.observability.tracing import span, record_exception
 from genxai.tools.security.policy import is_tool_allowed
+from genxai.security.rbac import get_current_user, Permission
+from genxai.security.policy_engine import get_policy_engine
+from genxai.security.audit import get_audit_log, AuditEvent
 
 logger = logging.getLogger(__name__)
 
@@ -105,6 +108,17 @@ class Tool(ABC):
         error_type: Optional[str] = None
         try:
             with span("genxai.tool.execute", {"tool_name": self.metadata.name}):
+                user = get_current_user()
+                if user is not None:
+                    get_policy_engine().check(user, f"tool:{self.metadata.name}", Permission.TOOL_EXECUTE)
+                    get_audit_log().record(
+                        AuditEvent(
+                            action="tool.execute",
+                            actor_id=user.user_id,
+                            resource_id=f"tool:{self.metadata.name}",
+                            status="allowed",
+                        )
+                    )
                 allowed, reason = is_tool_allowed(self.metadata.name)
                 if not allowed:
                     status = "error"

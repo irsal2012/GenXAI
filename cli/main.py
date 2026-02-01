@@ -2,6 +2,8 @@
 
 import click
 from cli.commands import tool, metrics
+from cli.commands.approval import approval
+from cli.commands.audit import audit
 
 
 @click.group()
@@ -17,6 +19,8 @@ def cli():
 # Register command groups
 cli.add_command(tool)
 cli.add_command(metrics)
+cli.add_command(approval)
+cli.add_command(audit)
 
 
 def main():

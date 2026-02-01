@@ -13,6 +13,9 @@ from genxai.utils.tokens import manage_context_window
 from genxai.observability.logging import set_log_context, clear_log_context
 from genxai.observability.metrics import record_agent_execution, record_llm_request
 from genxai.observability.tracing import span, add_event, record_exception
+from genxai.security.rbac import get_current_user, Permission
+from genxai.security.policy_engine import get_policy_engine
+from genxai.security.audit import get_audit_log, AuditEvent
 
 logger = logging.getLogger(__name__)
 
@@ -107,6 +110,17 @@ class AgentRuntime:
                 "genxai.agent.execute",
                 {"agent_id": self.agent.id, "agent_role": self.agent.config.role},
             ):
+                user = get_current_user()
+                if user is not None:
+                    get_policy_engine().check(user, f"agent:{self.agent.id}", Permission.AGENT_EXECUTE)
+                    get_audit_log().record(
+                        AuditEvent(
+                            action="agent.execute",
+                            actor_id=user.user_id,
+                            resource_id=f"agent:{self.agent.id}",
+                            status="allowed",
+                        )
+                    )
                 if execution_timeout:
                     result = await asyncio.wait_for(
                         self._execute_internal(task, context),

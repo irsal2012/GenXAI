@@ -21,7 +21,24 @@ await engine.stop()
 
 ## Notes
 - The current backend is in‑memory (`InMemoryQueueBackend`).
+- Redis-backed queues are supported via `RedisQueueBackend` (requires `redis`).
 - Use `WorkerQueueEngine.enqueue` to push work.
 - Provide `run_id` to enable idempotent enqueues.
 - Retries use linear backoff via `max_retries` + `backoff_seconds`.
 - Hooks for persistent backends can implement `QueueBackend`.
+
+## Redis Backend Example
+
+```python
+from genxai.core.execution import WorkerQueueEngine, RedisQueueBackend
+
+backend = RedisQueueBackend(url="redis://localhost:6379/0")
+engine = WorkerQueueEngine(backend=backend)
+
+async def handler(payload: dict):
+    print("processing", payload)
+
+engine.register_handler("workflow", handler)
+await engine.start()
+await engine.enqueue({"workflow_id": "wf_1"}, handler_name="workflow")
+```

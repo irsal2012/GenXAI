@@ -17,3 +17,16 @@ def test_execution_store_create_update():
     assert updated is not None
     assert updated.status == "success"
     assert updated.result == {"ok": True}
+
+
+def test_execution_store_sqlite_persistence(tmp_path):
+    db_path = tmp_path / "exec.db"
+    store = ExecutionStore(sql_url=f"sqlite:///{db_path}")
+    run_id = store.generate_run_id()
+    store.create(run_id, workflow="wf", status="running")
+    store.update(run_id, status="success", result={"ok": True}, completed=True)
+
+    fetched = store.get(run_id)
+    assert fetched is not None
+    assert fetched.status == "success"
+    assert fetched.result == {"ok": True}
