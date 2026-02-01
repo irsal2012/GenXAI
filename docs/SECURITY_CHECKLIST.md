@@ -30,6 +30,7 @@ Use this checklist before releasing new versions.
 ## Runtime Security
 
 - [ ] Secure secrets in env vars (no hardcoded secrets)
+- [ ] Encrypt connector configs at rest (GENXAI_CONNECTOR_CONFIG_KEY)
 - [ ] TLS enabled for API endpoints
 - [ ] Logging redacts sensitive fields
 

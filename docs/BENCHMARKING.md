@@ -75,5 +75,6 @@ P50: 1.2s, P95: 2.7s, P99: 3.1s
 ## Next Steps
 
 - Integrate with CI for baseline regression checks.
+- Store CI artifacts for encrypted connector configs when benchmarking connector-heavy workflows.
 - Store results in a time-series DB (Prometheus/Grafana).
 - Add workload-specific benchmarks (RAG, memory-heavy workflows).

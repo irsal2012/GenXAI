@@ -165,6 +165,75 @@ Enable auto-reload during development:
 genxai metrics serve --reload
 ```
 
+## Connector Commands
+
+List available connector types:
+
+```bash
+genxai connector list
+```
+
+Output connector catalog as JSON:
+
+```bash
+genxai connector list --format json
+```
+
+Validate connector configuration:
+
+```bash
+genxai connector validate \
+  --type slack \
+  --connector-id slack_alerts \
+  --config '{"bot_token": "xoxb-token"}'
+```
+
+Example validations for other connectors:
+
+```bash
+genxai connector validate --type github --config '{"token": "ghp_xxx"}'
+genxai connector validate --type jira --config '{"email": "you@company.com", "api_token": "token", "base_url": "https://your-domain.atlassian.net"}'
+genxai connector validate --type google_workspace --config '{"access_token": "ya29.x"}'
+```
+
+Save and reuse connector configs:
+
+```bash
+genxai connector save --name slack_alerts --type slack --config '{"bot_token": "xoxb-token"}'
+genxai connector saved
+genxai connector validate --type slack --config-name slack_alerts
+genxai connector start --type slack --config-name slack_alerts
+genxai connector health --type slack --config-name slack_alerts
+genxai connector remove --name slack_alerts
+```
+
+Enable encrypted connector configs (optional):
+
+```bash
+# Generate a Fernet key (requires cryptography)
+genxai connector keygen
+
+# Export the key before saving connector configs
+export GENXAI_CONNECTOR_CONFIG_KEY="your-generated-key"
+
+# Saved configs will now be encrypted at rest
+genxai connector save --name slack_alerts --type slack --config '{"bot_token": "xoxb-token"}'
+```
+
+Start/stop a connector instance (for quick validation):
+
+```bash
+genxai connector start --type slack --config '{"bot_token": "xoxb-token"}'
+genxai connector stop --type slack --config '{"bot_token": "xoxb-token"}'
+```
+
+Run a connector health check:
+
+```bash
+genxai connector health --type slack --config '{"bot_token": "xoxb-token"}'
+genxai connector health --type slack --format table --config '{"bot_token": "xoxb-token"}'
+```
+
 ## Approval Commands
 
 Manage pending approvals for policy-gated operations:
@@ -308,6 +377,12 @@ jobs:
       - name: Install GenXAI
         run: pip install genxai
       
+      - name: Configure encrypted connector configs (optional)
+        env:
+          GENXAI_CONNECTOR_CONFIG_KEY: ${{ secrets.GENXAI_CONNECTOR_CONFIG_KEY }}
+        run: |
+          echo "Connector configs will be encrypted at rest"
+
       - name: Deploy Tools
         run: |
           for file in tools/*.json; do

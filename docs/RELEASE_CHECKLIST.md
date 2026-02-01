@@ -12,6 +12,7 @@ Use this checklist before cutting a release tag.
 ## 2) Security & Compliance
 - [ ] Security workflow green (pip-audit + bandit)
 - [ ] License report generated and reviewed
+- [ ] Encrypted connector configs verified (GENXAI_CONNECTOR_CONFIG_KEY in CI)
 
 ## 3) Versioning
 - [ ] Version bumped in pyproject.toml

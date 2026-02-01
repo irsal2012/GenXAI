@@ -6,6 +6,11 @@ from genxai.connectors.webhook import WebhookConnector
 from genxai.connectors.kafka import KafkaConnector
 from genxai.connectors.sqs import SQSConnector
 from genxai.connectors.postgres_cdc import PostgresCDCConnector
+from genxai.connectors.slack import SlackConnector
+from genxai.connectors.github import GitHubConnector
+from genxai.connectors.notion import NotionConnector
+from genxai.connectors.jira import JiraConnector
+from genxai.connectors.google_workspace import GoogleWorkspaceConnector
 
 __all__ = [
     "Connector",
@@ -16,4 +21,9 @@ __all__ = [
     "KafkaConnector",
     "SQSConnector",
     "PostgresCDCConnector",
+    "SlackConnector",
+    "GitHubConnector",
+    "NotionConnector",
+    "JiraConnector",
+    "GoogleWorkspaceConnector",
 ]
