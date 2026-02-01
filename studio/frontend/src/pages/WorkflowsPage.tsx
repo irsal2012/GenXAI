@@ -42,12 +42,13 @@ const WorkflowsPage = () => {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-lg font-semibold">Workflow Library</h2>
-          <p className="text-sm text-slate-500">Manage automation graphs and execute runs.</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400">Manage automation graphs and execute runs.</p>
         </div>
         <button
           className="rounded-xl bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700"
           onClick={handleCreate}
           disabled={createWorkflow.isPending}
+          title="Create a new workflow"
         >
           {createWorkflow.isPending ? 'Creating...' : 'Create workflow'}
         </button>
@@ -56,9 +57,11 @@ const WorkflowsPage = () => {
         {workflowsQuery.data?.map((workflow) => (
           <div key={workflow.id} className="card flex items-center justify-between p-5">
             <div>
-              <p className="text-base font-semibold text-slate-900">{workflow.name}</p>
-              <p className="text-sm text-slate-500">{workflow.description || 'No description provided.'}</p>
-              <p className="mt-1 text-xs text-slate-400">
+              <p className="text-base font-semibold text-slate-900 dark:text-slate-100">{workflow.name}</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400">
+                {workflow.description || 'No description provided.'}
+              </p>
+              <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
                 {workflow.nodes.length} nodes • {workflow.edges.length} edges
               </p>
             </div>
@@ -66,6 +69,7 @@ const WorkflowsPage = () => {
               <Link
                 to={`/workflows/${workflow.id}`}
                 className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                title="Open workflow builder"
               >
                 Open builder
               </Link>
@@ -73,6 +77,7 @@ const WorkflowsPage = () => {
                 className="rounded-xl border border-red-200 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50"
                 onClick={() => handleDelete(workflow.id)}
                 disabled={deleteWorkflow.isPending}
+                title="Delete workflow"
               >
                 Delete
               </button>
@@ -80,7 +85,9 @@ const WorkflowsPage = () => {
           </div>
         ))}
         {workflowsQuery.data?.length === 0 ? (
-          <div className="card p-6 text-sm text-slate-500">No workflows yet. Create one to get started.</div>
+          <div className="card p-6 text-sm text-slate-500 dark:text-slate-400">
+            No workflows yet. Create one to get started.
+          </div>
         ) : null}
       </div>
     </div>

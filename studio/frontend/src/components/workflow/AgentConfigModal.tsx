@@ -56,27 +56,27 @@ const AgentConfigModal = ({ isOpen, onClose, agentData, onSave }: AgentConfigMod
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col">
+      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col dark:bg-slate-950 dark:border dark:border-slate-800">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-slate-200">
-          <h2 className="text-xl font-semibold text-slate-800">Configure Agent</h2>
-          <p className="text-sm text-slate-600 mt-1">{agentData.label}</p>
+        <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800">
+          <h2 className="text-xl font-semibold text-slate-800 dark:text-slate-100">Configure Agent</h2>
+          <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">{agentData.label}</p>
         </div>
 
         {/* Content */}
         <div className="px-6 py-4 overflow-y-auto flex-1">
           {/* Agent Info */}
           <div className="mb-6">
-            <h3 className="text-sm font-semibold text-slate-700 mb-2">Agent Information</h3>
-            <div className="bg-slate-50 rounded-lg p-3 space-y-2">
+            <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-2">Agent Information</h3>
+            <div className="bg-slate-50 rounded-lg p-3 space-y-2 dark:bg-slate-900">
               <div>
-                <span className="text-xs font-medium text-slate-600">Role:</span>
-                <p className="text-sm text-slate-800">{agentData.config?.role || agentData.label}</p>
+                <span className="text-xs font-medium text-slate-600 dark:text-slate-400">Role:</span>
+                <p className="text-sm text-slate-800 dark:text-slate-100">{agentData.config?.role || agentData.label}</p>
               </div>
               {agentData.config?.goal && (
                 <div>
-                  <span className="text-xs font-medium text-slate-600">Goal:</span>
-                  <p className="text-sm text-slate-800">{agentData.config.goal}</p>
+                  <span className="text-xs font-medium text-slate-600 dark:text-slate-400">Goal:</span>
+                  <p className="text-sm text-slate-800 dark:text-slate-100">{agentData.config.goal}</p>
                 </div>
               )}
             </div>
@@ -84,27 +84,27 @@ const AgentConfigModal = ({ isOpen, onClose, agentData, onSave }: AgentConfigMod
 
           {/* Tools Selection */}
           <div>
-            <h3 className="text-sm font-semibold text-slate-700 mb-2">Assign Tools</h3>
-            <p className="text-xs text-slate-500 mb-3">
+            <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-2">Assign Tools</h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">
               Select the tools this agent can use to accomplish its goals
             </p>
 
             {toolsLoading && (
-              <div className="text-sm text-slate-500 italic">Loading tools...</div>
+              <div className="text-sm text-slate-500 dark:text-slate-400 italic">Loading tools...</div>
             )}
 
             {!toolsLoading && (!availableTools || availableTools.length === 0) && (
-              <div className="text-sm text-slate-500 italic">
+              <div className="text-sm text-slate-500 dark:text-slate-400 italic">
                 No tools available. Create tools first in the Tools page.
               </div>
             )}
 
             {!toolsLoading && availableTools && availableTools.length > 0 && (
-              <div className="space-y-2 max-h-64 overflow-y-auto border border-slate-200 rounded-lg p-3">
+              <div className="space-y-2 max-h-64 overflow-y-auto border border-slate-200 rounded-lg p-3 dark:border-slate-800">
                 {availableTools.map((tool) => (
                   <label
                     key={tool.name}
-                    className="flex items-start gap-3 p-2 rounded hover:bg-slate-50 cursor-pointer"
+                    className="flex items-start gap-3 p-2 rounded hover:bg-slate-50 cursor-pointer dark:hover:bg-slate-900"
                   >
                     <input
                       type="checkbox"
@@ -113,9 +113,9 @@ const AgentConfigModal = ({ isOpen, onClose, agentData, onSave }: AgentConfigMod
                       className="mt-1 h-4 w-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500"
                     />
                     <div className="flex-1 min-w-0">
-                      <div className="text-sm font-medium text-slate-700">{tool.name}</div>
+                      <div className="text-sm font-medium text-slate-700 dark:text-slate-100">{tool.name}</div>
                       {tool.description && (
-                        <div className="text-xs text-slate-500 mt-0.5">{tool.description}</div>
+                        <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{tool.description}</div>
                       )}
                     </div>
                   </label>
@@ -125,21 +125,21 @@ const AgentConfigModal = ({ isOpen, onClose, agentData, onSave }: AgentConfigMod
 
             {/* Selected Tools Summary */}
             {selectedTools.length > 0 && (
-              <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                <div className="text-xs font-medium text-blue-700 mb-1">
+              <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg dark:bg-blue-950/50 dark:border-blue-900">
+                <div className="text-xs font-medium text-blue-700 dark:text-blue-200 mb-1">
                   Selected Tools ({selectedTools.length})
                 </div>
                 <div className="flex flex-wrap gap-1">
                   {selectedTools.map((tool) => (
                     <span
                       key={tool}
-                      className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded"
+                      className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded dark:bg-blue-900/60 dark:text-blue-100"
                     >
                       {tool}
                       <button
                         onClick={() => handleToolToggle(tool)}
                         className="hover:text-blue-900"
-                        title="Remove tool"
+                        title={`Remove ${tool}`}
                       >
                         ×
                       </button>
@@ -152,10 +152,10 @@ const AgentConfigModal = ({ isOpen, onClose, agentData, onSave }: AgentConfigMod
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-slate-200 flex justify-end gap-3">
+        <div className="px-6 py-4 border-t border-slate-200 dark:border-slate-800 flex justify-end gap-3">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors"
+            className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors dark:bg-slate-950 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-900"
           >
             Cancel
           </button>

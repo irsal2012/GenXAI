@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { useExecuteWorkflow, useUpdateWorkflow, useWorkflow } from '../services/workflows'
 import { useBuilderStore } from '../store/builderStore'
@@ -71,8 +71,9 @@ const WorkflowBuilderPage = () => {
   const [agentConfigModalNode, setAgentConfigModalNode] = useState<any>(null)
   const [decisionConfigModalOpen, setDecisionConfigModalOpen] = useState(false)
   const [decisionConfigModalNode, setDecisionConfigModalNode] = useState<any>(null)
+  const [copyStatus, setCopyStatus] = useState<string>('')
 
-  const handleSave = async () => {
+  const handleSave = useCallback(async () => {
     if (!workflowQuery.data || !workflowId) return
     const payload = {
       name: workflowQuery.data.name,
@@ -82,14 +83,59 @@ const WorkflowBuilderPage = () => {
       metadata: JSON.parse(draftMetadata || '{}'),
     }
     await updateWorkflow.mutateAsync(payload)
-  }
+  }, [workflowQuery.data, workflowId, draftNodes, draftEdges, draftMetadata, updateWorkflow])
 
-  const handleExecute = async () => {
+  const handleExportJson = useCallback(async () => {
+    try {
+      const exportPayload = {
+        id: workflowQuery.data?.id,
+        name: workflowQuery.data?.name,
+        description: workflowQuery.data?.description,
+        nodes: JSON.parse(draftNodes || '[]'),
+        edges: JSON.parse(draftEdges || '[]'),
+        metadata: JSON.parse(draftMetadata || '{}'),
+        exportedAt: new Date().toISOString(),
+      }
+      const formatted = JSON.stringify(exportPayload, null, 2)
+      await navigator.clipboard.writeText(formatted)
+      setCopyStatus('Copied JSON to clipboard')
+    } catch (error) {
+      setCopyStatus('Failed to export JSON')
+    } finally {
+      setTimeout(() => setCopyStatus(''), 2500)
+    }
+  }, [workflowQuery.data, draftNodes, draftEdges, draftMetadata])
+
+  const handleExecute = useCallback(async () => {
     if (!workflowId) return
     const result = await executeWorkflow.mutateAsync({ input: 'demo payload' })
     setExecutionResult(JSON.stringify(result, null, 2))
     setIsExecutionOutputVisible(true)
-  }
+  }, [workflowId, executeWorkflow])
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.target && (event.target as HTMLElement).closest('input, textarea, [contenteditable="true"]')) {
+        return
+      }
+
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 's') {
+        event.preventDefault()
+        void handleSave()
+      }
+      if ((event.metaKey || event.ctrlKey) && event.shiftKey && event.key.toLowerCase() === 'e') {
+        event.preventDefault()
+        void handleExportJson()
+      }
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'r') {
+        event.preventDefault()
+        void handleExecute()
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [handleSave, handleExportJson, handleExecute])
 
   if (workflowQuery.isLoading) {
     return <LoadingState message="Loading workflow..." />
@@ -105,26 +151,42 @@ const WorkflowBuilderPage = () => {
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <h2 className="text-lg font-semibold">{workflowQuery.data.name}</h2>
-            <p className="text-sm text-slate-500">{workflowQuery.data.description || 'No description provided.'}</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400">
+              {workflowQuery.data.description || 'No description provided.'}
+            </p>
           </div>
           <div className="flex items-center gap-3">
             <button
               className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
               onClick={handleSave}
               disabled={updateWorkflow.isPending}
+              title="Save workflow (Ctrl/Cmd + S)"
             >
               {updateWorkflow.isPending ? 'Saving...' : 'Save workflow'}
+            </button>
+            <button
+              className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
+              onClick={handleExportJson}
+              title="Copy workflow JSON to clipboard (Ctrl/Cmd + Shift + E)"
+            >
+              Export JSON
             </button>
             <button
               className="rounded-xl bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700"
               onClick={handleExecute}
               disabled={executeWorkflow.isPending}
+              title="Run workflow (Ctrl/Cmd + R)"
             >
               {executeWorkflow.isPending ? 'Running...' : 'Run workflow'}
             </button>
           </div>
         </div>
       </div>
+      {copyStatus && (
+        <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-950/60 dark:text-emerald-200">
+          {copyStatus}
+        </div>
+      )}
       <div className="grid gap-6 lg:grid-cols-[5fr_1fr]">
         <div className="card p-6">
           <div className="flex items-center justify-between mb-4">
@@ -189,25 +251,25 @@ const WorkflowBuilderPage = () => {
             <>
           <div className="mt-4 space-y-4 text-sm">
             <label className="block">
-              <span className="text-xs font-medium uppercase text-slate-500">Nodes</span>
+              <span className="text-xs font-medium uppercase text-slate-500 dark:text-slate-400">Nodes</span>
               <textarea
-                className="mt-2 h-40 w-full rounded-xl border border-slate-200 px-3 py-2 font-mono text-xs"
+                className="mt-2 h-40 w-full rounded-xl border border-slate-200 px-3 py-2 font-mono text-xs dark:border-slate-700 dark:bg-slate-950"
                 value={draftNodes}
                 onChange={(event) => setDraftNodes(event.target.value)}
               />
             </label>
             <label className="block">
-              <span className="text-xs font-medium uppercase text-slate-500">Edges</span>
+              <span className="text-xs font-medium uppercase text-slate-500 dark:text-slate-400">Edges</span>
               <textarea
-                className="mt-2 h-40 w-full rounded-xl border border-slate-200 px-3 py-2 font-mono text-xs"
+                className="mt-2 h-40 w-full rounded-xl border border-slate-200 px-3 py-2 font-mono text-xs dark:border-slate-700 dark:bg-slate-950"
                 value={draftEdges}
                 onChange={(event) => setDraftEdges(event.target.value)}
               />
             </label>
             <label className="block">
-              <span className="text-xs font-medium uppercase text-slate-500">Metadata</span>
+              <span className="text-xs font-medium uppercase text-slate-500 dark:text-slate-400">Metadata</span>
               <textarea
-                className="mt-2 h-32 w-full rounded-xl border border-slate-200 px-3 py-2 font-mono text-xs"
+                className="mt-2 h-32 w-full rounded-xl border border-slate-200 px-3 py-2 font-mono text-xs dark:border-slate-700 dark:bg-slate-950"
                 value={draftMetadata}
                 onChange={(event) => setDraftMetadata(event.target.value)}
               />
@@ -219,7 +281,7 @@ const WorkflowBuilderPage = () => {
         <div className="space-y-6">
           <div className="card p-6">
             <h3 className="text-base font-semibold">Current graph summary</h3>
-            <p className="mt-2 text-sm text-slate-500">
+            <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
               {workflowSnapshot.nodes.length} nodes · {workflowSnapshot.edges.length} edges
             </p>
           </div>
@@ -228,7 +290,7 @@ const WorkflowBuilderPage = () => {
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <h3 className="text-base font-semibold">Execution output</h3>
-                  <p className="mt-2 text-sm text-slate-500">Run the workflow to see the execution response.</p>
+                  <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Run the workflow to see the execution response.</p>
                 </div>
                 <div className="flex items-center gap-2">
                   <button
@@ -242,7 +304,7 @@ const WorkflowBuilderPage = () => {
                 </div>
               </div>
 
-              <pre className="mt-3 max-h-80 overflow-auto rounded-xl bg-slate-900 p-4 text-xs text-slate-100">
+              <pre className="mt-3 max-h-80 overflow-auto rounded-xl bg-slate-900 p-4 text-xs text-slate-100 dark:bg-slate-950">
                 {executionResult || 'No execution yet.'}
               </pre>
             </div>
@@ -251,7 +313,7 @@ const WorkflowBuilderPage = () => {
               <div className="flex items-center justify-between gap-4">
                 <div>
                   <h3 className="text-base font-semibold">Execution output</h3>
-                  <p className="mt-2 text-sm text-slate-500">Output hidden.</p>
+                  <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Output hidden.</p>
                 </div>
                 <button
                   type="button"

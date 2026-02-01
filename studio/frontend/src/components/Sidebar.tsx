@@ -1,4 +1,5 @@
 import { NavLink } from 'react-router-dom'
+import { useEffect, useState } from 'react'
 import { 
   Squares2X2Icon, 
   PlayCircleIcon, 
@@ -6,7 +7,9 @@ import {
   WrenchScrewdriverIcon,
   DocumentDuplicateIcon,
   BeakerIcon,
-  Cog6ToothIcon
+  Cog6ToothIcon,
+  SunIcon,
+  MoonIcon,
 } from '@heroicons/react/24/outline'
 
 const links = [
@@ -19,8 +22,18 @@ const links = [
 ]
 
 const Sidebar = () => {
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    if (typeof window === 'undefined') return false
+    return localStorage.getItem('studio-dark-mode') === 'true'
+  })
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', isDarkMode)
+    localStorage.setItem('studio-dark-mode', String(isDarkMode))
+  }, [isDarkMode])
+
   return (
-    <aside className="flex h-screen w-64 flex-col bg-slate-950 text-white">
+    <aside className="flex h-screen w-64 flex-col bg-slate-950 text-white dark:bg-slate-900">
       <div className="px-6 py-6">
         <p className="text-xl font-semibold">GenXAI Studio</p>
         <p className="text-sm text-slate-300">No-code builder</p>
@@ -38,13 +51,22 @@ const Sidebar = () => {
             }
           >
             <link.icon className="h-5 w-5" />
-            {link.label}
+            <span className="truncate">{link.label}</span>
           </NavLink>
         ))}
       </nav>
       
-      {/* Settings at bottom - icon only, left-aligned */}
-      <div className="px-3 pb-3">
+      {/* Settings and theme toggle at bottom */}
+      <div className="px-3 pb-3 space-y-2">
+        <button
+          type="button"
+          onClick={() => setIsDarkMode((prev) => !prev)}
+          className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-slate-300 transition hover:bg-white/5 hover:text-white"
+          title={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+        >
+          {isDarkMode ? <SunIcon className="h-5 w-5" /> : <MoonIcon className="h-5 w-5" />}
+          {isDarkMode ? 'Light mode' : 'Dark mode'}
+        </button>
         <NavLink
           to="/settings"
           className={({ isActive }) =>
@@ -55,6 +77,7 @@ const Sidebar = () => {
           title="Settings"
         >
           <Cog6ToothIcon className="h-5 w-5" />
+          Settings
         </NavLink>
       </div>
       

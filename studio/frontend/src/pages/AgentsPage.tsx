@@ -55,18 +55,20 @@ const AgentsPage = () => {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-lg font-semibold">Agent Catalog</h2>
-          <p className="text-sm text-slate-500">Define reusable agents for workflows.</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400">Define reusable agents for workflows.</p>
         </div>
         <div className="flex items-center gap-3">
           <button
             className="rounded-xl border border-primary-600 px-4 py-2 text-sm font-semibold text-primary-600 hover:bg-primary-50 transition-colors"
             onClick={handleOpenCreateModal}
+            title="Quick-create a new agent"
           >
             Quick Create
           </button>
           <button
             className="rounded-xl bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700 transition-colors flex items-center gap-2"
             onClick={() => navigate('/agents/builder')}
+            title="Open the visual agent builder"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -85,14 +87,15 @@ const AgentsPage = () => {
           {agentsQuery.data?.map((agent) => (
             <div key={agent.id} className="card flex items-center justify-between p-5">
               <div>
-                <p className="text-base font-semibold text-slate-900">{agent.role}</p>
-                <p className="text-sm text-slate-500">{agent.goal}</p>
-                <p className="mt-1 text-xs text-slate-400">Model: {agent.llm_model}</p>
+                <p className="text-base font-semibold text-slate-900 dark:text-slate-100">{agent.role}</p>
+                <p className="text-sm text-slate-500 dark:text-slate-400">{agent.goal}</p>
+                <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">Model: {agent.llm_model}</p>
               </div>
               <div className="flex items-center gap-3">
                 <button
                   className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
                   onClick={() => handleEdit(agent)}
+                  title="Edit agent"
                 >
                   Edit
                 </button>
@@ -100,6 +103,7 @@ const AgentsPage = () => {
                   className="rounded-xl border border-red-200 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50"
                   onClick={() => handleDelete(agent.id)}
                   disabled={deleteAgent.isPending}
+                  title="Delete agent"
                 >
                   Delete
                 </button>
@@ -107,7 +111,9 @@ const AgentsPage = () => {
             </div>
           ))}
           {agentsQuery.data?.length === 0 ? (
-            <div className="card p-6 text-sm text-slate-500">No agents yet. Create one to get started.</div>
+            <div className="card p-6 text-sm text-slate-500 dark:text-slate-400">
+              No agents yet. Create one to get started.
+            </div>
           ) : null}
         </div>
       )}

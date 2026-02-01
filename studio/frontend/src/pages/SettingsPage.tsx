@@ -29,8 +29,8 @@ const SettingsPage = () => {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">Settings</h1>
-        <p className="mt-1 text-sm text-slate-500">
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Settings</h1>
+        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
           Configure your API keys and preferences
         </p>
       </div>
@@ -39,7 +39,7 @@ const SettingsPage = () => {
       <div className="card p-6">
         <div className="flex items-center gap-2 mb-4">
           <KeyIcon className="h-5 w-5 text-primary-600" />
-          <h2 className="text-lg font-semibold text-slate-900">API Keys</h2>
+          <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">API Keys</h2>
         </div>
 
         <div className="space-y-6">
@@ -70,13 +70,13 @@ const SettingsPage = () => {
 
           {/* OpenAI API Key */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
               OpenAI API Key
             </label>
             <div className="relative">
               <input
                 type={showOpenAI ? 'text' : 'password'}
-                className="w-full rounded-xl border border-slate-200 px-3 py-2 pr-10 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                className="w-full rounded-xl border border-slate-200 px-3 py-2 pr-10 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-slate-700 dark:bg-slate-950"
                 value={apiKeys.openai}
                 onChange={(e) => setApiKey('openai', e.target.value)}
                 placeholder="sk-..."
@@ -93,7 +93,7 @@ const SettingsPage = () => {
                 )}
               </button>
             </div>
-            <p className="mt-1 text-xs text-slate-500">
+            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
               Get your API key from{' '}
               <a
                 href="https://platform.openai.com/api-keys"
@@ -108,13 +108,13 @@ const SettingsPage = () => {
 
           {/* Anthropic API Key */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
               Anthropic API Key <span className="text-slate-400 font-normal">(Optional)</span>
             </label>
             <div className="relative">
               <input
                 type={showAnthropic ? 'text' : 'password'}
-                className="w-full rounded-xl border border-slate-200 px-3 py-2 pr-10 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                className="w-full rounded-xl border border-slate-200 px-3 py-2 pr-10 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-slate-700 dark:bg-slate-950"
                 value={apiKeys.anthropic}
                 onChange={(e) => setApiKey('anthropic', e.target.value)}
                 placeholder="sk-ant-..."
@@ -131,7 +131,7 @@ const SettingsPage = () => {
                 )}
               </button>
             </div>
-            <p className="mt-1 text-xs text-slate-500">
+            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
               Required for Claude models. Get your key from{' '}
               <a
                 href="https://console.anthropic.com/settings/keys"
@@ -150,6 +150,7 @@ const SettingsPage = () => {
               type="button"
               className="rounded-xl border border-red-200 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50"
               onClick={handleClear}
+              title="Clear all stored API keys"
             >
               Clear All Keys
             </button>
@@ -158,6 +159,7 @@ const SettingsPage = () => {
                 type="button"
                 className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
                 onClick={handleCancel}
+                title="Return to previous page"
               >
                 Cancel
               </button>
@@ -165,6 +167,7 @@ const SettingsPage = () => {
                 type="button"
                 className="rounded-xl bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700"
                 onClick={handleSave}
+                title="Save API key settings"
               >
                 {saved ? '✓ Saved!' : 'Save Settings'}
               </button>
@@ -175,8 +178,8 @@ const SettingsPage = () => {
 
       {/* Usage Information */}
       <div className="card p-6">
-        <h2 className="text-lg font-semibold text-slate-900 mb-4">How API Keys Are Used</h2>
-        <div className="space-y-3 text-sm text-slate-600">
+        <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4">How API Keys Are Used</h2>
+        <div className="space-y-3 text-sm text-slate-600 dark:text-slate-400">
           <div className="flex gap-3">
             <span className="flex-shrink-0 text-primary-600">1.</span>
             <p>
