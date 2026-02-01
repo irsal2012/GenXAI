@@ -50,6 +50,12 @@ GenXAI is an advanced agentic AI framework designed to surpass existing solution
 - Real-time testing playground
 - One-click deployment
 
+### ⚡ Trigger SDK (Non-Studio)
+- Webhook triggers for external events
+- Cron/interval schedule triggers
+- Async queue triggers for message-driven workflows
+- Lightweight registry to start/stop triggers programmatically
+
 ### 🏢 Enterprise-Ready
 - **Observability**: Logging, metrics, tracing
 - **Security**: RBAC, encryption, guardrails
@@ -197,6 +203,28 @@ graph.add_edge(Edge(source="support", target="end"))
 
 # Run workflow
 result = await graph.run(input_data="My app crashed")
+```
+
+### Trigger SDK Quick Start
+
+```python
+from genxai.triggers import WebhookTrigger
+from genxai.core.graph import TriggerWorkflowRunner
+
+trigger = WebhookTrigger(trigger_id="support_webhook", secret="my-secret")
+
+# Wire trigger to workflow
+runner = TriggerWorkflowRunner(nodes=nodes, edges=edges)
+
+async def on_event(event):
+    result = await runner.handle_event(event)
+    print("Workflow result:", result)
+
+trigger.on_event(on_event)
+await trigger.start()
+
+# In your FastAPI handler:
+# await trigger.handle_request(payload, raw_body=raw, headers=request.headers)
 ```
 
 ### Install Options

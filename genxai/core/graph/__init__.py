@@ -12,6 +12,8 @@ from genxai.core.graph.checkpoints import (
     WorkflowCheckpoint,
     WorkflowCheckpointManager,
 )
+from genxai.core.graph.trigger_runner import TriggerWorkflowRunner
+from genxai.core.execution import WorkerQueueEngine
 
 __all__ = [
     "Node",
@@ -23,4 +25,6 @@ __all__ = [
     "execute_workflow_sync",
     "WorkflowCheckpoint",
     "WorkflowCheckpointManager",
+    "TriggerWorkflowRunner",
+    "WorkerQueueEngine",
 ]

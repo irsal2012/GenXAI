@@ -4,6 +4,7 @@ import asyncio
 import copy
 from typing import Any, Dict, List, Optional
 import logging
+from pathlib import Path
 
 from genxai.core.graph.engine import Graph
 from genxai.core.graph.nodes import InputNode, OutputNode, AgentNode, NodeType
@@ -11,6 +12,7 @@ from genxai.core.graph.edges import Edge, ConditionalEdge
 from genxai.core.agent.base import Agent, AgentFactory
 from genxai.core.agent.registry import AgentRegistry
 from genxai.tools.registry import ToolRegistry
+from genxai.core.execution import WorkerQueueEngine, ExecutionStore
 from genxai.tools.builtin.computation.calculator import CalculatorTool
 from genxai.tools.builtin.file.file_reader import FileReaderTool
 
@@ -172,7 +174,9 @@ class WorkflowExecutor:
         self, 
         openai_api_key: Optional[str] = None, 
         anthropic_api_key: Optional[str] = None,
-        register_builtin_tools: bool = True
+        register_builtin_tools: bool = True,
+        queue_engine: Optional[WorkerQueueEngine] = None,
+        execution_store: Optional[ExecutionStore] = None,
     ):
         """Initialize workflow executor.
 
@@ -184,6 +188,9 @@ class WorkflowExecutor:
         self.openai_api_key = openai_api_key
         self.anthropic_api_key = anthropic_api_key
         
+        self.queue_engine = queue_engine
+        self.execution_store = execution_store or ExecutionStore()
+
         if register_builtin_tools:
             self._setup_tools()
 
@@ -307,7 +314,10 @@ class WorkflowExecutor:
         self, 
         nodes: List[Dict[str, Any]], 
         edges: List[Dict[str, Any]], 
-        input_data: Dict[str, Any]
+        input_data: Dict[str, Any],
+        run_id: Optional[str] = None,
+        checkpoint_dir: Optional[str] = None,
+        resume_from: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Execute a workflow.
 
@@ -319,6 +329,9 @@ class WorkflowExecutor:
         Returns:
             Execution result with status, result, and metadata
         """
+        run_id = run_id or self.execution_store.generate_run_id()
+        record = self.execution_store.create(run_id, workflow="workflow", status="running")
+
         try:
             logger.info("Starting workflow execution")
 
@@ -332,13 +345,24 @@ class WorkflowExecutor:
             graph.validate()
             logger.info(f"Graph validated: {len(graph.nodes)} nodes, {len(graph.edges)} edges")
 
+            checkpoint = None
+            if resume_from and checkpoint_dir:
+                checkpoint = graph.load_checkpoint(resume_from, Path(checkpoint_dir))
+
             # Execute graph
-            result = await graph.run(input_data=input_data)
+            result = await graph.run(input_data=input_data, resume_from=checkpoint)
 
             logger.info("Workflow execution completed successfully")
 
+            self.execution_store.update(
+                run_id,
+                status="success",
+                result=result,
+                completed=True,
+            )
             return {
                 "status": "success",
+                "run_id": run_id,
                 "result": result,
                 "nodes_executed": len(graph.nodes),
                 "message": "Workflow executed successfully"
@@ -346,8 +370,15 @@ class WorkflowExecutor:
 
         except Exception as e:
             logger.error(f"Workflow execution failed: {e}", exc_info=True)
+            self.execution_store.update(
+                run_id,
+                status="error",
+                error=str(e),
+                completed=True,
+            )
             return {
                 "status": "error",
+                "run_id": run_id,
                 "error": str(e),
                 "message": f"Workflow execution failed: {str(e)}"
             }
@@ -356,6 +387,51 @@ class WorkflowExecutor:
             # Cleanup: Clear registries for next execution
             AgentRegistry.clear()
             logger.info("Cleared agent registry")
+
+    async def execute_queued(
+        self,
+        nodes: List[Dict[str, Any]],
+        edges: List[Dict[str, Any]],
+        input_data: Dict[str, Any],
+        run_id: Optional[str] = None,
+        checkpoint_dir: Optional[str] = None,
+        resume_from: Optional[str] = None,
+    ) -> str:
+        """Enqueue workflow execution using a worker queue engine."""
+        if not self.queue_engine:
+            self.queue_engine = WorkerQueueEngine()
+
+        run_id = run_id or self.execution_store.generate_run_id()
+        existing = self.execution_store.get(run_id)
+        if existing and existing.status in {"running", "success"}:
+            return run_id
+
+        self.execution_store.create(run_id, workflow="workflow", status="queued")
+
+        async def _handler(payload: Dict[str, Any]) -> None:
+            await self.execute(
+                nodes=payload["nodes"],
+                edges=payload["edges"],
+                input_data=payload["input_data"],
+                run_id=payload["run_id"],
+                checkpoint_dir=payload.get("checkpoint_dir"),
+                resume_from=payload.get("resume_from"),
+            )
+
+        await self.queue_engine.start()
+        return await self.queue_engine.enqueue(
+            {
+                "nodes": nodes,
+                "edges": edges,
+                "input_data": input_data,
+                "run_id": run_id,
+                "checkpoint_dir": checkpoint_dir,
+                "resume_from": resume_from,
+            },
+            _handler,
+            metadata={"workflow": "queued"},
+            run_id=run_id,
+        )
 
 
 def execute_workflow_sync(

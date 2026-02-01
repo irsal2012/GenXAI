@@ -9,6 +9,7 @@ import logging
 
 from genxai.observability.metrics import record_tool_execution
 from genxai.observability.tracing import span, record_exception
+from genxai.tools.security.policy import is_tool_allowed
 
 logger = logging.getLogger(__name__)
 
@@ -104,6 +105,16 @@ class Tool(ABC):
         error_type: Optional[str] = None
         try:
             with span("genxai.tool.execute", {"tool_name": self.metadata.name}):
+                allowed, reason = is_tool_allowed(self.metadata.name)
+                if not allowed:
+                    status = "error"
+                    error_type = "PolicyDenied"
+                    return ToolResult(
+                        success=False,
+                        data=None,
+                        error=reason or "Tool execution denied by policy",
+                        execution_time=time.time() - start_time,
+                    )
                 # Validate input
                 if not self.validate_input(**kwargs):
                     status = "error"
