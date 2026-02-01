@@ -11,17 +11,16 @@ and **n8n**.
 ## Executive Summary
 
 GenXAI’s **core runtime** is feature‑complete for agent workflows, tool orchestration,
-and multi‑provider LLM support. It competes well with **CrewAI** and **AutoGen** in
-agent tooling and extensibility, but lags behind **n8n** in plug‑and‑play triggers,
-connectors, and GUI‑first automation experience. Compared to **BeeAI**, GenXAI offers
-stronger multi‑provider and graph orchestration depth, while BeeAI focuses on rapid
-agentic automation patterns.
+multi‑provider LLM support, and **workflow triggers/connectors**. It competes well with
+**CrewAI** and **AutoGen** in orchestration depth and tooling, but still trails **n8n**
+on breadth of plug‑and‑play integrations and GUI‑first automation UX. Compared to
+**BeeAI**, GenXAI offers stronger multi‑provider support, graph orchestration, and
+enterprise‑grade observability/security.
 
 Key gaps to reach parity across the board:
 
-- Production‑ready **workflow triggers/connectors** outside Studio
-- **Distributed execution** / worker queue support
-- Rich **plugin ecosystem** and marketplace
+- Broader **connector ecosystem** (SaaS + enterprise systems)
+- Rich **plugin marketplace** and community template packs
 - Expanded **integration test matrix** for memory/vector store backends
 
 ---
@@ -45,7 +44,7 @@ Legend: ✅ = available, ⚠️ = partial, ❌ = missing, 🟡 = external/experi
 | Security/RBAC | ✅ | ⚠️ | ⚠️ | ⚠️ | ✅ |
 | Offline/local inference | ✅ (Ollama) | ⚠️ | ✅ | ✅ | ✅ |
 | CLI workflows | ✅ | ✅ | ✅ | ⚠️ | ✅ |
-| Workflow triggers/connectors | ❌ (core) | ⚠️ | ⚠️ | ⚠️ | ✅ |
+| Workflow triggers/connectors | ✅ (core) | ⚠️ | ⚠️ | ⚠️ | ✅ |
 | GUI workflow builder | ❌ (core) | ❌ | ❌ | ❌ | ✅ |
 | Marketplace/ecosystem | ⚠️ (templates) | ✅ | ✅ | ⚠️ | ✅ |
 
@@ -65,8 +64,8 @@ Scale: **1 = missing**, **3 = partial**, **5 = best‑in‑class**
 | Tooling & schemas | 4 | 4 | 4 | 3 | 5 |
 | Memory & persistence | 4 | 2 | 4 | 2 | 3 |
 | Observability & governance | 4 | 2 | 3 | 2 | 5 |
-| Enterprise readiness | 3 | 2 | 3 | 2 | 5 |
-| Ecosystem/connectors | 2 | 4 | 4 | 2 | 5 |
+| Enterprise readiness | 4 | 2 | 3 | 2 | 5 |
+| Ecosystem/connectors | 3 | 4 | 4 | 2 | 5 |
 | UX/automation experience | 2 | 3 | 3 | 3 | 5 |
 | Extensibility/plug‑ins | 3 | 4 | 4 | 2 | 5 |
 
@@ -98,7 +97,7 @@ Weighted score formula: **(score / 5) × weight**
 
 | Framework | Weighted Total (0–100) |
 |---|---:|
-| GenXAI (Core) | 72.0 |
+| GenXAI (Core) | 76.8 |
 | CrewAI | 61.8 |
 | AutoGen | 75.2 |
 | BeeAI | 48.0 |
@@ -127,7 +126,7 @@ Weighted totals (Enterprise‑First):
 
 | Framework | Weighted Total (0–100) |
 |---|---:|
-| GenXAI (Core) | 70.6 |
+| GenXAI (Core) | 77.0 |
 | CrewAI | 56.8 |
 | AutoGen | 72.2 |
 | BeeAI | 44.0 |
@@ -154,7 +153,7 @@ Weighted totals (Developer‑First):
 
 | Framework | Weighted Total (0–100) |
 |---|---:|
-| GenXAI (Core) | 75.0 |
+| GenXAI (Core) | 77.2 |
 | CrewAI | 63.2 |
 | AutoGen | 76.8 |
 | BeeAI | 50.4 |
@@ -170,8 +169,8 @@ Weighted totals (Developer‑First):
 | Tooling & schemas | 🟩4 | 🟩4 | 🟩4 | 🟨3 | 🟩5 |
 | Memory & persistence | 🟩4 | 🟥2 | 🟩4 | 🟥2 | 🟨3 |
 | Observability & governance | 🟩4 | 🟥2 | 🟨3 | 🟥2 | 🟩5 |
-| Enterprise readiness | 🟨3 | 🟥2 | 🟨3 | 🟥2 | 🟩5 |
-| Ecosystem/connectors | 🟥2 | 🟩4 | 🟩4 | 🟥2 | 🟩5 |
+| Enterprise readiness | 🟩4 | 🟥2 | 🟨3 | 🟥2 | 🟩5 |
+| Ecosystem/connectors | 🟨3 | 🟩4 | 🟩4 | 🟥2 | 🟩5 |
 | UX/automation experience | 🟥2 | 🟨3 | 🟨3 | 🟨3 | 🟩5 |
 | Extensibility/plug‑ins | 🟨3 | 🟩4 | 🟩4 | 🟥2 | 🟩5 |
 
@@ -193,9 +192,8 @@ Weighted totals (Developer‑First):
 - Observability scaffolding and security modules.
 
 **Weaknesses**
-- Lacks non‑Studio **workflow triggers/connectors** (e.g., schedules/webhooks).
-- No built‑in **distributed execution** / worker queues.
-- Limited ecosystem/marketplace compared to CrewAI/AutoGen/n8n.
+- Limited **connector ecosystem** (SaaS/enterprise integrations still growing).
+- Limited **ecosystem/marketplace** compared to CrewAI/AutoGen/n8n.
 
 ### CrewAI
 **Strengths**
@@ -237,15 +235,15 @@ Weighted totals (Developer‑First):
 ## Readiness Verdict (Non‑Studio)
 
 **Competitive with CrewAI/AutoGen on core orchestration and tooling.**
-To compete with **n8n** and broader enterprise platforms, GenXAI needs
-connectors/triggers, workflow persistence at scale, and distributed execution.
+GenXAI now includes **core triggers/connectors** and a **worker queue engine**.
+To compete with **n8n** and broader enterprise platforms, GenXAI needs broader
+connector coverage, richer templates, and ecosystem growth.
 
 ---
 
 ## Recommended Next Milestones
 
-1. **Trigger & Connector SDK** (webhooks, schedules, DB listeners, queues)
-2. **Worker/Queue Execution Layer** (Redis/Celery/RQ or async worker pool)
-3. **Expanded Vector Store Coverage** + integration tests
-4. **Template Marketplace** (discoverable workflow packs)
-5. **Deployment Hardening** (K8s/Helm, secrets policy, CI benchmarks)
+1. **Connector Ecosystem Expansion** (top SaaS + enterprise systems)
+2. **Expanded Vector Store Coverage** + integration tests
+3. **Template Marketplace** (discoverable workflow packs)
+4. **Deployment Hardening** (K8s/Helm, secrets policy, CI benchmarks)

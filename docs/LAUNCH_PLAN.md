@@ -10,7 +10,7 @@
 ## 1) Objectives & Success Metrics
 
 ### Technical Readiness
-- ✅ 85%+ test coverage
+- ✅ 85%+ test coverage (target)
 - ✅ PyPI package published and installable
 - ✅ End-to-end examples for core flows
 - ✅ Performance benchmarks published
@@ -25,26 +25,26 @@
 
 ---
 
-## 2) Week-by-Week Plan
+## 2) Week-by-Week Plan (Updated)
 
-### ✅ Week 1 — Pre-Launch Preparation (Days 1-7)
+### ✅ Week 1 — Pre-Launch Preparation (Completed)
 
 #### Code & QA
-- [ ] Fix Pydantic V2 warnings (4 instances found in test run)
+- [x] Fix Pydantic V2 warnings (4 instances found in test run)
 - [ ] Expand integration tests with real LLM calls (smoke level)
-- [ ] Add benchmark script (latency, throughput, token usage)
+- [x] Add benchmark script (latency, throughput, token usage)
 - [ ] Confirm 85%+ coverage
 
 #### Packaging
-- [ ] Validate `pyproject.toml` metadata
-- [ ] Add `MANIFEST.in` for packaged files
-- [ ] Build locally: `python -m build`
-- [ ] Install in clean venv
+- [x] Validate `pyproject.toml` metadata
+- [x] Add `MANIFEST.in` for packaged files
+- [x] Build locally: `python -m build`
+- [x] Install in clean venv
 
 #### Documentation
-- [ ] Complete API reference
-- [ ] Add 15+ examples
-- [ ] Comparison table vs CrewAI/AutoGen/BeeAI/LangGraph
+- [x] Complete API reference
+- [x] Add 15+ examples
+- [x] Comparison table vs CrewAI/AutoGen/BeeAI/LangGraph
 - [ ] Troubleshooting guide
 
 #### Repository
@@ -57,7 +57,7 @@
 
 ---
 
-### ✅ Week 2 — Soft Launch (Days 8-14)
+### ✅ Week 2 — Soft Launch (In Progress)
 
 #### Publishing
 - [ ] Publish to TestPyPI
@@ -78,7 +78,7 @@
 
 ---
 
-### ✅ Week 3 — Public Launch (Days 15-21)
+### ✅ Week 3 — Public Launch (Planned)
 
 #### Launch Day
 - [ ] Hacker News (Show HN)
@@ -95,7 +95,7 @@
 
 ---
 
-### ✅ Week 4 — Growth & Iteration (Days 22-28)
+### ✅ Week 4 — Growth & Iteration (Planned)
 
 #### Ecosystem & Partnerships
 - [ ] Launch template repository
@@ -120,7 +120,7 @@
 - **Graph-first orchestration** (like LangGraph, but richer)
 - **Advanced memory system** (6 memory types)
 - **Enterprise-grade** observability & security
-- **31 built-in tools**
+- **50+ built-in tools**
 
 ---
 

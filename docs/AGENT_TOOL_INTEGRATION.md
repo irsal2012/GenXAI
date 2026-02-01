@@ -48,22 +48,20 @@ Start → Extract Tool → Transform Tool → Agent → Load Tool → End
 - Agent can't control the tool execution flow
 - Confusing mental model
 
-## How to Use in the Workflow Builder
+## How to Use Programmatically
 
-### 1. Create Tools
+### 1. Define Tools
 
-First, create your tools in the **Tools** page:
-- Go to Tools → Create Tool
-- Define the tool's name, description, and parameters
-- Example tools: `extract_data`, `transform_data`, `load_data`
+Create or import tools and register them with the registry:
+
+```python
+from genxai.tools.registry import ToolRegistry
+from genxai.tools.builtin import *  # noqa: F403 - auto-register built-ins
+```
 
 ### 2. Create Agents with Tools
 
-Create agents in the **Agents** page:
-- Go to Agents → Create Agent
-- Set the agent's role and goal
-- **Assign tools** to the agent from the available tools list
-- The agent will have access to these tools during execution
+Create agents by assigning tool names in their configuration:
 
 Example agent configuration:
 ```json
@@ -77,14 +75,7 @@ Example agent configuration:
 
 ### 3. Build Workflows with Agents
 
-In the **Workflow Builder**:
-- Drag agents from the "Available Agents" section onto the canvas
-- The agent node will display:
-  - 🤖 Agent icon and name
-  - Agent goal/description
-  - 🔧 Number of tools assigned
-- Connect agents with Start, Decision, and End nodes
-- Click on an agent node to configure its tools (coming soon)
+Build graphs by wiring Agent nodes and let each agent call tools internally.
 
 ## Agent Configuration
 
@@ -98,10 +89,8 @@ Every agent is automatically connected to an LLM with these default settings:
 
 ### Tool Assignment
 
-Tools can be assigned to agents in two ways:
-
-1. **During Agent Creation**: Select tools when creating the agent
-2. **In Workflow Builder**: Click on an agent node to modify its tools (coming soon)
+Tools can be assigned to agents by populating `tools` in `AgentConfig` or via
+`AgentFactory.create_agent(..., tools=[...])`.
 
 ### Agent Execution Flow
 
@@ -167,59 +156,17 @@ End
 
 Each agent has specialized tools for its role.
 
-## Visualization in UI
-
-### Agent Node Display
-
-Agent nodes in the workflow canvas show:
-```
-┌─────────────────────┐
-│ 🤖 Data Processor   │
-│ Process data        │
-│ ─────────────────── │
-│ 🔧 4 tools          │
-└─────────────────────┘
-```
-
-### Agent Palette Card
-
-Agent cards in the palette show:
-```
-┌─────────────────────┐
-│ 🤖 Data Processor   │
-│ Process and trans...│
-│ 🔧 4 tools          │
-└─────────────────────┘
-```
-
 ## Technical Details
 
 ### Agent Data Structure
 
-```typescript
-interface Agent {
-  id: string
-  role: string
-  goal: string
-  backstory: string
-  llm_model: string
-  tools: string[]  // Array of tool names
-  metadata: Record<string, any>
-}
-```
-
-### Workflow Node Data
-
-```typescript
-interface AgentNodeData {
-  label: string
-  config: {
-    role: string
-    goal: string
-    tools: string[]  // Tools available to this agent
-  }
-  agentId: string
-}
+```python
+class AgentConfig(BaseModel):
+    role: str
+    goal: str
+    backstory: str = ""
+    llm_model: str = "gpt-4"
+    tools: list[str] = []
 ```
 
 ## FAQ

@@ -164,6 +164,69 @@ result = await engine.execute(start_node="input", input_data={"task": "..."})
 
 ---
 
+## Triggers
+
+Triggers emit workflow events for schedules, webhooks, and queues.
+
+```python
+from genxai.triggers import WebhookTrigger, ScheduleTrigger
+from genxai.core.graph.trigger_runner import TriggerWorkflowRunner
+
+runner = TriggerWorkflowRunner(nodes=nodes, edges=edges)
+trigger = WebhookTrigger(trigger_id="support_webhook", secret="my-secret")
+
+async def on_event(event):
+    result = await runner.handle_event(event)
+    print(result)
+
+trigger.on_event(on_event)
+await trigger.start()
+```
+
+```python
+schedule = ScheduleTrigger(trigger_id="daily_job", cron="0 9 * * *")
+schedule.on_event(on_event)
+await schedule.start()
+```
+
+---
+
+## Connectors
+
+Connectors integrate external systems (Kafka, SQS, Postgres CDC, Webhooks).
+
+```python
+from genxai.connectors import WebhookConnector, ConnectorRegistry
+
+connector = WebhookConnector(connector_id="webhook_1", secret="my-secret")
+
+async def handle(event):
+    print(event.payload)
+
+connector.on_event(handle)
+ConnectorRegistry.register(connector)
+await ConnectorRegistry.start_all()
+```
+
+---
+
+## Worker Queue Engine
+
+```python
+from genxai.core.execution import WorkerQueueEngine
+
+engine = WorkerQueueEngine(worker_count=4)
+
+async def handler(payload: dict):
+    print("processing", payload)
+
+await engine.start()
+task_id = await engine.enqueue({"workflow_id": "wf_1"}, handler)
+await engine.stop()
+```
+
+---
+
 ## Tools
 
 ### Tool Registry + Built-ins

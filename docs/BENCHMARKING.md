@@ -27,8 +27,11 @@ python scripts/benchmarks/run_benchmark.py \
 The benchmark script generates synthetic workflows that exercise:
 
 - **Agent Runtime** (LLM calls + prompts)
-- **Tool Execution** (calculator, file reader)
+- **Tool Execution** (50+ built-in tools including calculator, file reader, web scraper)
 - **Graph Engine** (parallel + sequential branches)
+- **Trigger System** (webhook, schedule, queue, file watcher)
+- **Connector System** (webhook, Kafka, SQS, Postgres CDC)
+- **Worker Queue Engine** (task distribution, retry logic)
 
 You can adjust parameters with flags:
 

@@ -13,11 +13,14 @@ Use this checklist before releasing new versions.
 - [ ] Input validation for workflow payloads
 - [ ] Output filtering for sensitive data
 - [ ] PII detection enabled (if applicable)
+- [ ] Trigger payload validation (webhook signatures, schedule inputs)
+- [ ] Connector payload schema validation
 
 ## Rate Limiting & Cost Controls
 
 - [ ] Rate limits configured
 - [ ] Cost control policies set (max tokens/cost)
+- [ ] Worker queue retry limits and backoff configured
 
 ## Dependencies & Vulnerabilities
 

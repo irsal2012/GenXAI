@@ -165,6 +165,39 @@ Enable auto-reload during development:
 genxai metrics serve --reload
 ```
 
+## Approval Commands
+
+Manage pending approvals for policy-gated operations:
+
+```bash
+# List all pending approvals
+genxai approval list
+
+# Approve a specific request
+genxai approval approve <request_id>
+
+# Reject a specific request
+genxai approval reject <request_id> --reason "Security concern"
+```
+
+## Audit Commands
+
+Query and export audit logs:
+
+```bash
+# List recent audit events
+genxai audit list --limit 50
+
+# Filter by user
+genxai audit list --user alice
+
+# Filter by resource type
+genxai audit list --resource-type tool
+
+# Export audit logs to JSON
+genxai audit export --output audit_logs.json --start-date 2026-01-01
+```
+
 ## Tool Categories
 
 Valid tool categories:

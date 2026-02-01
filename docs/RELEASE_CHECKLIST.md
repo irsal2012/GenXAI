@@ -7,6 +7,7 @@ Use this checklist before cutting a release tag.
 - [ ] Unit + integration tests passing locally
 - [ ] Linting (ruff) clean
 - [ ] Mypy type checks clean
+- [ ] Trigger + connector integration tests passing
 
 ## 2) Security & Compliance
 - [ ] Security workflow green (pip-audit + bandit)
@@ -21,6 +22,7 @@ Use this checklist before cutting a release tag.
 - [ ] `python -m build` succeeds
 - [ ] PyPI publish workflow verified
 - [ ] Docker image built/pushed (latest + version)
+- [ ] Release notes mention connector + trigger coverage
 
 ## 5) Post-Release
 - [ ] GitHub Release created

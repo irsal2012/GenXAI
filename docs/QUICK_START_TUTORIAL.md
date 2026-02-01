@@ -23,7 +23,7 @@ python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 
 # Install dependencies
-pip install -e ".[llm,tools]"
+pip install -e ".[llm,tools,observability]"
 ```
 
 ---
@@ -92,7 +92,7 @@ import os
 from genxai.core.agent.base import AgentFactory
 from genxai.core.agent.runtime import AgentRuntime
 from genxai.tools.registry import ToolRegistry
-from genxai.tools.builtin import *  # Auto-registers all 31 tools
+from genxai.tools.builtin import *  # Auto-registers all tools
 
 async def main():
     # Create an agent with calculator tool
@@ -108,7 +108,7 @@ async def main():
     # Get tools from registry
     calculator = ToolRegistry.get("calculator")
     
-    # Create runtime and set tools
+    # Create runtime
     runtime = AgentRuntime(agent=agent, api_key=os.getenv("OPENAI_API_KEY"))
     runtime.set_tools({"calculator": calculator})
     
@@ -284,6 +284,42 @@ python list_tools.py
 
 ---
 
+## ⏰ Example 6: Trigger a Workflow
+
+```python
+import asyncio
+from genxai.triggers import ScheduleTrigger
+from genxai.core.graph.trigger_runner import TriggerWorkflowRunner
+
+runner = TriggerWorkflowRunner(nodes=nodes, edges=edges)
+trigger = ScheduleTrigger(trigger_id="daily_job", cron="0 9 * * *")
+
+async def on_event(event):
+    result = await runner.handle_event(event)
+    print(result)
+
+trigger.on_event(on_event)
+await trigger.start()
+```
+
+---
+
+## 🔌 Example 7: Connector Event Handler
+
+```python
+from genxai.connectors import WebhookConnector
+
+connector = WebhookConnector(connector_id="webhook_1", secret="my-secret")
+
+async def on_event(event):
+    print("Connector payload:", event.payload)
+
+connector.on_event(on_event)
+await connector.start()
+```
+
+---
+
 ## 🎨 Visualize Your Workflow
 
 GenXAI can generate visual representations of your workflows:
@@ -342,7 +378,7 @@ open htmlcov/index.html
 
 ### Explore Features
 - **Graph Patterns**: See `examples/patterns/` for workflow patterns
-- **Tool Creation**: Read `README_TOOL_CREATION.md` to create custom tools
+- **Tool Creation**: Read `TOOLS_DESIGN.md` to create custom tools
 - **Memory System**: Explore `MEMORY_DESIGN.md` for advanced memory features
 - **LLM Integration**: Check `docs/LLM_INTEGRATION.md` for provider setup
 
@@ -371,7 +407,7 @@ from genxai.tools.builtin import *
 ### Issue: "Module not found"
 **Solution**: Install with dependencies:
 ```bash
-pip install -e ".[llm,tools]"
+pip install -e ".[llm,tools,observability]"
 ```
 
 ### Issue: Tests failing
@@ -385,7 +421,7 @@ python --version
 ## 💡 Tips & Best Practices
 
 1. **Start Simple**: Begin with a single agent, then add complexity
-2. **Use Tools**: Leverage the 31 built-in tools before creating custom ones
+2. **Use Tools**: Leverage the built-in tools before creating custom ones
 3. **Enable Memory**: Add memory for context-aware agents
 4. **Validate Graphs**: Always call `graph.validate()` before running
 5. **Monitor Tokens**: Track token usage to manage costs
@@ -399,7 +435,7 @@ python --version
 
 You've completed the GenXAI quick start tutorial! You now know how to:
 - ✅ Create agents with different roles
-- ✅ Use built-in tools (31 available!)
+- ✅ Use built-in tools
 - ✅ Build multi-agent workflows
 - ✅ Add memory to agents
 - ✅ Visualize workflows
