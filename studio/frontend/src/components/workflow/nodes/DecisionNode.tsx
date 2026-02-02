@@ -22,7 +22,7 @@ const DecisionNode = memo(({ id, data, isConnectable, selected }: NodeProps<Deci
     >
       <Handle
         type="target"
-        position={Position.Top}
+        position={Position.Left}
         isConnectable={isConnectable}
         className="!bg-orange-500 !w-3 !h-3"
       />
@@ -59,7 +59,7 @@ const DecisionNode = memo(({ id, data, isConnectable, selected }: NodeProps<Deci
 
       <Handle
         type="source"
-        position={Position.Bottom}
+        position={Position.Right}
         isConnectable={isConnectable}
         className="!bg-orange-500 !w-3 !h-3"
       />

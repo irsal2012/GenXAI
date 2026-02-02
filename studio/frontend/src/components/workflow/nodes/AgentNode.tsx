@@ -54,7 +54,7 @@ const AgentNode = memo(({ id, data, isConnectable, selected }: NodeProps<AgentNo
     >
       <Handle
         type="target"
-        position={Position.Top}
+        position={Position.Left}
         isConnectable={isConnectable}
         className="!bg-blue-500 !w-3 !h-3"
       />
@@ -142,7 +142,7 @@ const AgentNode = memo(({ id, data, isConnectable, selected }: NodeProps<AgentNo
 
       <Handle
         type="source"
-        position={Position.Bottom}
+        position={Position.Right}
         isConnectable={isConnectable}
         className="!bg-blue-500 !w-3 !h-3"
       />

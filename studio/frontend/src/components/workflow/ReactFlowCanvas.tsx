@@ -62,7 +62,7 @@ type StyledEdge = Edge & {
 const getLayoutedElements = (nodes: ReactFlowNode[], edges: ReactFlowEdge[]) => {
   const dagreGraph = new dagre.graphlib.Graph()
   dagreGraph.setDefaultEdgeLabel(() => ({}))
-  dagreGraph.setGraph({ rankdir: 'TB', ranksep: 100, nodesep: 80 })
+  dagreGraph.setGraph({ rankdir: 'LR', ranksep: 120, nodesep: 80 })
 
   nodes.forEach((node) => {
     // Agent nodes are more compact (to match the palette cards)
@@ -115,9 +115,9 @@ const CustomNode = ({ data, type }: NodeProps) => {
         fontWeight: 600,
       }}
     >
-      <Handle type="target" position={Position.Top} style={{ background: color }} />
+      <Handle type="target" position={Position.Left} style={{ background: color }} />
       <div style={{ textAlign: 'center' }}>{String(data.label)}</div>
-      <Handle type="source" position={Position.Bottom} style={{ background: color }} />
+      <Handle type="source" position={Position.Right} style={{ background: color }} />
     </div>
   )
 }

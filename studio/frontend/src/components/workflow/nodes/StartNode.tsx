@@ -22,7 +22,7 @@ const StartNode = memo(({ id, data, isConnectable, selected }: NodeProps<StartNo
     >
       <Handle
         type="source"
-        position={Position.Bottom}
+        position={Position.Right}
         isConnectable={isConnectable}
         className="!bg-green-500 !w-3 !h-3"
       />

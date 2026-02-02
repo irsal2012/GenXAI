@@ -22,7 +22,7 @@ const EndNode = memo(({ id, data, isConnectable, selected }: NodeProps<EndNodeTy
     >
       <Handle
         type="target"
-        position={Position.Top}
+        position={Position.Left}
         isConnectable={isConnectable}
         className="!bg-red-500 !w-3 !h-3"
       />
