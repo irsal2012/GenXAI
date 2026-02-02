@@ -163,22 +163,31 @@ const ReactFlowCanvas = ({
   useMemo(() => {
     setNodes(layoutedNodes)
   }, [layoutedNodes, setNodes])
-  const [edges, setEdges, onEdgesChangeInternal] = useEdgesState<StyledEdge>(
-    layoutedEdges.map((edge) => ({
-      ...edge,
-      type: 'smoothstep',
-      animated: true,
-      style: {
-        strokeDasharray: '5,5',
-        stroke: '#94a3b8',
-        strokeWidth: 2,
-      },
-      markerEnd: {
-        type: MarkerType.ArrowClosed,
-        color: '#94a3b8',
-      },
-    }))
+  const styledEdges = useMemo(
+    () =>
+      layoutedEdges.map((edge) => ({
+        ...edge,
+        type: 'smoothstep',
+        animated: true,
+        style: {
+          strokeDasharray: '5,5',
+          stroke: '#94a3b8',
+          strokeWidth: 2,
+        },
+        markerEnd: {
+          type: MarkerType.ArrowClosed,
+          color: '#94a3b8',
+        },
+      })),
+    [layoutedEdges]
   )
+
+  const [edges, setEdges, onEdgesChangeInternal] = useEdgesState<StyledEdge>(styledEdges)
+
+  // Update edges when layoutedEdges change
+  useMemo(() => {
+    setEdges(styledEdges)
+  }, [styledEdges, setEdges])
 
   const onConnect = useCallback(
     (params: Connection) => {

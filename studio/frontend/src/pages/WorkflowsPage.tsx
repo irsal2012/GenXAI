@@ -7,8 +7,29 @@ import type { WorkflowInput } from '../types/api'
 const emptyWorkflow: WorkflowInput = {
   name: 'New Workflow',
   description: 'Describe your workflow goals',
-  nodes: [],
-  edges: [],
+  nodes: [
+    {
+      id: 'start',
+      type: 'start',
+      position: { x: 250, y: 50 },
+      label: 'Start',
+      config: {},
+    },
+    {
+      id: 'end',
+      type: 'end',
+      position: { x: 250, y: 250 },
+      label: 'End',
+      config: {},
+    },
+  ],
+  edges: [
+    {
+      id: 'e1',
+      source: 'start',
+      target: 'end',
+    },
+  ],
   metadata: {},
 }
 
