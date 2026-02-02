@@ -4,38 +4,24 @@
  */
 
 import { useMemo } from 'react'
-import type { Node } from '@xyflow/react'
-
-interface AgentNodeData {
-  [key: string]: unknown
-  label: string
-  agentId?: string
-  config?: {
-    role?: string
-    goal?: string
-    backstory?: string
-    llm_model?: string
-    tools?: string[]
-    description?: string
-    temperature?: number
-    max_tokens?: number
-    max_iterations?: number
-    allow_delegation?: boolean
-    verbose?: boolean
-    metadata?: Record<string, unknown>
-  }
-}
+import type { ReactFlowNode } from '../../utils/workflowConverter'
 
 interface AgentDetailsPanelProps {
-  selectedNode: Node<AgentNodeData> | null
+  selectedNode: ReactFlowNode | null
   onClose: () => void
-  onConfigure?: (node: Node<AgentNodeData>) => void
+  onConfigure?: (node: ReactFlowNode) => void
+}
+
+interface AgentNodeDataShape {
+  label: string
+  config?: Record<string, any>
+  agentId?: string
 }
 
 const AgentDetailsPanel = ({ selectedNode, onClose, onConfigure }: AgentDetailsPanelProps) => {
   const agentData = useMemo(() => {
     if (!selectedNode || selectedNode.type !== 'agent') return null
-    return selectedNode.data
+    return selectedNode.data as AgentNodeDataShape
   }, [selectedNode])
 
   if (!agentData) return null
@@ -147,7 +133,7 @@ const AgentDetailsPanel = ({ selectedNode, onClose, onConfigure }: AgentDetailsP
             <p className="text-xs text-slate-500 italic">No tools assigned</p>
           ) : (
             <div className="space-y-1.5">
-              {tools.map((tool, index) => (
+              {tools.map((tool: string, index: number) => (
                 <div
                   key={index}
                   className="flex items-center gap-2 px-2.5 py-1.5 bg-slate-50 rounded-lg border border-slate-200"

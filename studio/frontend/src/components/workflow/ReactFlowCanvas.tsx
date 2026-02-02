@@ -3,7 +3,7 @@
  * Provides full drag-and-drop editing capabilities
  */
 
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { useCallback, useMemo, useRef } from 'react'
 import {
   ReactFlow,
   Background,
@@ -17,8 +17,8 @@ import {
   Position,
   type Connection,
   type Edge,
-  type Node,
-  type ReactFlowInstance,
+  type EdgeChange,
+  type NodeChange,
   type NodeProps,
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
@@ -32,14 +32,34 @@ import DecisionNode from './nodes/DecisionNode'
 interface ReactFlowCanvasProps {
   nodes: ReactFlowNode[]
   edges: ReactFlowEdge[]
-  onNodesChange?: (nodes: Node[]) => void
+  onNodesChange?: (nodes: ReactFlowNode[]) => void
   onEdgesChange?: (edges: Edge[]) => void
-  onNodeClick?: (node: Node) => void
-  onNodeDoubleClick?: (node: Node) => void
+  onNodeClick?: (node: ReactFlowNode) => void
+  onNodeDoubleClick?: (node: ReactFlowNode) => void
+  showMiniMap?: boolean
+  showGrid?: boolean
+  onInit?: (instance: {
+    screenToFlowPosition: (point: { x: number; y: number }) => { x: number; y: number }
+    fitView: (options?: { padding?: number; duration?: number }) => void
+  }) => void
+}
+
+type StyledEdge = Edge & {
+  type: string
+  animated: boolean
+  style: {
+    strokeDasharray: string
+    stroke: string
+    strokeWidth: number
+  }
+  markerEnd: {
+    type: MarkerType
+    color: string
+  }
 }
 
 // Auto-layout using dagre
-const getLayoutedElements = (nodes: Node[], edges: Edge[]) => {
+const getLayoutedElements = (nodes: ReactFlowNode[], edges: ReactFlowEdge[]) => {
   const dagreGraph = new dagre.graphlib.Graph()
   dagreGraph.setDefaultEdgeLabel(() => ({}))
   dagreGraph.setGraph({ rankdir: 'TB', ranksep: 100, nodesep: 80 })
@@ -112,9 +132,24 @@ const nodeTypes = {
   default: CustomNode,
 }
 
-const ReactFlowCanvas = ({ nodes: initialNodes, edges: initialEdges, onNodesChange, onEdgesChange, onNodeClick, onNodeDoubleClick }: ReactFlowCanvasProps) => {
+const ReactFlowCanvas = ({
+  nodes: initialNodes,
+  edges: initialEdges,
+  onNodesChange,
+  onEdgesChange,
+  onNodeClick,
+  onNodeDoubleClick,
+  showMiniMap = true,
+  showGrid = true,
+  onInit,
+}: ReactFlowCanvasProps) => {
   const reactFlowWrapper = useRef<HTMLDivElement>(null)
-  const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | null>(null)
+  const reactFlowInstance = useRef<
+    {
+      screenToFlowPosition: (point: { x: number; y: number }) => { x: number; y: number }
+      fitView: (options?: { padding?: number; duration?: number }) => void
+    } | null
+  >(null)
   
   // Apply auto-layout
   const { nodes: layoutedNodes, edges: layoutedEdges} = useMemo(
@@ -122,13 +157,13 @@ const ReactFlowCanvas = ({ nodes: initialNodes, edges: initialEdges, onNodesChan
     [initialNodes, initialEdges]
   )
 
-  const [nodes, setNodes, onNodesChangeInternal] = useNodesState(layoutedNodes)
+  const [nodes, setNodes, onNodesChangeInternal] = useNodesState<ReactFlowNode>(layoutedNodes)
   
   // Update nodes when initialNodes change (e.g., when config is updated)
   useMemo(() => {
     setNodes(layoutedNodes)
   }, [layoutedNodes, setNodes])
-  const [edges, setEdges, onEdgesChangeInternal] = useEdgesState(
+  const [edges, setEdges, onEdgesChangeInternal] = useEdgesState<StyledEdge>(
     layoutedEdges.map((edge) => ({
       ...edge,
       type: 'smoothstep',
@@ -147,7 +182,8 @@ const ReactFlowCanvas = ({ nodes: initialNodes, edges: initialEdges, onNodesChan
 
   const onConnect = useCallback(
     (params: Connection) => {
-      const newEdge = {
+      const newEdge: StyledEdge = {
+        id: `${params.source}-${params.target}-${Date.now()}`,
         ...params,
         type: 'smoothstep',
         animated: true,
@@ -161,7 +197,7 @@ const ReactFlowCanvas = ({ nodes: initialNodes, edges: initialEdges, onNodesChan
           color: '#94a3b8',
         },
       }
-      const newEdges = addEdge(newEdge, edges) as any[]
+      const newEdges = addEdge<StyledEdge>(newEdge, edges)
       setEdges(newEdges.map((edge) => ({
         ...edge,
         type: edge.type || 'smoothstep',
@@ -182,7 +218,7 @@ const ReactFlowCanvas = ({ nodes: initialNodes, edges: initialEdges, onNodesChan
   )
 
   const handleNodesChange = useCallback(
-    (changes: any) => {
+    (changes: NodeChange<ReactFlowNode>[]) => {
       onNodesChangeInternal(changes)
       onNodesChange?.(nodes)
     },
@@ -190,7 +226,7 @@ const ReactFlowCanvas = ({ nodes: initialNodes, edges: initialEdges, onNodesChan
   )
 
   const handleEdgesChange = useCallback(
-    (changes: any) => {
+    (changes: EdgeChange<StyledEdge>[]) => {
       onEdgesChangeInternal(changes)
       onEdgesChange?.(edges)
     },
@@ -241,7 +277,7 @@ const ReactFlowCanvas = ({ nodes: initialNodes, edges: initialEdges, onNodesChan
     (event: React.DragEvent) => {
       event.preventDefault()
 
-      if (!reactFlowInstance) return
+      if (!reactFlowInstance.current) return
 
       const type = event.dataTransfer.getData('application/reactflow')
       const agentId = event.dataTransfer.getData('agentId')
@@ -251,7 +287,7 @@ const ReactFlowCanvas = ({ nodes: initialNodes, edges: initialEdges, onNodesChan
 
       if (!type) return
 
-      const position = reactFlowInstance.screenToFlowPosition({
+      const position = reactFlowInstance.current.screenToFlowPosition({
         x: event.clientX,
         y: event.clientY,
       })
@@ -266,7 +302,7 @@ const ReactFlowCanvas = ({ nodes: initialNodes, edges: initialEdges, onNodesChan
         }
       }
 
-      const newNode: Node = {
+      const newNode: ReactFlowNode = {
         id: `${type}-${Date.now()}`,
         type,
         position,
@@ -283,7 +319,7 @@ const ReactFlowCanvas = ({ nodes: initialNodes, edges: initialEdges, onNodesChan
       setNodes((nds) => nds.concat(newNode))
       onNodesChange?.([...nodes, newNode])
     },
-    [reactFlowInstance, setNodes, nodes, onNodesChange]
+    [setNodes, nodes, onNodesChange]
   )
 
   return (
@@ -295,11 +331,14 @@ const ReactFlowCanvas = ({ nodes: initialNodes, edges: initialEdges, onNodesChan
         onNodesChange={handleNodesChange}
         onEdgesChange={handleEdgesChange}
         onConnect={onConnect}
-        onInit={setReactFlowInstance}
+        onInit={(instance) => {
+          reactFlowInstance.current = instance
+          onInit?.(instance)
+        }}
         onDrop={onDrop}
         onDragOver={onDragOver}
-        onNodeClick={(_, node) => onNodeClick?.(node)}
-        onNodeDoubleClick={(_, node) => onNodeDoubleClick?.(node)}
+        onNodeClick={(_, node) => onNodeClick?.(node as ReactFlowNode)}
+        onNodeDoubleClick={(_, node) => onNodeDoubleClick?.(node as ReactFlowNode)}
         deleteKeyCode={['Backspace', 'Delete']}
         fitView
         attributionPosition="bottom-left"
@@ -308,14 +347,16 @@ const ReactFlowCanvas = ({ nodes: initialNodes, edges: initialEdges, onNodesChan
         elementsSelectable={true}
         selectNodesOnDrag={false}
       >
-        <Background color="#e2e8f0" gap={20} />
+        {showGrid && <Background color="#e2e8f0" gap={20} />}
         <Controls />
-        <MiniMap
-          nodeColor={(node) => nodeColors[node.type || 'default'] || nodeColors.default}
-          nodeStrokeWidth={3}
-          zoomable
-          pannable
-        />
+        {showMiniMap && (
+          <MiniMap
+            nodeColor={(node) => nodeColors[node.type || 'default'] || nodeColors.default}
+            nodeStrokeWidth={3}
+            zoomable
+            pannable
+          />
+        )}
       </ReactFlow>
       
       {/* Success banner */}

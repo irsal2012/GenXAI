@@ -13,6 +13,16 @@ const AppShell = () => {
   const { pathname } = useLocation()
   const title = pageTitles[pathname] ?? 'Workflow Builder'
 
+  const isWorkflowCanvas = pathname.startsWith('/workflows/')
+
+  if (isWorkflowCanvas) {
+    return (
+      <div className="min-h-screen bg-slate-100 text-slate-900">
+        <Outlet />
+      </div>
+    )
+  }
+
   return (
     <div className="flex min-h-screen bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
       <Sidebar />

@@ -13,6 +13,10 @@ interface NodeType {
   description: string
 }
 
+interface NodePaletteProps {
+  className?: string
+}
+
 const nodeTypes: NodeType[] = [
   {
     type: 'start',
@@ -37,7 +41,7 @@ const nodeTypes: NodeType[] = [
   },
 ]
 
-const NodePalette = () => {
+const NodePalette = ({ className }: NodePaletteProps) => {
   const { data: agents, isLoading } = useAgents()
 
   const onDragStart = (event: React.DragEvent, nodeType: string) => {
@@ -46,7 +50,7 @@ const NodePalette = () => {
   }
 
   return (
-    <div className="w-64 bg-white border-r border-slate-200 p-4 overflow-y-auto dark:bg-slate-950 dark:border-slate-800">
+    <div className={`w-64 bg-white border-r border-slate-200 p-4 overflow-y-auto dark:bg-slate-950 dark:border-slate-800 ${className || ''}`}>
       <div className="mb-6">
         <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-2">Node Types</h3>
         <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">Drag nodes onto the canvas to build your workflow</p>

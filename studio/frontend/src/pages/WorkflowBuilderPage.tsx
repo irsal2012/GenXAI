@@ -4,23 +4,19 @@ import { useExecuteWorkflow, useUpdateWorkflow, useWorkflow } from '../services/
 import { useBuilderStore } from '../store/builderStore'
 import ErrorState from '../components/ErrorState'
 import LoadingState from '../components/LoadingState'
-import ReactFlowCanvas from '../components/workflow/ReactFlowCanvas'
-import NodePalette from '../components/workflow/NodePalette'
+import CanvasEditor from '../components/canvas/CanvasEditor'
 import AgentConfigModal from '../components/workflow/AgentConfigModal'
 import DecisionConfigModal from '../components/workflow/DecisionConfigModal'
 import AgentDetailsPanel from '../components/workflow/AgentDetailsPanel'
 import { convertToReactFlow } from '../utils/workflowConverter'
-import type { Node } from '@xyflow/react'
+import type { ReactFlowNode } from '../utils/workflowConverter'
 
 const WorkflowBuilderPage = () => {
   const { workflowId } = useParams<{ workflowId: string }>()
   const workflowQuery = useWorkflow(workflowId)
   const updateWorkflow = useUpdateWorkflow(workflowId ?? '')
   const executeWorkflow = useExecuteWorkflow(workflowId ?? '')
-  const [executionResult, setExecutionResult] = useState<string>('')
-  const [isExecutionOutputVisible, setIsExecutionOutputVisible] = useState<boolean>(true)
-  const { draftNodes, draftEdges, draftMetadata, resetDrafts, setDraftNodes, setDraftEdges, setDraftMetadata } =
-    useBuilderStore()
+  const { draftNodes, draftEdges, draftMetadata, resetDrafts, setDraftNodes } = useBuilderStore()
 
   useEffect(() => {
     if (workflowQuery.data) {
@@ -32,19 +28,6 @@ const WorkflowBuilderPage = () => {
     }
   }, [workflowQuery.data, resetDrafts])
 
-  const workflowSnapshot = useMemo(() => {
-    try {
-      return {
-        nodes: JSON.parse(draftNodes || '[]'),
-        edges: JSON.parse(draftEdges || '[]'),
-      }
-    } catch {
-      return {
-        nodes: workflowQuery.data?.nodes ?? [],
-        edges: workflowQuery.data?.edges ?? [],
-      }
-    }
-  }, [draftNodes, draftEdges, workflowQuery.data])
 
   const visualWorkflow = useMemo(() => {
     try {
@@ -65,12 +48,11 @@ const WorkflowBuilderPage = () => {
     }
   }, [draftNodes, draftEdges, draftMetadata, workflowQuery.data])
 
-  const [viewMode, setViewMode] = useState<'visual' | 'json'>('visual')
-  const [selectedNode, setSelectedNode] = useState<Node | null>(null)
+  const [selectedNode, setSelectedNode] = useState<ReactFlowNode | null>(null)
   const [agentConfigModalOpen, setAgentConfigModalOpen] = useState(false)
-  const [agentConfigModalNode, setAgentConfigModalNode] = useState<any>(null)
+  const [agentConfigModalNode, setAgentConfigModalNode] = useState<ReactFlowNode | null>(null)
   const [decisionConfigModalOpen, setDecisionConfigModalOpen] = useState(false)
-  const [decisionConfigModalNode, setDecisionConfigModalNode] = useState<any>(null)
+  const [decisionConfigModalNode, setDecisionConfigModalNode] = useState<ReactFlowNode | null>(null)
   const [copyStatus, setCopyStatus] = useState<string>('')
 
   const handleSave = useCallback(async () => {
@@ -99,7 +81,7 @@ const WorkflowBuilderPage = () => {
       const formatted = JSON.stringify(exportPayload, null, 2)
       await navigator.clipboard.writeText(formatted)
       setCopyStatus('Copied JSON to clipboard')
-    } catch (error) {
+    } catch {
       setCopyStatus('Failed to export JSON')
     } finally {
       setTimeout(() => setCopyStatus(''), 2500)
@@ -108,9 +90,7 @@ const WorkflowBuilderPage = () => {
 
   const handleExecute = useCallback(async () => {
     if (!workflowId) return
-    const result = await executeWorkflow.mutateAsync({ input: 'demo payload' })
-    setExecutionResult(JSON.stringify(result, null, 2))
-    setIsExecutionOutputVisible(true)
+    await executeWorkflow.mutateAsync({ input: 'demo payload' })
   }, [workflowId, executeWorkflow])
 
   useEffect(() => {
@@ -146,187 +126,43 @@ const WorkflowBuilderPage = () => {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="card p-6">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <h2 className="text-lg font-semibold">{workflowQuery.data.name}</h2>
-            <p className="text-sm text-slate-500 dark:text-slate-400">
-              {workflowQuery.data.description || 'No description provided.'}
-            </p>
-          </div>
-          <div className="flex items-center gap-3">
-            <button
-              className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
-              onClick={handleSave}
-              disabled={updateWorkflow.isPending}
-              title="Save workflow (Ctrl/Cmd + S)"
-            >
-              {updateWorkflow.isPending ? 'Saving...' : 'Save workflow'}
-            </button>
-            <button
-              className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
-              onClick={handleExportJson}
-              title="Copy workflow JSON to clipboard (Ctrl/Cmd + Shift + E)"
-            >
-              Export JSON
-            </button>
-            <button
-              className="rounded-xl bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700"
-              onClick={handleExecute}
-              disabled={executeWorkflow.isPending}
-              title="Run workflow (Ctrl/Cmd + R)"
-            >
-              {executeWorkflow.isPending ? 'Running...' : 'Run workflow'}
-            </button>
-          </div>
-        </div>
-      </div>
+    <div className="relative">
       {copyStatus && (
-        <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-950/60 dark:text-emerald-200">
+        <div className="absolute left-6 top-6 z-40 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm text-emerald-700">
           {copyStatus}
         </div>
       )}
-      <div className="grid gap-6 lg:grid-cols-[5fr_1fr]">
-        <div className="card p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-base font-semibold">Workflow Editor</h3>
-            <div className="flex gap-2">
-              <button
-                className={`px-3 py-1 text-xs font-medium rounded-lg transition ${
-                  viewMode === 'visual'
-                    ? 'bg-primary-600 text-white'
-                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                }`}
-                onClick={() => setViewMode('visual')}
-              >
-                Visual
-              </button>
-              <button
-                className={`px-3 py-1 text-xs font-medium rounded-lg transition ${
-                  viewMode === 'json'
-                    ? 'bg-primary-600 text-white'
-                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                }`}
-                onClick={() => setViewMode('json')}
-              >
-                JSON
-              </button>
-            </div>
-          </div>
-
-          {viewMode === 'visual' ? (
-            <div className="h-[700px] flex gap-4">
-              <NodePalette />
-              <div className="flex-1">
-                <ReactFlowCanvas 
-                  nodes={visualWorkflow.nodes} 
-                  edges={visualWorkflow.edges}
-                  onNodeClick={(node) => setSelectedNode(node)}
-                  onNodeDoubleClick={(node) => {
-                    if (node.type === 'agent') {
-                      setAgentConfigModalNode(node)
-                      setAgentConfigModalOpen(true)
-                    } else if (node.type === 'decision') {
-                      setDecisionConfigModalNode(node)
-                      setDecisionConfigModalOpen(true)
-                    }
-                  }}
-                />
-              </div>
-              {selectedNode && selectedNode.type === 'agent' && (
-                <div className="w-80 h-full">
-                  <AgentDetailsPanel
-                    selectedNode={selectedNode as any}
-                    onClose={() => setSelectedNode(null)}
-                    onConfigure={(node) => {
-                      setAgentConfigModalNode(node)
-                      setAgentConfigModalOpen(true)
-                    }}
-                  />
-                </div>
-              )}
-            </div>
-          ) : (
-            <>
-          <div className="mt-4 space-y-4 text-sm">
-            <label className="block">
-              <span className="text-xs font-medium uppercase text-slate-500 dark:text-slate-400">Nodes</span>
-              <textarea
-                className="mt-2 h-40 w-full rounded-xl border border-slate-200 px-3 py-2 font-mono text-xs dark:border-slate-700 dark:bg-slate-950"
-                value={draftNodes}
-                onChange={(event) => setDraftNodes(event.target.value)}
-              />
-            </label>
-            <label className="block">
-              <span className="text-xs font-medium uppercase text-slate-500 dark:text-slate-400">Edges</span>
-              <textarea
-                className="mt-2 h-40 w-full rounded-xl border border-slate-200 px-3 py-2 font-mono text-xs dark:border-slate-700 dark:bg-slate-950"
-                value={draftEdges}
-                onChange={(event) => setDraftEdges(event.target.value)}
-              />
-            </label>
-            <label className="block">
-              <span className="text-xs font-medium uppercase text-slate-500 dark:text-slate-400">Metadata</span>
-              <textarea
-                className="mt-2 h-32 w-full rounded-xl border border-slate-200 px-3 py-2 font-mono text-xs dark:border-slate-700 dark:bg-slate-950"
-                value={draftMetadata}
-                onChange={(event) => setDraftMetadata(event.target.value)}
-              />
-            </label>
-          </div>
-            </>
-          )}
+      <CanvasEditor
+        workflowName={workflowQuery.data.name}
+        nodes={visualWorkflow.nodes}
+        edges={visualWorkflow.edges}
+        onSave={handleSave}
+        onExport={handleExportJson}
+        onRun={handleExecute}
+        isRunning={executeWorkflow.isPending}
+        onNodeClick={(node) => setSelectedNode(node)}
+        onNodeDoubleClick={(node) => {
+          if (node.type === 'agent') {
+            setAgentConfigModalNode(node)
+            setAgentConfigModalOpen(true)
+          } else if (node.type === 'decision') {
+            setDecisionConfigModalNode(node)
+            setDecisionConfigModalOpen(true)
+          }
+        }}
+      />
+      {selectedNode && selectedNode.type === 'agent' && (
+        <div className="absolute right-6 top-24 z-30 h-[70vh] w-80">
+          <AgentDetailsPanel
+            selectedNode={selectedNode}
+            onClose={() => setSelectedNode(null)}
+            onConfigure={(node) => {
+              setAgentConfigModalNode(node)
+              setAgentConfigModalOpen(true)
+            }}
+          />
         </div>
-        <div className="space-y-6">
-          <div className="card p-6">
-            <h3 className="text-base font-semibold">Current graph summary</h3>
-            <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-              {workflowSnapshot.nodes.length} nodes · {workflowSnapshot.edges.length} edges
-            </p>
-          </div>
-          {isExecutionOutputVisible ? (
-            <div className="card p-6">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <h3 className="text-base font-semibold">Execution output</h3>
-                  <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Run the workflow to see the execution response.</p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50"
-                    onClick={() => setIsExecutionOutputVisible(false)}
-                    title="Close output"
-                  >
-                    Close
-                  </button>
-                </div>
-              </div>
-
-              <pre className="mt-3 max-h-80 overflow-auto rounded-xl bg-slate-900 p-4 text-xs text-slate-100 dark:bg-slate-950">
-                {executionResult || 'No execution yet.'}
-              </pre>
-            </div>
-          ) : (
-            <div className="card p-6">
-              <div className="flex items-center justify-between gap-4">
-                <div>
-                  <h3 className="text-base font-semibold">Execution output</h3>
-                  <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Output hidden.</p>
-                </div>
-                <button
-                  type="button"
-                  className="rounded-xl bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700"
-                  onClick={() => setIsExecutionOutputVisible(true)}
-                >
-                  Show
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
+      )}
 
       {/* Agent Configuration Modal */}
       {agentConfigModalOpen && agentConfigModalNode && (
@@ -345,7 +181,7 @@ const WorkflowBuilderPage = () => {
             // Update the node's config in the workflow
             try {
               const nodes = JSON.parse(draftNodes || '[]')
-              const nodeIndex = nodes.findIndex((n: any) => n.id === agentConfigModalNode.id)
+              const nodeIndex = nodes.findIndex((n: ReactFlowNode) => n.id === agentConfigModalNode.id)
               if (nodeIndex !== -1) {
                 nodes[nodeIndex].config = updatedConfig
                 setDraftNodes(JSON.stringify(nodes, null, 2))
