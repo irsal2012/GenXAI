@@ -6,7 +6,29 @@ import tseslint from 'typescript-eslint'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
-  globalIgnores(['dist', '**/.vite/**', '**/node_modules/**', '**/.vite/deps/**']),
+  {
+    files: ['.vite/deps/**', '**/.vite/deps/**'],
+    linterOptions: {
+      noInlineConfig: true,
+    },
+    rules: {},
+  },
+  {
+    ignores: ['.vite/**', '**/.vite/**', '**/.vite/deps/**', '.vite/deps/**'],
+  },
+  {
+    ignores: ['.vite/**', '**/.vite/**', '**/.vite/deps/**'],
+  },
+  globalIgnores([
+    'dist',
+    '.vite',
+    '.vite/**',
+    '**/.vite',
+    '**/.vite/**',
+    '**/.vite/deps/**',
+    '**/node_modules/**',
+    '**/.*',
+  ]),
   {
     files: ['**/*.{ts,tsx}'],
     extends: [

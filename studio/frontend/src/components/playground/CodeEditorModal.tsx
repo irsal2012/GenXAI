@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useCallback, useState, useEffect } from 'react'
 import Editor from '@monaco-editor/react'
 import { XMarkIcon, CheckIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline'
 
@@ -36,7 +36,7 @@ const CodeEditorModal = ({
     }
   }
 
-  const validateCode = () => {
+  const validateCode = useCallback(() => {
     // Basic Python syntax validation
     if (!code.trim()) {
       setValidationError('Code cannot be empty')
@@ -53,9 +53,9 @@ const CodeEditorModal = ({
 
     setValidationError(null)
     return true
-  }
+  }, [code])
 
-  const handleSave = async () => {
+  const handleSave = useCallback(async () => {
     if (!validateCode()) {
       return
     }
@@ -69,9 +69,9 @@ const CodeEditorModal = ({
     } finally {
       setIsSaving(false)
     }
-  }
+  }, [code, onSave, validateCode])
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     if (!hasChanges) {
       onClose()
       return
@@ -84,9 +84,9 @@ const CodeEditorModal = ({
     if (shouldClose) {
       onClose()
     }
-  }
+  }, [hasChanges, onClose])
 
-  const handleKeyDown = (e: KeyboardEvent) => {
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
     // Ctrl+S or Cmd+S to save
     if ((e.ctrlKey || e.metaKey) && e.key === 's') {
       e.preventDefault()
@@ -96,14 +96,14 @@ const CodeEditorModal = ({
       e.preventDefault()
       handleClose()
     }
-  }
+  }, [handleSave, handleClose])
 
   useEffect(() => {
     if (isOpen) {
       window.addEventListener('keydown', handleKeyDown)
       return () => window.removeEventListener('keydown', handleKeyDown)
     }
-  }, [isOpen, code, hasChanges])
+  }, [handleKeyDown, isOpen])
 
   if (!isOpen) return null
 

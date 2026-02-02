@@ -234,14 +234,17 @@ const ReactFlowCanvas = ({
   )
 
   // Node colors based on type
-  const nodeColors: Record<string, string> = {
-    start: '#10b981',
-    end: '#ef4444',
-    agent: '#3b82f6',
-    tool: '#8b5cf6',
-    decision: '#f59e0b',
-    default: '#6b7280',
-  }
+  const nodeColors = useMemo<Record<string, string>>(
+    () => ({
+      start: '#10b981',
+      end: '#ef4444',
+      agent: '#3b82f6',
+      tool: '#8b5cf6',
+      decision: '#f59e0b',
+      default: '#6b7280',
+    }),
+    []
+  )
 
   // Custom node styles: keep styling for non-custom component nodes only.
   // Agent, Start, End, and Decision nodes are rendered by their own components.
@@ -263,7 +266,7 @@ const ReactFlowCanvas = ({
           },
         }
       }),
-    [nodes]
+    [nodes, nodeColors]
   )
 
   // Handle drag over
