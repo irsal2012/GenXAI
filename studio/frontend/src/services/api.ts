@@ -21,4 +21,22 @@ api.interceptors.request.use((config) => {
   return config
 })
 
+// LLM Connection Status Types
+export interface LLMConnectionStatus {
+  status: 'connected' | 'error' | 'no_key'
+  message: string
+  model?: string
+}
+
+export interface LLMConnectionTestResult {
+  openai: LLMConnectionStatus
+  anthropic: LLMConnectionStatus
+}
+
+// Test LLM connection
+export const testLLMConnection = async (): Promise<LLMConnectionTestResult> => {
+  const response = await api.post<LLMConnectionTestResult>('/llm/test-connection')
+  return response.data
+}
+
 export default api

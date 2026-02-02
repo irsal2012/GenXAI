@@ -44,12 +44,12 @@ import logging
 
 try:
     # When running from within `studio/backend/`
-    from api import workflows, agents, tools
+    from api import workflows, agents, tools, llm
     from services.db import init_db
     from middleware.api_keys import ApiKeyMiddleware
 except ModuleNotFoundError:
     # When running from repo root as `studio.backend.main`
-    from studio.backend.api import workflows, agents, tools
+    from studio.backend.api import workflows, agents, tools, llm
     from studio.backend.services.db import init_db
     from studio.backend.middleware.api_keys import ApiKeyMiddleware
 
@@ -128,6 +128,7 @@ app.include_router(agents.router, prefix="/api/agents", tags=["agents"])
 app.include_router(tools.router, prefix="/api/tools", tags=["tools"])
 app.include_router(workflows.executions_router, prefix="/api/executions", tags=["executions"])
 app.include_router(workflows.templates_router, prefix="/api/templates", tags=["templates"])
+app.include_router(llm.router, prefix="/api/llm", tags=["llm"])
 
 
 if __name__ == "__main__":

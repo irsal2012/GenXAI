@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useApiKeys } from '../contexts/ApiKeyContext'
-import { EyeIcon, EyeSlashIcon, KeyIcon } from '@heroicons/react/24/outline'
+import { EyeIcon, EyeSlashIcon, KeyIcon, CheckCircleIcon, XCircleIcon, ExclamationCircleIcon } from '@heroicons/react/24/outline'
 import { getDefaultLlmModel, setDefaultLlmModel } from '../utils/defaultModel'
+import { testLLMConnection, type LLMConnectionStatus } from '../services/api'
 
 const SettingsPage = () => {
   const navigate = useNavigate()
@@ -11,6 +12,11 @@ const SettingsPage = () => {
   const [showAnthropic, setShowAnthropic] = useState(false)
   const [saved, setSaved] = useState(false)
   const [defaultModel, setDefaultModel] = useState(getDefaultLlmModel())
+  
+  // Connection status states
+  const [openaiStatus, setOpenaiStatus] = useState<LLMConnectionStatus | null>(null)
+  const [anthropicStatus, setAnthropicStatus] = useState<LLMConnectionStatus | null>(null)
+  const [testing, setTesting] = useState(false)
 
   const handleSave = () => {
     setDefaultLlmModel(defaultModel)
@@ -25,7 +31,65 @@ const SettingsPage = () => {
   const handleClear = () => {
     if (confirm('Are you sure you want to clear all API keys? This action cannot be undone.')) {
       clearApiKeys()
+      setOpenaiStatus(null)
+      setAnthropicStatus(null)
     }
+  }
+
+  const handleTestConnection = async () => {
+    setTesting(true)
+    try {
+      const result = await testLLMConnection()
+      setOpenaiStatus(result.openai)
+      setAnthropicStatus(result.anthropic)
+    } catch (error) {
+      console.error('Failed to test connection:', error)
+      setOpenaiStatus({
+        status: 'error',
+        message: 'Failed to test connection. Please check if the backend is running.',
+      })
+      setAnthropicStatus({
+        status: 'error',
+        message: 'Failed to test connection. Please check if the backend is running.',
+      })
+    } finally {
+      setTesting(false)
+    }
+  }
+
+  const renderConnectionStatus = (status: LLMConnectionStatus | null) => {
+    if (!status) {
+      return (
+        <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600">
+          Not Tested
+        </span>
+      )
+    }
+
+    if (status.status === 'connected') {
+      return (
+        <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-700">
+          <CheckCircleIcon className="h-3.5 w-3.5" />
+          Connected
+        </span>
+      )
+    }
+
+    if (status.status === 'no_key') {
+      return (
+        <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600">
+          <ExclamationCircleIcon className="h-3.5 w-3.5" />
+          No Key
+        </span>
+      )
+    }
+
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-700">
+        <XCircleIcon className="h-3.5 w-3.5" />
+        Error
+      </span>
+    )
   }
 
   return (
@@ -73,15 +137,21 @@ const SettingsPage = () => {
 
           {/* OpenAI API Key */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-              OpenAI API Key
-            </label>
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                OpenAI API Key
+              </label>
+              {renderConnectionStatus(openaiStatus)}
+            </div>
             <div className="relative">
               <input
                 type={showOpenAI ? 'text' : 'password'}
                 className="w-full rounded-xl border border-slate-200 px-3 py-2 pr-10 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-slate-700 dark:bg-slate-950"
                 value={apiKeys.openai}
-                onChange={(e) => setApiKey('openai', e.target.value)}
+                onChange={(e) => {
+                  setApiKey('openai', e.target.value)
+                  setOpenaiStatus(null) // Reset status when key changes
+                }}
                 placeholder="sk-..."
               />
               <button
@@ -96,30 +166,48 @@ const SettingsPage = () => {
                 )}
               </button>
             </div>
-            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-              Get your API key from{' '}
-              <a
-                href="https://platform.openai.com/api-keys"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-primary-600 hover:text-primary-700 underline"
-              >
-                OpenAI Platform
-              </a>
-            </p>
+            {openaiStatus && openaiStatus.status !== 'connected' && (
+              <p className="mt-1 text-xs text-red-600 dark:text-red-400">
+                {openaiStatus.message}
+              </p>
+            )}
+            {openaiStatus && openaiStatus.status === 'connected' && openaiStatus.model && (
+              <p className="mt-1 text-xs text-green-600 dark:text-green-400">
+                Connected to {openaiStatus.model}
+              </p>
+            )}
+            {!openaiStatus && (
+              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                Get your API key from{' '}
+                <a
+                  href="https://platform.openai.com/api-keys"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary-600 hover:text-primary-700 underline"
+                >
+                  OpenAI Platform
+                </a>
+              </p>
+            )}
           </div>
 
           {/* Anthropic API Key */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-              Anthropic API Key <span className="text-slate-400 font-normal">(Optional)</span>
-            </label>
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                Anthropic API Key <span className="text-slate-400 font-normal">(Optional)</span>
+              </label>
+              {renderConnectionStatus(anthropicStatus)}
+            </div>
             <div className="relative">
               <input
                 type={showAnthropic ? 'text' : 'password'}
                 className="w-full rounded-xl border border-slate-200 px-3 py-2 pr-10 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-slate-700 dark:bg-slate-950"
                 value={apiKeys.anthropic}
-                onChange={(e) => setApiKey('anthropic', e.target.value)}
+                onChange={(e) => {
+                  setApiKey('anthropic', e.target.value)
+                  setAnthropicStatus(null) // Reset status when key changes
+                }}
                 placeholder="sk-ant-..."
               />
               <button
@@ -134,17 +222,52 @@ const SettingsPage = () => {
                 )}
               </button>
             </div>
-            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-              Required for Claude models. Get your key from{' '}
-              <a
-                href="https://console.anthropic.com/settings/keys"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-primary-600 hover:text-primary-700 underline"
-              >
-                Anthropic Console
-              </a>
-            </p>
+            {anthropicStatus && anthropicStatus.status !== 'connected' && anthropicStatus.status !== 'no_key' && (
+              <p className="mt-1 text-xs text-red-600 dark:text-red-400">
+                {anthropicStatus.message}
+              </p>
+            )}
+            {anthropicStatus && anthropicStatus.status === 'connected' && anthropicStatus.model && (
+              <p className="mt-1 text-xs text-green-600 dark:text-green-400">
+                Connected to {anthropicStatus.model}
+              </p>
+            )}
+            {!anthropicStatus && (
+              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                Required for Claude models. Get your key from{' '}
+                <a
+                  href="https://console.anthropic.com/settings/keys"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary-600 hover:text-primary-700 underline"
+                >
+                  Anthropic Console
+                </a>
+              </p>
+            )}
+          </div>
+
+          {/* Test Connection Button */}
+          <div className="pt-4 border-t border-slate-200">
+            <button
+              type="button"
+              className="w-full rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              onClick={handleTestConnection}
+              disabled={testing || (!apiKeys.openai && !apiKeys.anthropic)}
+              title="Test connection to LLM providers"
+            >
+              {testing ? (
+                <span className="flex items-center justify-center gap-2">
+                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                  Testing Connection...
+                </span>
+              ) : (
+                'Test Connection'
+              )}
+            </button>
           </div>
 
           {/* Action Buttons */}
