@@ -264,6 +264,7 @@ async def execute_workflow(
         "logs": logs,
         "result": execution_result,
         "node_events": execution_result.get("node_events", []),
+        "node_results": execution_result.get("node_results", {}),
         "started_at": started_at,
         "completed_at": datetime.utcnow().isoformat(),
     }
@@ -326,6 +327,7 @@ async def get_execution(execution_id: str) -> Dict[str, Any]:
         "logs": json_loads(execution["logs"], []),
         "result": result_payload,
         "node_events": result_payload.get("node_events", []),
+        "node_results": result_payload.get("node_results", {}),
         "started_at": execution["started_at"],
         "completed_at": execution["completed_at"],
     }
@@ -346,6 +348,7 @@ async def list_executions() -> List[Dict[str, Any]]:
                 "logs": json_loads(execution["logs"], []),
                 "result": result_payload,
                 "node_events": result_payload.get("node_events", []),
+                "node_results": result_payload.get("node_results", {}),
                 "started_at": execution["started_at"],
                 "completed_at": execution["completed_at"],
             }

@@ -107,7 +107,17 @@ export interface ExecutionResult {
     status: string
     timestamp: number
     error?: string
+    duration_ms?: number
   }[]
+  node_results?: Record<
+    string,
+    {
+      output: unknown
+      status: string
+      duration_ms?: number
+      error?: string
+    }
+  >
   started_at: string
   completed_at: string
 }

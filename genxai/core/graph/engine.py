@@ -355,6 +355,8 @@ class Graph:
             node.status = NodeStatus.COMPLETED
             logger.debug(f"Node completed: {node_id}")
 
+            node_duration_ms = int((time.time() - node_start) * 1000)
+
             record_workflow_node_execution(
                 workflow_id=self.name,
                 node_id=node_id,
@@ -365,8 +367,15 @@ class Graph:
                     "node_id": node_id,
                     "status": NodeStatus.COMPLETED.value,
                     "timestamp": time.time(),
+                    "duration_ms": node_duration_ms,
                 }
             )
+
+            state.setdefault("node_results", {})[node_id] = {
+                "output": result,
+                "status": NodeStatus.COMPLETED.value,
+                "duration_ms": node_duration_ms,
+            }
 
             # Update state with result
             state[node_id] = result
@@ -396,6 +405,7 @@ class Graph:
             node.status = NodeStatus.FAILED
             node.error = str(e)
             logger.error(f"Node execution failed: {node_id} - {e}")
+            node_duration_ms = int((time.time() - node_start) * 1000)
             record_workflow_node_execution(
                 workflow_id=self.name,
                 node_id=node_id,
@@ -407,8 +417,15 @@ class Graph:
                     "status": NodeStatus.FAILED.value,
                     "timestamp": time.time(),
                     "error": str(e),
+                    "duration_ms": node_duration_ms,
                 }
             )
+            state.setdefault("node_results", {})[node_id] = {
+                "output": None,
+                "status": NodeStatus.FAILED.value,
+                "duration_ms": node_duration_ms,
+                "error": str(e),
+            }
             raise GraphExecutionError(f"Node {node_id} failed: {e}") from e
 
     async def _execute_node_logic(

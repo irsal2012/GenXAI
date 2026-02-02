@@ -5,10 +5,12 @@ import { useBuilderStore } from '../store/builderStore'
 import ErrorState from '../components/ErrorState'
 import LoadingState from '../components/LoadingState'
 import CanvasEditor from '../components/canvas/CanvasEditor'
+import ExecutionResultsPanel from '../components/workflow/ExecutionResultsPanel'
 import AgentConfigModal from '../components/workflow/AgentConfigModal'
 import DecisionConfigModal from '../components/workflow/DecisionConfigModal'
 import AgentDetailsPanel from '../components/workflow/AgentDetailsPanel'
 import { convertToReactFlow } from '../utils/workflowConverter'
+import type { ExecutionResult } from '../types/api'
 import type { ReactFlowNode } from '../utils/workflowConverter'
 
 const WorkflowBuilderPage = () => {
@@ -127,12 +129,15 @@ const WorkflowBuilderPage = () => {
     Record<string, 'running' | 'completed' | 'failed' | 'pending'>
   >({})
   const [lastEvent, setLastEvent] = useState<{ node_id: string; status: string; timestamp: number } | undefined>()
+  const [executionResult, setExecutionResult] = useState<ExecutionResult | undefined>()
 
   const handleExecute = useCallback(async () => {
     if (!workflowId) return
     setNodeStatuses({})
     setLastEvent(undefined)
+    setExecutionResult(undefined)
     const result = await executeWorkflow.mutateAsync({ input: 'demo payload' })
+    setExecutionResult(result)
     if (result?.node_events) {
       const statuses: Record<string, 'running' | 'completed' | 'failed' | 'pending'> = {}
       result.node_events.forEach((event) => {
@@ -144,6 +149,14 @@ const WorkflowBuilderPage = () => {
       setNodeStatuses(statuses)
     }
   }, [workflowId, executeWorkflow])
+
+  const nodeLabels = useMemo(() => {
+    const labels: Record<string, string> = {}
+    visualWorkflow.nodes.forEach((node) => {
+      labels[node.id] = node.data.label || node.id
+    })
+    return labels
+  }, [visualWorkflow.nodes])
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -205,6 +218,13 @@ const WorkflowBuilderPage = () => {
         nodeStatuses={nodeStatuses}
         lastEvent={lastEvent}
       />
+      {executionResult && (
+        <ExecutionResultsPanel
+          execution={executionResult}
+          onClose={() => setExecutionResult(undefined)}
+          nodeLabels={nodeLabels}
+        />
+      )}
       {selectedNode && selectedNode.type === 'agent' && (
         <div className="absolute right-6 top-24 z-30 h-[70vh] w-80">
           <AgentDetailsPanel
