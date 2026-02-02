@@ -357,6 +357,7 @@ class WorkflowExecutor:
         run_id: Optional[str] = None,
         checkpoint_dir: Optional[str] = None,
         resume_from: Optional[str] = None,
+        model_override: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Execute a workflow.
 
@@ -373,6 +374,13 @@ class WorkflowExecutor:
 
         try:
             logger.info("Starting workflow execution")
+
+            # Apply model override if provided
+            if model_override:
+                for node in nodes:
+                    if node.get("type") == "agent":
+                        config = node.setdefault("config", {})
+                        config["llm_model"] = model_override
 
             # Create agents from nodes
             self._create_agents_from_nodes(nodes)
@@ -447,6 +455,7 @@ class WorkflowExecutor:
         run_id: Optional[str] = None,
         checkpoint_dir: Optional[str] = None,
         resume_from: Optional[str] = None,
+        model_override: Optional[str] = None,
     ) -> str:
         """Enqueue workflow execution using a worker queue engine."""
         if not self.queue_engine:
@@ -467,6 +476,7 @@ class WorkflowExecutor:
                 run_id=payload["run_id"],
                 checkpoint_dir=payload.get("checkpoint_dir"),
                 resume_from=payload.get("resume_from"),
+                model_override=payload.get("model_override"),
             )
 
         await self.queue_engine.start()
@@ -478,6 +488,7 @@ class WorkflowExecutor:
                 "run_id": run_id,
                 "checkpoint_dir": checkpoint_dir,
                 "resume_from": resume_from,
+                "model_override": model_override,
             },
             _handler,
             metadata={"workflow": "queued"},
@@ -491,6 +502,7 @@ def execute_workflow_sync(
     input_data: Dict[str, Any],
     openai_api_key: Optional[str] = None,
     anthropic_api_key: Optional[str] = None,
+    model_override: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Synchronous wrapper for workflow execution.
     
@@ -517,7 +529,7 @@ def execute_workflow_sync(
     asyncio.set_event_loop(loop)
     try:
         result = loop.run_until_complete(
-            executor.execute(nodes, edges, input_data)
+            executor.execute(nodes, edges, input_data, model_override=model_override)
         )
         return result
     finally:
@@ -530,6 +542,7 @@ async def execute_workflow_async(
     input_data: Dict[str, Any],
     openai_api_key: Optional[str] = None,
     anthropic_api_key: Optional[str] = None,
+    model_override: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Async convenience function for workflow execution.
 
@@ -550,4 +563,4 @@ async def execute_workflow_async(
         openai_api_key=openai_api_key,
         anthropic_api_key=anthropic_api_key,
     )
-    return await executor.execute(nodes, edges, input_data)
+    return await executor.execute(nodes, edges, input_data, model_override=model_override)

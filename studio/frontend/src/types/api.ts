@@ -118,8 +118,14 @@ export interface ExecutionResult {
       error?: string
     }
   >
+  node_models?: Record<string, string>
   started_at: string
   completed_at: string
+}
+
+export interface WorkflowExecuteInput {
+  input: Record<string, unknown> | string
+  model_override?: string
 }
 
 export interface WorkflowTemplate {

@@ -6,9 +6,21 @@ interface BottomToolbarProps {
   onExport: () => void
   onRun: () => void
   isRunning?: boolean
+  modelOverride?: string
+  onModelOverrideChange?: (value: string) => void
+  onResetModelOverride?: () => void
 }
 
-const BottomToolbar = ({ workflowName, onSave, onExport, onRun, isRunning }: BottomToolbarProps) => {
+const BottomToolbar = ({
+  workflowName,
+  onSave,
+  onExport,
+  onRun,
+  isRunning,
+  modelOverride,
+  onModelOverrideChange,
+  onResetModelOverride,
+}: BottomToolbarProps) => {
   return (
     <div className="group absolute bottom-0 left-0 right-0 z-20 flex justify-center pb-4">
       <div className="h-2 w-32 rounded-full bg-slate-900/40 transition group-hover:w-40" />
@@ -19,6 +31,35 @@ const BottomToolbar = ({ workflowName, onSave, onExport, onRun, isRunning }: Bot
             <div className="text-sm font-semibold">{workflowName}</div>
           </div>
           <div className="flex items-center gap-3">
+            {onModelOverrideChange && (
+              <div className="flex items-center gap-2">
+                <select
+                  className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold shadow-sm transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900"
+                  value={modelOverride || ''}
+                  onChange={(event) => onModelOverrideChange(event.target.value)}
+                  title="Override model for this run"
+                >
+                  <option value="">Default model</option>
+                  <option value="gpt-4">GPT-4</option>
+                  <option value="gpt-4-turbo">GPT-4 Turbo</option>
+                  <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+                  <option value="claude-3-opus">Claude 3 Opus</option>
+                  <option value="claude-3-sonnet">Claude 3 Sonnet</option>
+                  <option value="claude-3-haiku">Claude 3 Haiku</option>
+                </select>
+                {onResetModelOverride && (
+                  <button
+                    type="button"
+                    onClick={onResetModelOverride}
+                    className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-[10px] font-semibold uppercase tracking-wide text-slate-500 shadow-sm transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900"
+                    title="Reset to the global default model from Settings"
+                    aria-label="Reset to the global default model"
+                  >
+                    Reset
+                  </button>
+                )}
+              </div>
+            )}
             <button
               type="button"
               onClick={onSave}

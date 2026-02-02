@@ -30,6 +30,7 @@ import EndNode from './nodes/EndNode'
 import DecisionNode from './nodes/DecisionNode'
 import SubworkflowNode from './nodes/SubworkflowNode'
 import LoopNode from './nodes/LoopNode'
+import { getDefaultLlmModel } from '../../utils/defaultModel'
 
 interface ReactFlowCanvasProps {
   nodes: ReactFlowNode[]
@@ -347,6 +348,7 @@ const ReactFlowCanvas = ({
           label: agentName || type.charAt(0).toUpperCase() + type.slice(1),
           config: {
             ...(agentGoal ? { goal: agentGoal } : null),
+            ...(type === 'agent' ? { llm_model: getDefaultLlmModel() } : null),
             ...(tools.length > 0 ? { tools } : null),
           },
           ...(agentId && { agentId }),

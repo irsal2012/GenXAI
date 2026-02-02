@@ -204,6 +204,15 @@ async def execute_workflow(
     # Parse workflow nodes and edges
     nodes = json_loads(workflow_data["nodes"], [])
     edges = json_loads(workflow_data["edges"], [])
+
+    payload = dict(input_data or {})
+    model_override = payload.pop("model_override", None)
+    execution_input = payload.get("input", payload)
+    node_models = {}
+    for node in nodes:
+        if node.get("type") == "agent":
+            config = node.get("config", {})
+            node_models[node.get("id")] = model_override or config.get("llm_model", "gpt-4")
     
     # Execute workflow using GenXAI engine
     try:
@@ -220,10 +229,12 @@ async def execute_workflow(
         execution_result = await execute_studio_workflow(
             nodes=nodes,
             edges=edges,
-            input_data=input_data,
+            input_data=execution_input,
             openai_api_key=openai_api_key,
-            anthropic_api_key=anthropic_api_key
+            anthropic_api_key=anthropic_api_key,
+            model_override=model_override,
         )
+        execution_result["node_models"] = node_models
         
         status = execution_result.get("status", "completed")
         logs = [execution_result.get("message", "Execution completed")]
@@ -236,7 +247,8 @@ async def execute_workflow(
         execution_result = {
             "status": "error",
             "error": str(e),
-            "message": f"Execution failed: {str(e)}"
+            "message": f"Execution failed: {str(e)}",
+            "node_models": node_models,
         }
         logs = [f"Execution failed: {str(e)}"]
 

@@ -21,6 +21,7 @@ const ExecutionResultsPanel = ({ execution, onClose, nodeLabels }: ExecutionResu
   const [expandedNodes, setExpandedNodes] = useState<Record<string, boolean>>({})
 
   const nodeResults = useMemo(() => execution?.node_results ?? {}, [execution?.node_results])
+  const nodeModels = useMemo(() => execution?.node_models ?? {}, [execution?.node_models])
   const nodeEntries = useMemo(() => Object.entries(nodeResults), [nodeResults])
 
   if (!execution) {
@@ -84,6 +85,9 @@ const ExecutionResultsPanel = ({ execution, onClose, nodeLabels }: ExecutionResu
                     {nodeLabels[nodeId] ?? nodeId}
                   </div>
                   <div className="text-[10px] text-slate-400">{nodeId}</div>
+                  {nodeModels[nodeId] && (
+                    <div className="text-[10px] text-slate-500">Model: {nodeModels[nodeId]}</div>
+                  )}
                 </div>
                 <div className="flex items-center gap-2">
                   <span className={`text-[11px] font-semibold ${statusColor}`}>{result.status}</span>

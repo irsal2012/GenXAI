@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useApiKeys } from '../contexts/ApiKeyContext'
 import { EyeIcon, EyeSlashIcon, KeyIcon } from '@heroicons/react/24/outline'
+import { getDefaultLlmModel, setDefaultLlmModel } from '../utils/defaultModel'
 
 const SettingsPage = () => {
   const navigate = useNavigate()
@@ -9,8 +10,10 @@ const SettingsPage = () => {
   const [showOpenAI, setShowOpenAI] = useState(false)
   const [showAnthropic, setShowAnthropic] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [defaultModel, setDefaultModel] = useState(getDefaultLlmModel())
 
   const handleSave = () => {
+    setDefaultLlmModel(defaultModel)
     setSaved(true)
     setTimeout(() => setSaved(false), 3000)
   }
@@ -173,6 +176,34 @@ const SettingsPage = () => {
               </button>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Default Model Section */}
+      <div className="card p-6">
+        <div className="flex items-center gap-2 mb-4">
+          <KeyIcon className="h-5 w-5 text-primary-600" />
+          <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Default LLM Model</h2>
+        </div>
+        <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
+          This model will be used as the default when creating new agents or adding agent nodes.
+        </p>
+        <div>
+          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+            Default Model
+          </label>
+          <select
+            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-slate-700 dark:bg-slate-950"
+            value={defaultModel}
+            onChange={(e) => setDefaultModel(e.target.value)}
+          >
+            <option value="gpt-4">GPT-4</option>
+            <option value="gpt-4-turbo">GPT-4 Turbo</option>
+            <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+            <option value="claude-3-opus">Claude 3 Opus</option>
+            <option value="claude-3-sonnet">Claude 3 Sonnet</option>
+            <option value="claude-3-haiku">Claude 3 Haiku</option>
+          </select>
         </div>
       </div>
 

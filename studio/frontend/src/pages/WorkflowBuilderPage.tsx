@@ -10,6 +10,7 @@ import AgentConfigModal from '../components/workflow/AgentConfigModal'
 import DecisionConfigModal from '../components/workflow/DecisionConfigModal'
 import AgentDetailsPanel from '../components/workflow/AgentDetailsPanel'
 import { convertToReactFlow } from '../utils/workflowConverter'
+import { getDefaultLlmModel, getWorkflowModelOverride, setWorkflowModelOverride } from '../utils/defaultModel'
 import type { ExecutionResult } from '../types/api'
 import type { ReactFlowNode } from '../utils/workflowConverter'
 
@@ -130,13 +131,23 @@ const WorkflowBuilderPage = () => {
   >({})
   const [lastEvent, setLastEvent] = useState<{ node_id: string; status: string; timestamp: number } | undefined>()
   const [executionResult, setExecutionResult] = useState<ExecutionResult | undefined>()
+  const [runModelOverride, setRunModelOverride] = useState('')
+
+  useEffect(() => {
+    if (workflowId) {
+      setRunModelOverride(getWorkflowModelOverride(workflowId))
+    }
+  }, [workflowId])
 
   const handleExecute = useCallback(async () => {
     if (!workflowId) return
     setNodeStatuses({})
     setLastEvent(undefined)
     setExecutionResult(undefined)
-    const result = await executeWorkflow.mutateAsync({ input: 'demo payload' })
+    const result = await executeWorkflow.mutateAsync({
+      input: 'demo payload',
+      model_override: runModelOverride || undefined,
+    })
     setExecutionResult(result)
     if (result?.node_events) {
       const statuses: Record<string, 'running' | 'completed' | 'failed' | 'pending'> = {}
@@ -148,7 +159,7 @@ const WorkflowBuilderPage = () => {
       })
       setNodeStatuses(statuses)
     }
-  }, [workflowId, executeWorkflow])
+  }, [workflowId, executeWorkflow, runModelOverride])
 
   const nodeLabels = useMemo(() => {
     const labels: Record<string, string> = {}
@@ -205,6 +216,19 @@ const WorkflowBuilderPage = () => {
         onExport={handleDownloadCode}
         onRun={handleExecute}
         isRunning={executeWorkflow.isPending}
+        modelOverride={runModelOverride}
+        onModelOverrideChange={(value) => {
+          setRunModelOverride(value)
+          if (workflowId) {
+            setWorkflowModelOverride(workflowId, value)
+          }
+        }}
+        onResetModelOverride={() => {
+          setRunModelOverride('')
+          if (workflowId) {
+            setWorkflowModelOverride(workflowId, '')
+          }
+        }}
         onNodeClick={(node) => setSelectedNode(node)}
         onNodeDoubleClick={(node) => {
           if (node.type === 'agent') {
@@ -249,7 +273,10 @@ const WorkflowBuilderPage = () => {
           agentData={{
             id: agentConfigModalNode.id,
             label: agentConfigModalNode.data.label || 'Agent',
-            config: agentConfigModalNode.data.config || {},
+            config: {
+              llm_model: getDefaultLlmModel(),
+              ...(agentConfigModalNode.data.config || {}),
+            },
           }}
           onSave={(updatedConfig) => {
             // Update the node's config in the workflow

@@ -16,6 +16,7 @@ async def execute_studio_workflow(
     input_data: Dict[str, Any],
     openai_api_key: Optional[str] = None,
     anthropic_api_key: Optional[str] = None,
+    model_override: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Execute a workflow using the core GenXAI executor.
     
@@ -38,4 +39,5 @@ async def execute_studio_workflow(
         input_data=input_data,
         openai_api_key=openai_api_key,
         anthropic_api_key=anthropic_api_key,
+        model_override=model_override,
     )

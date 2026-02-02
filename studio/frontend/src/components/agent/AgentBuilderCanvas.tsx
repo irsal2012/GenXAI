@@ -5,6 +5,7 @@
 
 import { useState, useCallback } from 'react'
 import type { ToolSummary } from '../../types/api'
+import { getDefaultLlmModel } from '../../utils/defaultModel'
 
 interface AgentBuilderCanvasProps {
   onAgentChange?: (agentData: AgentData) => void
@@ -24,7 +25,7 @@ const AgentBuilderCanvas = ({ onAgentChange }: AgentBuilderCanvasProps) => {
     role: '',
     goal: '',
     backstory: '',
-    llm_model: 'gpt-4',
+    llm_model: getDefaultLlmModel(),
     tools: [],
     metadata: {},
   })

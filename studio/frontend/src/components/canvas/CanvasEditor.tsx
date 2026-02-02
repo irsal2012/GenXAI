@@ -22,6 +22,9 @@ interface CanvasEditorProps {
   onExport: () => void
   onRun: () => void
   isRunning?: boolean
+  modelOverride?: string
+  onModelOverrideChange?: (value: string) => void
+  onResetModelOverride?: () => void
   onNodeClick?: (node: ReactFlowNode) => void
   onNodeDoubleClick?: (node: ReactFlowNode) => void
   nodeStatuses?: Record<string, 'running' | 'completed' | 'failed' | 'pending'>
@@ -42,6 +45,9 @@ const CanvasEditor = ({
   onExport,
   onRun,
   isRunning,
+  modelOverride,
+  onModelOverrideChange,
+  onResetModelOverride,
   onNodeClick,
   onNodeDoubleClick,
   nodeStatuses,
@@ -152,6 +158,9 @@ const CanvasEditor = ({
         onExport={onExport}
         onRun={onRun}
         isRunning={isRunning}
+        modelOverride={modelOverride}
+        onModelOverrideChange={onModelOverrideChange}
+        onResetModelOverride={onResetModelOverride}
       />
       <div className="absolute bottom-6 right-6 rounded-2xl border border-white/30 bg-white/80 px-4 py-2 text-xs text-slate-600 shadow-lg backdrop-blur">
         {overlayStats.nodes} nodes · {overlayStats.edges} edges

@@ -1,6 +1,7 @@
 import { Fragment, useState } from 'react'
 import { Dialog, Transition } from '@headlessui/react'
 import { XMarkIcon } from '@heroicons/react/24/outline'
+import { getDefaultLlmModel } from '../utils/defaultModel'
 import type { AgentInput } from '../types/api'
 
 interface AgentCreateModalProps {
@@ -15,7 +16,7 @@ const AgentCreateModal = ({ isOpen, onClose, onCreate, isCreating }: AgentCreate
     role: '',
     goal: '',
     backstory: '',
-    llm_model: 'gpt-4',
+    llm_model: getDefaultLlmModel(),
     tools: [],
     metadata: {},
   })
@@ -35,7 +36,7 @@ const AgentCreateModal = ({ isOpen, onClose, onCreate, isCreating }: AgentCreate
       role: '',
       goal: '',
       backstory: '',
-      llm_model: 'gpt-4',
+      llm_model: getDefaultLlmModel(),
       tools: [],
       metadata: {},
     })
