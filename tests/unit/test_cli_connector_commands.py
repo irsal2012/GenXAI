@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Any, Dict
+import builtins
 import sys
 from types import SimpleNamespace
 
@@ -110,6 +111,15 @@ def test_connector_keygen_missing_dependency(monkeypatch) -> None:
         monkeypatch.delitem(sys.modules, "cryptography", raising=False)
     if "cryptography.fernet" in sys.modules:
         monkeypatch.delitem(sys.modules, "cryptography.fernet", raising=False)
+
+    original_import = builtins.__import__
+
+    def blocked_import(name, globals=None, locals=None, fromlist=(), level=0):
+        if name.startswith("cryptography"):
+            raise ImportError("No module named 'cryptography'")
+        return original_import(name, globals, locals, fromlist, level)
+
+    monkeypatch.setattr(builtins, "__import__", blocked_import)
 
     result = runner.invoke(connector_group, ["keygen"])
     assert result.exit_code != 0
