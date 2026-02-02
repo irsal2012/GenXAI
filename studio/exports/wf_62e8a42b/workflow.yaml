@@ -1,0 +1,58 @@
+workflow:
+  name: Peer-to-Peer Collaboration (Copy)
+  description: Agents collaborate directly to solve problems through consensus
+  metadata:
+    template: true
+    templateId: peer-to-peer
+  agents_ref: agents.yaml
+  graph:
+    nodes:
+    - id: start
+      type: input
+    - id: analyst
+      type: agent
+      agent: analyst
+    - id: designer
+      type: agent
+      agent: designer
+    - id: engineer
+      type: agent
+      agent: engineer
+    - id: reviewer
+      type: agent
+      agent: reviewer
+    - id: end
+      type: output
+    edges:
+    - from: start
+      to: analyst
+    - from: start
+      to: designer
+    - from: start
+      to: engineer
+    - from: start
+      to: reviewer
+    - from: analyst
+      to: designer
+    - from: designer
+      to: analyst
+    - from: analyst
+      to: engineer
+    - from: engineer
+      to: analyst
+    - from: designer
+      to: reviewer
+    - from: reviewer
+      to: designer
+    - from: engineer
+      to: reviewer
+    - from: reviewer
+      to: engineer
+    - from: analyst
+      to: end
+    - from: designer
+      to: end
+    - from: engineer
+      to: end
+    - from: reviewer
+      to: end

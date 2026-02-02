@@ -1,0 +1,21 @@
+workflow:
+  name: Simple Research Assistant (Copy)
+  description: Research a topic and provide a summary
+  metadata:
+    template: true
+    templateId: simple-research
+  agents_ref: agents.yaml
+  graph:
+    nodes:
+    - id: start
+      type: input
+    - id: research-agent
+      type: agent
+      agent: research-agent
+    - id: end
+      type: output
+    edges:
+    - from: start
+      to: research-agent
+    - from: research-agent
+      to: end

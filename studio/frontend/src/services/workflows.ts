@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import api from './api'
-import type { ExecutionResult, Workflow, WorkflowInput } from '../types/api'
+import type { ExecutionResult, Workflow, WorkflowExport, WorkflowInput } from '../types/api'
 
 export const workflowsKeys = {
   all: ['workflows'] as const,
@@ -69,6 +69,26 @@ export const useExecuteWorkflow = (workflowId: string) => {
     mutationFn: async (input: Record<string, unknown>) => {
       const { data } = await api.post<ExecutionResult>(`/workflows/${workflowId}/execute`, input)
       return data
+    },
+  })
+}
+
+export const useExportWorkflowCode = () => {
+  return useMutation({
+    mutationFn: async (workflowId: string) => {
+      const { data } = await api.post<WorkflowExport>(`/workflows/${workflowId}/export-code`)
+      return data
+    },
+  })
+}
+
+export const useDownloadWorkflowCode = () => {
+  return useMutation({
+    mutationFn: async (workflowId: string) => {
+      const response = await api.get(`/workflows/${workflowId}/download-code`, {
+        responseType: 'blob',
+      })
+      return response
     },
   })
 }

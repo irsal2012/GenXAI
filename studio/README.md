@@ -49,6 +49,8 @@ Frontend will be available at: `http://localhost:3000`
 - `PUT /api/workflows/{id}` - Update workflow
 - `DELETE /api/workflows/{id}` - Delete workflow
 - `POST /api/workflows/{id}/execute` - Execute workflow
+- `POST /api/workflows/{id}/export-code` - Export workflow to runnable code bundle
+- `GET /api/workflows/{id}/download-code` - Download workflow code bundle (zip)
 
 ### Agents
 - `GET /api/agents` - List all agents

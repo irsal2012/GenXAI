@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { useCreateWorkflow, useDeleteWorkflow, useWorkflows } from '../services/workflows'
+import { useCreateWorkflow, useDeleteWorkflow, useDownloadWorkflowCode, useWorkflows } from '../services/workflows'
 import ErrorState from '../components/ErrorState'
 import LoadingState from '../components/LoadingState'
 import type { WorkflowInput } from '../types/api'
@@ -37,6 +37,7 @@ const WorkflowsPage = () => {
   const workflowsQuery = useWorkflows()
   const createWorkflow = useCreateWorkflow()
   const deleteWorkflow = useDeleteWorkflow()
+  const downloadWorkflow = useDownloadWorkflowCode()
 
   const handleCreate = async () => {
     await createWorkflow.mutateAsync({
@@ -48,6 +49,24 @@ const WorkflowsPage = () => {
   const handleDelete = async (workflowId: string) => {
     if (!window.confirm('Delete this workflow?')) return
     await deleteWorkflow.mutateAsync(workflowId)
+  }
+
+  const handleDownload = async (workflowId: string) => {
+    try {
+      const response = await downloadWorkflow.mutateAsync(workflowId)
+      const blob = new Blob([response.data], { type: 'application/zip' })
+      const url = window.URL.createObjectURL(blob)
+      const anchor = document.createElement('a')
+      anchor.href = url
+      anchor.download = `${workflowId}.zip`
+      document.body.appendChild(anchor)
+      anchor.click()
+      anchor.remove()
+      window.URL.revokeObjectURL(url)
+      alert('Download started')
+    } catch (error) {
+      alert(`Download failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    }
   }
 
   if (workflowsQuery.isLoading) {
@@ -94,6 +113,13 @@ const WorkflowsPage = () => {
               >
                 Open builder
               </Link>
+              <button
+                className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                onClick={() => handleDownload(workflow.id)}
+                title="Download workflow code"
+              >
+                Download code
+              </button>
               <button
                 className="rounded-xl border border-red-200 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50"
                 onClick={() => handleDelete(workflow.id)}

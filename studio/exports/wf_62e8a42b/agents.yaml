@@ -1,0 +1,296 @@
+agents:
+- id: agent_0d12afab
+  config:
+    role: Research Assistant
+    goal: To do research
+    backstory: ''
+    llm_provider: openai
+    llm_model: gpt-4-turbo
+    llm_temperature: 0.7
+    llm_max_tokens: null
+    tools: []
+    allow_tool_creation: false
+    enable_memory: true
+    memory_type: short_term
+    agent_type: reactive
+    max_iterations: 10
+    verbose: false
+    max_execution_time: null
+    allowed_domains: []
+    metadata: {}
+- id: agent_95e7796c
+  config:
+    role: Research Assistant
+    goal: helping to research
+    backstory: Good research
+    llm_provider: openai
+    llm_model: gpt-4
+    llm_temperature: 0.7
+    llm_max_tokens: null
+    tools:
+    - my_test_tool_2
+    - test-1
+    allow_tool_creation: false
+    enable_memory: true
+    memory_type: short_term
+    agent_type: reactive
+    max_iterations: 10
+    verbose: false
+    max_execution_time: null
+    allowed_domains: []
+    metadata: {}
+- id: summarizer
+  config:
+    role: Content Summarizer
+    goal: Summarize long documents into concise briefs.
+    backstory: Specialized in distilling key points across domains.
+    llm_provider: openai
+    llm_model: gpt-4
+    llm_temperature: 0.7
+    llm_max_tokens: null
+    tools:
+    - text_analyzer
+    allow_tool_creation: false
+    enable_memory: true
+    memory_type: short_term
+    agent_type: reactive
+    max_iterations: 10
+    verbose: false
+    max_execution_time: null
+    allowed_domains: []
+    metadata:
+      llm_provider: openai
+      llm_temperature: 0.4
+      memory:
+        enabled: true
+        type: short_term
+      behavior:
+        agent_type: reactive
+        max_iterations: 5
+- id: qa_reviewer
+  config:
+    role: Quality Assurance Reviewer
+    goal: Perform final QA checks before outputs are published.
+    backstory: Ensures outputs meet quality, compliance, and tone standards.
+    llm_provider: openai
+    llm_model: gpt-4
+    llm_temperature: 0.7
+    llm_max_tokens: null
+    tools:
+    - text_analyzer
+    allow_tool_creation: false
+    enable_memory: true
+    memory_type: short_term
+    agent_type: reactive
+    max_iterations: 10
+    verbose: false
+    max_execution_time: null
+    allowed_domains: []
+    metadata:
+      llm_provider: openai
+      llm_temperature: 0.2
+      memory:
+        enabled: true
+        type: short_term
+      behavior:
+        agent_type: deliberative
+        max_iterations: 6
+- id: researcher
+  config:
+    role: Research Agent
+    goal: Gather and summarize relevant information for content creation.
+    backstory: Experienced analyst focused on sourcing accurate references.
+    llm_provider: openai
+    llm_model: gpt-4
+    llm_temperature: 0.7
+    llm_max_tokens: null
+    tools:
+    - web_scraper
+    - text_analyzer
+    allow_tool_creation: false
+    enable_memory: true
+    memory_type: short_term
+    agent_type: reactive
+    max_iterations: 10
+    verbose: false
+    max_execution_time: null
+    allowed_domains: []
+    metadata:
+      llm_provider: openai
+      llm_temperature: 0.6
+      memory:
+        enabled: true
+        type: short_term
+      behavior:
+        agent_type: reactive
+        max_iterations: 8
+- id: writer
+  config:
+    role: Content Writer
+    goal: Draft clear, engaging content from research inputs.
+    backstory: Seasoned writer with a focus on concise storytelling.
+    llm_provider: openai
+    llm_model: gpt-4
+    llm_temperature: 0.7
+    llm_max_tokens: null
+    tools:
+    - text_analyzer
+    allow_tool_creation: false
+    enable_memory: true
+    memory_type: short_term
+    agent_type: reactive
+    max_iterations: 10
+    verbose: false
+    max_execution_time: null
+    allowed_domains: []
+    metadata:
+      llm_provider: openai
+      llm_temperature: 0.7
+      memory:
+        enabled: true
+        type: short_term
+      behavior:
+        agent_type: deliberative
+        max_iterations: 10
+- id: editor
+  config:
+    role: Editor
+    goal: Refine drafts for clarity, accuracy, and tone alignment.
+    backstory: Detail-oriented editor ensuring quality and consistency.
+    llm_provider: openai
+    llm_model: gpt-4
+    llm_temperature: 0.7
+    llm_max_tokens: null
+    tools:
+    - text_analyzer
+    allow_tool_creation: false
+    enable_memory: true
+    memory_type: short_term
+    agent_type: reactive
+    max_iterations: 10
+    verbose: false
+    max_execution_time: null
+    allowed_domains: []
+    metadata:
+      llm_provider: openai
+      llm_temperature: 0.4
+      memory:
+        enabled: true
+        type: short_term
+      behavior:
+        agent_type: deliberative
+        max_iterations: 6
+- id: validator
+  config:
+    role: Data Validator
+    goal: Validate incoming datasets for schema and integrity issues.
+    backstory: Focused on ensuring data quality and compliance.
+    llm_provider: openai
+    llm_model: gpt-4
+    llm_temperature: 0.7
+    llm_max_tokens: null
+    tools:
+    - csv_processor
+    - data_validator
+    allow_tool_creation: false
+    enable_memory: true
+    memory_type: short_term
+    agent_type: reactive
+    max_iterations: 10
+    verbose: false
+    max_execution_time: null
+    allowed_domains: []
+    metadata:
+      llm_provider: openai
+      llm_temperature: 0.4
+      memory:
+        enabled: false
+        type: short_term
+      behavior:
+        agent_type: reactive
+        max_iterations: 6
+- id: transformer
+  config:
+    role: Data Transformer
+    goal: Normalize and enrich validated datasets for storage.
+    backstory: Optimizes data formats for downstream systems.
+    llm_provider: openai
+    llm_model: gpt-4
+    llm_temperature: 0.7
+    llm_max_tokens: null
+    tools:
+    - data_transformer
+    allow_tool_creation: false
+    enable_memory: true
+    memory_type: short_term
+    agent_type: reactive
+    max_iterations: 10
+    verbose: false
+    max_execution_time: null
+    allowed_domains: []
+    metadata:
+      llm_provider: openai
+      llm_temperature: 0.5
+      memory:
+        enabled: false
+        type: short_term
+      behavior:
+        agent_type: deliberative
+        max_iterations: 6
+- id: classifier
+  config:
+    role: Request Classifier
+    goal: Categorize incoming support requests accurately.
+    backstory: Trained on historical support data to classify topics quickly.
+    llm_provider: openai
+    llm_model: gpt-4
+    llm_temperature: 0.7
+    llm_max_tokens: null
+    tools:
+    - text_analyzer
+    allow_tool_creation: false
+    enable_memory: true
+    memory_type: short_term
+    agent_type: reactive
+    max_iterations: 10
+    verbose: false
+    max_execution_time: null
+    allowed_domains: []
+    metadata:
+      llm_provider: openai
+      llm_temperature: 0.3
+      memory:
+        enabled: true
+        type: short_term
+      behavior:
+        agent_type: reactive
+        max_iterations: 5
+- id: support
+  config:
+    role: Support Agent
+    goal: Resolve customer issues with helpful, actionable responses.
+    backstory: Customer advocate focused on fast, accurate resolutions.
+    llm_provider: openai
+    llm_model: gpt-4
+    llm_temperature: 0.7
+    llm_max_tokens: null
+    tools:
+    - email_sender
+    - web_scraper
+    allow_tool_creation: false
+    enable_memory: true
+    memory_type: short_term
+    agent_type: reactive
+    max_iterations: 10
+    verbose: false
+    max_execution_time: null
+    allowed_domains: []
+    metadata:
+      llm_provider: openai
+      llm_temperature: 0.6
+      memory:
+        enabled: true
+        type: short_term
+      behavior:
+        agent_type: deliberative
+        max_iterations: 8

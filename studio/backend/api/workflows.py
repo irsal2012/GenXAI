@@ -2,6 +2,7 @@
 
 from datetime import datetime
 from fastapi import APIRouter, HTTPException, Request
+from fastapi.responses import FileResponse
 from typing import List, Dict, Any
 from pydantic import BaseModel
 import uuid
@@ -42,6 +43,22 @@ class WorkflowResponse(BaseModel):
     nodes: List[Dict[str, Any]]
     edges: List[Dict[str, Any]]
     metadata: Dict[str, Any]
+
+
+class WorkflowExportResponse(BaseModel):
+    """Workflow export response."""
+
+    success: bool
+    workflow_id: str
+    export_path: str
+
+
+class WorkflowDownloadResponse(BaseModel):
+    """Workflow download response."""
+
+    success: bool
+    workflow_id: str
+    download_path: str
 
 
 @router.get("/")
@@ -219,6 +236,48 @@ async def execute_workflow(
         "started_at": started_at,
         "completed_at": datetime.utcnow().isoformat(),
     }
+
+
+@router.post("/{workflow_id}/export-code")
+async def export_workflow_code_endpoint(workflow_id: str) -> WorkflowExportResponse:
+    """Export a workflow into runnable code artifacts."""
+    try:
+        try:
+            from services.export_service import export_workflow_code
+        except ModuleNotFoundError:
+            from studio.backend.services.export_service import export_workflow_code
+
+        result = export_workflow_code(workflow_id)
+        return WorkflowExportResponse(
+            success=True,
+            workflow_id=workflow_id,
+            export_path=str(result.export_path),
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Export failed: {exc}") from exc
+
+
+@router.get("/{workflow_id}/download-code")
+async def download_workflow_code(workflow_id: str) -> FileResponse:
+    """Download a workflow export bundle as a zip."""
+    try:
+        try:
+            from services.export_service import export_workflow_zip
+        except ModuleNotFoundError:
+            from studio.backend.services.export_service import export_workflow_zip
+
+        result = export_workflow_zip(workflow_id)
+        return FileResponse(
+            path=str(result.export_path),
+            filename=f"{workflow_id}.zip",
+            media_type="application/zip",
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Download failed: {exc}") from exc
 
 
 @executions_router.get("/{execution_id}")

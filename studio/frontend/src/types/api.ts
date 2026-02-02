@@ -105,3 +105,9 @@ export interface ExecutionResult {
   started_at: string
   completed_at: string
 }
+
+export interface WorkflowExport {
+  success: boolean
+  workflow_id: string
+  export_path: string
+}

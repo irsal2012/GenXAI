@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { useExecuteWorkflow, useUpdateWorkflow, useWorkflow } from '../services/workflows'
+import { useDownloadWorkflowCode, useExecuteWorkflow, useExportWorkflowCode, useUpdateWorkflow, useWorkflow } from '../services/workflows'
 import { useBuilderStore } from '../store/builderStore'
 import ErrorState from '../components/ErrorState'
 import LoadingState from '../components/LoadingState'
@@ -16,6 +16,8 @@ const WorkflowBuilderPage = () => {
   const workflowQuery = useWorkflow(workflowId)
   const updateWorkflow = useUpdateWorkflow(workflowId ?? '')
   const executeWorkflow = useExecuteWorkflow(workflowId ?? '')
+  const exportWorkflow = useExportWorkflowCode()
+  const downloadWorkflow = useDownloadWorkflowCode()
   const { draftNodes, draftEdges, draftMetadata, resetDrafts, setDraftNodes } = useBuilderStore()
 
   useEffect(() => {
@@ -88,6 +90,39 @@ const WorkflowBuilderPage = () => {
     }
   }, [workflowQuery.data, draftNodes, draftEdges, draftMetadata])
 
+  const handleExportCode = useCallback(async () => {
+    if (!workflowId) return
+    try {
+      const result = await exportWorkflow.mutateAsync(workflowId)
+      setCopyStatus(`Exported code to ${result.export_path}`)
+    } catch (error) {
+      setCopyStatus(`Export failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    } finally {
+      setTimeout(() => setCopyStatus(''), 3500)
+    }
+  }, [workflowId, exportWorkflow])
+
+  const handleDownloadCode = useCallback(async () => {
+    if (!workflowId) return
+    try {
+      const response = await downloadWorkflow.mutateAsync(workflowId)
+      const blob = new Blob([response.data], { type: 'application/zip' })
+      const url = window.URL.createObjectURL(blob)
+      const anchor = document.createElement('a')
+      anchor.href = url
+      anchor.download = `${workflowId}.zip`
+      document.body.appendChild(anchor)
+      anchor.click()
+      anchor.remove()
+      window.URL.revokeObjectURL(url)
+      setCopyStatus('Download started')
+    } catch (error) {
+      setCopyStatus(`Download failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    } finally {
+      setTimeout(() => setCopyStatus(''), 3500)
+    }
+  }, [workflowId, downloadWorkflow])
+
   const handleExecute = useCallback(async () => {
     if (!workflowId) return
     await executeWorkflow.mutateAsync({ input: 'demo payload' })
@@ -137,7 +172,7 @@ const WorkflowBuilderPage = () => {
         nodes={visualWorkflow.nodes}
         edges={visualWorkflow.edges}
         onSave={handleSave}
-        onExport={handleExportJson}
+        onExport={handleDownloadCode}
         onRun={handleExecute}
         isRunning={executeWorkflow.isPending}
         onNodeClick={(node) => setSelectedNode(node)}
