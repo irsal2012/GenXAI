@@ -28,6 +28,8 @@ import AgentNode from './nodes/AgentNode'
 import StartNode from './nodes/StartNode'
 import EndNode from './nodes/EndNode'
 import DecisionNode from './nodes/DecisionNode'
+import SubworkflowNode from './nodes/SubworkflowNode'
+import LoopNode from './nodes/LoopNode'
 
 interface ReactFlowCanvasProps {
   nodes: ReactFlowNode[]
@@ -38,6 +40,7 @@ interface ReactFlowCanvasProps {
   onNodeDoubleClick?: (node: ReactFlowNode) => void
   showMiniMap?: boolean
   showGrid?: boolean
+  nodeStatuses?: Record<string, 'running' | 'completed' | 'failed' | 'pending'>
   onInit?: (instance: {
     screenToFlowPosition: (point: { x: number; y: number }) => { x: number; y: number }
     fitView: (options?: { padding?: number; duration?: number }) => void
@@ -129,6 +132,8 @@ const nodeTypes = {
   tool: CustomNode,
   decision: DecisionNode,
   end: EndNode,
+  subgraph: SubworkflowNode,
+  loop: LoopNode,
   default: CustomNode,
 }
 
@@ -141,6 +146,7 @@ const ReactFlowCanvas = ({
   onNodeDoubleClick,
   showMiniMap = true,
   showGrid = true,
+  nodeStatuses = {},
   onInit,
 }: ReactFlowCanvasProps) => {
   const reactFlowWrapper = useRef<HTMLDivElement>(null)
@@ -260,7 +266,22 @@ const ReactFlowCanvas = ({
   const nodesWithStyles = useMemo(
     () =>
       nodes.map((node) => {
-        if (node.type === 'agent' || node.type === 'start' || node.type === 'end' || node.type === 'decision') return node
+        if (
+          node.type === 'agent' ||
+          node.type === 'start' ||
+          node.type === 'end' ||
+          node.type === 'decision' ||
+          node.type === 'subgraph' ||
+          node.type === 'loop'
+        ) {
+          return {
+            ...node,
+            data: {
+              ...node.data,
+              status: nodeStatuses[node.id],
+            },
+          }
+        }
 
         return {
           ...node,
@@ -273,9 +294,13 @@ const ReactFlowCanvas = ({
             fontSize: '14px',
             fontWeight: 600,
           },
+          data: {
+            ...node.data,
+            status: nodeStatuses[node.id],
+          },
         }
       }),
-    [nodes, nodeColors]
+    [nodes, nodeColors, nodeStatuses]
   )
 
   // Handle drag over

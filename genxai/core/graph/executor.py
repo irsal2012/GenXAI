@@ -7,7 +7,18 @@ import logging
 from pathlib import Path
 
 from genxai.core.graph.engine import Graph
-from genxai.core.graph.nodes import InputNode, OutputNode, AgentNode, NodeType
+from genxai.core.graph.nodes import (
+    InputNode,
+    OutputNode,
+    AgentNode,
+    ConditionNode,
+    ToolNode,
+    SubgraphNode,
+    LoopNode,
+    Node,
+    NodeConfig,
+    NodeType,
+)
 from genxai.core.graph.edges import Edge, ConditionalEdge
 from genxai.core.agent.base import Agent, AgentFactory
 from genxai.core.agent.registry import AgentRegistry
@@ -30,7 +41,9 @@ class EnhancedGraph(Graph):
     in GenXAI.
     """
 
-    async def _execute_node_logic(self, node: Any, state: Dict[str, Any]) -> Any:
+    async def _execute_node_logic(
+        self, node: Any, state: Dict[str, Any], max_iterations: int
+    ) -> Any:
         """Execute node logic with actual agent execution.
 
         Args:
@@ -74,8 +87,7 @@ class EnhancedGraph(Graph):
             return result
         
         else:
-            # Default behavior
-            return {"node_id": node.id, "type": node.type.value}
+            return await super()._execute_node_logic(node, state, max_iterations)
 
     async def _execute_agent_with_tools(
         self, agent: Agent, task: str, state: Dict[str, Any]
@@ -261,6 +273,7 @@ class WorkflowExecutor:
         for node in nodes:
             node_id = node.get("id")
             node_type = node.get("type")
+            config = node.get("config", {})
 
             # Support some common aliases used by the Studio UI
             # - "start" behaves like an input node
@@ -271,6 +284,29 @@ class WorkflowExecutor:
                 graph.add_node(OutputNode(id=node_id))
             elif node_type == "agent":
                 graph.add_node(AgentNode(id=node_id, agent_id=node_id))
+            elif node_type == "tool":
+                tool_name = config.get("tool_name") or config.get("name") or "tool"
+                graph.add_node(ToolNode(id=node_id, tool_name=tool_name))
+            elif node_type == "decision":
+                condition = config.get("condition", "")
+                graph.add_node(ConditionNode(id=node_id, condition=condition))
+            elif node_type == "subgraph":
+                workflow_id = config.get("workflow_id") or config.get("subgraph_id") or config.get("workflow")
+                if workflow_id:
+                    graph.add_node(SubgraphNode(id=node_id, workflow_id=workflow_id))
+                else:
+                    graph.add_node(
+                        Node(
+                            id=node_id,
+                            type=NodeType.SUBGRAPH,
+                            config=NodeConfig(type=NodeType.SUBGRAPH, data={"workflow_id": ""}),
+                        )
+                    )
+                    logger.warning(f"Subgraph node '{node_id}' missing workflow_id")
+            elif node_type == "loop":
+                condition = config.get("condition", "")
+                max_iterations = int(config.get("max_iterations", 5))
+                graph.add_node(LoopNode(id=node_id, condition=condition, max_iterations=max_iterations))
             else:
                 logger.warning(f"Unknown node type: {node_type}")
 
@@ -378,6 +414,7 @@ class WorkflowExecutor:
                 "status": "success",
                 "run_id": run_id,
                 "result": result,
+                "node_events": result.get("node_events", []),
                 "nodes_executed": len(graph.nodes),
                 "message": "Workflow executed successfully"
             }

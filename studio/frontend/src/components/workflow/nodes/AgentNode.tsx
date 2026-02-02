@@ -47,9 +47,18 @@ const AgentNode = memo(({ id, data, isConnectable, selected }: NodeProps<AgentNo
     hasTools ? `Tools: ${tools.join(', ')}` : null,
   ].filter(Boolean).join('\n')
 
+  const status = (data as { status?: string }).status
+  const statusStyles: Record<string, string> = {
+    running: 'border-blue-500 bg-blue-50/80',
+    completed: 'border-emerald-500 bg-emerald-50/80',
+    failed: 'border-red-500 bg-red-50/80',
+  }
+
   return (
     <div
-      className={`relative flex flex-col gap-1 px-2 py-1.5 rounded-lg border shadow-sm min-w-[160px] max-w-[220px] transition-colors ${containerClass}`}
+      className={`relative flex flex-col gap-1 px-2 py-1.5 rounded-lg border shadow-sm min-w-[160px] max-w-[220px] transition-colors ${
+        status ? statusStyles[status] || containerClass : containerClass
+      }`}
       title={tooltipContent}
     >
       <Handle
@@ -117,6 +126,12 @@ const AgentNode = memo(({ id, data, isConnectable, selected }: NodeProps<AgentNo
               </div>
             )}
           </div>
+        </div>
+      )}
+
+      {status && (
+        <div className="absolute top-1 right-1 rounded-full bg-white/80 px-2 py-0.5 text-[9px] uppercase text-slate-500">
+          {status}
         </div>
       )}
 

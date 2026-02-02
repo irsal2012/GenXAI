@@ -103,6 +103,7 @@ app.include_router(workflows.router, prefix="/api/workflows", tags=["workflows"]
 app.include_router(agents.router, prefix="/api/agents", tags=["agents"])
 app.include_router(tools.router, prefix="/api/tools", tags=["tools"])
 app.include_router(workflows.executions_router, prefix="/api/executions", tags=["executions"])
+app.include_router(workflows.templates_router, prefix="/api/templates", tags=["templates"])
 
 
 if __name__ == "__main__":

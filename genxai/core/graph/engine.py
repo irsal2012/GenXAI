@@ -8,7 +8,7 @@ import time
 import copy
 from pathlib import Path
 
-from genxai.core.graph.nodes import Node, NodeStatus, NodeType
+from genxai.core.graph.nodes import Node, NodeConfig, NodeStatus, NodeType
 from genxai.core.agent.registry import AgentRegistry
 from genxai.core.agent.runtime import AgentRuntime
 from genxai.tools.registry import ToolRegistry
@@ -244,6 +244,7 @@ class Graph:
                 state = {}
             state["input"] = input_data
             state["iterations"] = 0
+        state.setdefault("node_events", [])
 
         if resume_from:
             for node_id, status in resume_from.node_statuses.items():
@@ -288,6 +289,7 @@ class Graph:
             )
 
         logger.info(f"Graph execution completed: {self.name}")
+        state["node_events"] = state.get("node_events", [])
         return state
 
     def create_checkpoint(self, name: str, state: Dict[str, Any]) -> WorkflowCheckpoint:
@@ -334,6 +336,13 @@ class Graph:
         node.status = NodeStatus.RUNNING
         logger.debug(f"Executing node: {node_id}")
         node_start = time.time()
+        state.setdefault("node_events", []).append(
+            {
+                "node_id": node_id,
+                "status": NodeStatus.RUNNING.value,
+                "timestamp": time.time(),
+            }
+        )
 
         try:
             # Execute node (placeholder - will be implemented with actual executors)
@@ -341,7 +350,7 @@ class Graph:
                 "genxai.workflow.node",
                 {"workflow_id": self.name, "node_id": node_id, "node_type": node.type.value},
             ):
-                result = await self._execute_node_logic(node, state)
+                result = await self._execute_node_logic(node, state, max_iterations)
             node.result = result
             node.status = NodeStatus.COMPLETED
             logger.debug(f"Node completed: {node_id}")
@@ -350,6 +359,13 @@ class Graph:
                 workflow_id=self.name,
                 node_id=node_id,
                 status="success",
+            )
+            state.setdefault("node_events", []).append(
+                {
+                    "node_id": node_id,
+                    "status": NodeStatus.COMPLETED.value,
+                    "timestamp": time.time(),
+                }
             )
 
             # Update state with result
@@ -385,9 +401,19 @@ class Graph:
                 node_id=node_id,
                 status="error",
             )
+            state.setdefault("node_events", []).append(
+                {
+                    "node_id": node_id,
+                    "status": NodeStatus.FAILED.value,
+                    "timestamp": time.time(),
+                    "error": str(e),
+                }
+            )
             raise GraphExecutionError(f"Node {node_id} failed: {e}") from e
 
-    async def _execute_node_logic(self, node: Node, state: Dict[str, Any]) -> Any:
+    async def _execute_node_logic(
+        self, node: Node, state: Dict[str, Any], max_iterations: int
+    ) -> Any:
         """Execute the actual logic of a node.
 
         Args:
@@ -408,6 +434,12 @@ class Graph:
 
         if node.type == NodeType.TOOL:
             return await self._execute_tool_node(node, state)
+
+        if node.type == NodeType.SUBGRAPH:
+            return await self._execute_subgraph_node(node, state, max_iterations)
+
+        if node.type == NodeType.LOOP:
+            return await self._execute_loop_node(node, state, max_iterations)
 
         # Default fallback for unsupported nodes
         return {"node_id": node.id, "type": node.type.value}
@@ -476,6 +508,73 @@ class Graph:
 
         result = await tool.execute(**tool_params)
         return result.model_dump() if hasattr(result, "model_dump") else result
+
+    async def _execute_subgraph_node(
+        self, node: Node, state: Dict[str, Any], max_iterations: int
+    ) -> Any:
+        """Execute a nested workflow defined in the state metadata."""
+        workflow_id = node.config.data.get("workflow_id")
+        if not workflow_id:
+            raise GraphExecutionError(
+                f"Subgraph node '{node.id}' missing workflow_id in config.data"
+            )
+
+        subgraphs = state.get("subgraphs", {})
+        workflow_def = subgraphs.get(workflow_id)
+        if not workflow_def and "subgraphs" in state:
+            workflow_def = state["subgraphs"].get(workflow_id)
+        if not workflow_def and "metadata" in state:
+            workflow_def = state.get("metadata", {}).get("subgraphs", {}).get(workflow_id)
+        if not workflow_def:
+            raise GraphExecutionError(
+                f"Subgraph workflow '{workflow_id}' not found in state.subgraphs"
+            )
+
+        subgraph = Graph(name=f"subgraph:{workflow_id}")
+        for node_def in workflow_def.get("nodes", []):
+            node_type = node_def.get("type")
+            node_id = node_def.get("id")
+            if node_type == "input":
+                subgraph.add_node(Node(id=node_id, type=NodeType.INPUT, config=NodeConfig(type=NodeType.INPUT)))
+            elif node_type == "output":
+                subgraph.add_node(Node(id=node_id, type=NodeType.OUTPUT, config=NodeConfig(type=NodeType.OUTPUT)))
+            elif node_type == "agent":
+                subgraph.add_node(Node(id=node_id, type=NodeType.AGENT, config=NodeConfig(type=NodeType.AGENT, data=node_def.get("config", {}))))
+            elif node_type == "tool":
+                subgraph.add_node(Node(id=node_id, type=NodeType.TOOL, config=NodeConfig(type=NodeType.TOOL, data=node_def.get("config", {}))))
+            else:
+                subgraph.add_node(Node(id=node_id, type=NodeType.CONDITION, config=NodeConfig(type=NodeType.CONDITION, data=node_def.get("config", {}))))
+
+        for edge_def in workflow_def.get("edges", []):
+            subgraph.add_edge(Edge(source=edge_def["source"], target=edge_def["target"], condition=edge_def.get("condition")))
+
+        result_state = await subgraph.run(
+            input_data=state.get("input"),
+            max_iterations=max_iterations,
+            state={"parent_state": state},
+        )
+        return {"workflow_id": workflow_id, "state": result_state}
+
+    async def _execute_loop_node(
+        self, node: Node, state: Dict[str, Any], max_iterations: int
+    ) -> Any:
+        """Execute a loop node by iterating until condition is met."""
+        condition_key = node.config.data.get("condition")
+        loop_limit = int(node.config.data.get("max_iterations", 5))
+        loop_iterations = 0
+        results = []
+
+        while loop_iterations < loop_limit:
+            loop_iterations += 1
+            state_key = f"loop_{node.id}_iteration"
+            state[state_key] = loop_iterations
+            results.append({"iteration": loop_iterations})
+            if condition_key and state.get(condition_key):
+                break
+            if state.get("iterations", 0) >= max_iterations:
+                break
+
+        return {"iterations": loop_iterations, "results": results}
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert graph to dictionary representation.

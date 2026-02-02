@@ -102,8 +102,28 @@ export interface ExecutionResult {
   status: string
   logs: string[]
   result: Record<string, unknown>
+  node_events?: {
+    node_id: string
+    status: string
+    timestamp: number
+    error?: string
+  }[]
   started_at: string
   completed_at: string
+}
+
+export interface WorkflowTemplate {
+  id: string
+  name: string
+  description: string
+  category: string
+  difficulty: string
+  tags: string[]
+  nodes: Record<string, unknown>[]
+  edges: Record<string, unknown>[]
+  metadata: Record<string, unknown>
+  created_at: string
+  updated_at: string
 }
 
 export interface WorkflowExport {

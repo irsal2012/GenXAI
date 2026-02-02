@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { Edge } from '@xyflow/react'
 import ReactFlowCanvas from '../workflow/ReactFlowCanvas'
+import ExecutionOverlay from '../workflow/ExecutionOverlay'
+import ValidationPanel from '../workflow/ValidationPanel'
+import { validateWorkflow } from '../../utils/workflowConverter'
 import BottomToolbar from './BottomToolbar'
 import FloatingNodePalette from './FloatingNodePalette'
 import QuickActionsPanel from './QuickActionsPanel'
@@ -21,6 +24,12 @@ interface CanvasEditorProps {
   isRunning?: boolean
   onNodeClick?: (node: ReactFlowNode) => void
   onNodeDoubleClick?: (node: ReactFlowNode) => void
+  nodeStatuses?: Record<string, 'running' | 'completed' | 'failed' | 'pending'>
+  lastEvent?: {
+    node_id: string
+    status: string
+    timestamp: number
+  }
 }
 
 const CanvasEditor = ({
@@ -35,6 +44,8 @@ const CanvasEditor = ({
   isRunning,
   onNodeClick,
   onNodeDoubleClick,
+  nodeStatuses,
+  lastEvent,
 }: CanvasEditorProps) => {
   const [showMinimap, setShowMinimap] = useState(true)
   const [showGrid, setShowGrid] = useState(true)
@@ -98,6 +109,9 @@ const CanvasEditor = ({
     }
   }, [nodes.length, edges.length])
 
+  const [showValidation, setShowValidation] = useState(true)
+  const validation = useMemo(() => validateWorkflow(nodes, edges), [nodes, edges])
+
   return (
     <div className="relative h-screen w-full bg-slate-100 text-slate-900" onContextMenu={handleContextMenu}>
       <HamburgerMenu isOpen={isMenuOpen} onToggle={() => setIsMenuOpen((prev) => !prev)} />
@@ -110,10 +124,21 @@ const CanvasEditor = ({
         onNodeDoubleClick={onNodeDoubleClick}
         showMiniMap={showMinimap}
         showGrid={showGrid}
+        nodeStatuses={nodeStatuses}
         onInit={(instance) => {
           reactFlowRef.current = instance
         }}
       />
+      {nodeStatuses && (
+        <ExecutionOverlay
+          nodeStatuses={nodeStatuses}
+          lastEvent={lastEvent}
+          nodes={nodes}
+        />
+      )}
+      {showValidation && !validation.valid && (
+        <ValidationPanel errors={validation.errors} onClose={() => setShowValidation(false)} />
+      )}
       <FloatingNodePalette />
       <QuickActionsPanel
         onFitView={handleFitView}

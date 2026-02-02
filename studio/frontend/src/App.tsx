@@ -4,6 +4,7 @@ import AppShell from './app/AppShell'
 import DashboardPage from './pages/DashboardPage'
 import WorkflowsPage from './pages/WorkflowsPage'
 import WorkflowBuilderPage from './pages/WorkflowBuilderPage'
+import ExecutionHistoryPage from './pages/ExecutionHistoryPage'
 import AgentsPage from './pages/AgentsPage'
 import AgentBuilderPage from './pages/AgentBuilderPage'
 import ToolsPage from './pages/ToolsPage'
@@ -19,6 +20,7 @@ const App = () => {
           <Route index element={<DashboardPage />} />
           <Route path="workflows" element={<WorkflowsPage />} />
           <Route path="workflows/:workflowId" element={<WorkflowBuilderPage />} />
+          <Route path="executions" element={<ExecutionHistoryPage />} />
           <Route path="agents" element={<AgentsPage />} />
           <Route path="agents/builder" element={<AgentBuilderPage />} />
           <Route path="tools" element={<ToolsPage />} />

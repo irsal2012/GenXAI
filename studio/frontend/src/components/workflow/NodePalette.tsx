@@ -26,6 +26,20 @@ const nodeTypes: NodeType[] = [
     description: 'Workflow entry point',
   },
   {
+    type: 'subgraph',
+    label: 'Subworkflow',
+    icon: '🧩',
+    color: '#6b7280',
+    description: 'Run a nested workflow',
+  },
+  {
+    type: 'loop',
+    label: 'Loop',
+    icon: '🔁',
+    color: '#a855f7',
+    description: 'Repeat until condition met',
+  },
+  {
     type: 'decision',
     label: 'Decision',
     icon: '❓',

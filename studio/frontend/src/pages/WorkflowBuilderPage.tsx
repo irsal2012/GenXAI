@@ -123,9 +123,26 @@ const WorkflowBuilderPage = () => {
     }
   }, [workflowId, downloadWorkflow])
 
+  const [nodeStatuses, setNodeStatuses] = useState<
+    Record<string, 'running' | 'completed' | 'failed' | 'pending'>
+  >({})
+  const [lastEvent, setLastEvent] = useState<{ node_id: string; status: string; timestamp: number } | undefined>()
+
   const handleExecute = useCallback(async () => {
     if (!workflowId) return
-    await executeWorkflow.mutateAsync({ input: 'demo payload' })
+    setNodeStatuses({})
+    setLastEvent(undefined)
+    const result = await executeWorkflow.mutateAsync({ input: 'demo payload' })
+    if (result?.node_events) {
+      const statuses: Record<string, 'running' | 'completed' | 'failed' | 'pending'> = {}
+      result.node_events.forEach((event) => {
+        if (event.status === 'running' || event.status === 'completed' || event.status === 'failed') {
+          statuses[event.node_id] = event.status
+          setLastEvent({ node_id: event.node_id, status: event.status, timestamp: event.timestamp })
+        }
+      })
+      setNodeStatuses(statuses)
+    }
   }, [workflowId, executeWorkflow])
 
   useEffect(() => {
@@ -185,6 +202,8 @@ const WorkflowBuilderPage = () => {
             setDecisionConfigModalOpen(true)
           }
         }}
+        nodeStatuses={nodeStatuses}
+        lastEvent={lastEvent}
       />
       {selectedNode && selectedNode.type === 'agent' && (
         <div className="absolute right-6 top-24 z-30 h-[70vh] w-80">

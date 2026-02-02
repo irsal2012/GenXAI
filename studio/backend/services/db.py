@@ -67,6 +67,23 @@ def init_db() -> None:
             )
             """
         )
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS workflow_templates (
+                id TEXT PRIMARY KEY,
+                name TEXT NOT NULL,
+                description TEXT,
+                category TEXT,
+                difficulty TEXT,
+                tags TEXT NOT NULL,
+                nodes TEXT NOT NULL,
+                edges TEXT NOT NULL,
+                metadata TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            )
+            """
+        )
 
 
 def json_dumps(value: Any) -> str:

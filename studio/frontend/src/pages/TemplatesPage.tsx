@@ -1,16 +1,14 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useCreateWorkflow } from '../services/workflows'
-import {
-  getAllTemplates,
-  getCategories,
-  searchTemplates,
-  type WorkflowTemplate,
-} from '../data/workflowTemplates'
+import { useCreateTemplate, useCreateWorkflow, useDeleteTemplate, useTemplates } from '../services/workflows'
+import { getAllTemplates, getCategories, searchTemplates, type WorkflowTemplate } from '../data/workflowTemplates'
 
 const TemplatesPage = () => {
   const navigate = useNavigate()
   const createWorkflow = useCreateWorkflow()
+  const templatesQuery = useTemplates()
+  const createTemplate = useCreateTemplate()
+  const deleteTemplate = useDeleteTemplate()
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('')
   const [selectedDifficulty, setSelectedDifficulty] = useState('')
@@ -18,8 +16,29 @@ const TemplatesPage = () => {
   const allTemplates = getAllTemplates()
   const categories = getCategories()
 
+  const savedTemplates = templatesQuery.data || []
+
   // Filter templates
-  const filteredTemplates = allTemplates.filter((template) => {
+  const combinedTemplates = [
+    ...allTemplates,
+    ...savedTemplates.map((template) => ({
+      id: template.id,
+      name: template.name,
+      description: template.description,
+      category: template.category,
+      difficulty: template.difficulty as WorkflowTemplate['difficulty'],
+      tags: template.tags,
+      workflow: {
+        name: template.name,
+        description: template.description,
+        nodes: template.nodes,
+        edges: template.edges,
+        metadata: template.metadata || {},
+      },
+    })),
+  ]
+
+  const filteredTemplates = combinedTemplates.filter((template) => {
     // Search filter
     if (searchQuery) {
       const matchesSearch = searchTemplates(searchQuery).some((t) => t.id === template.id)
@@ -51,6 +70,33 @@ const TemplatesPage = () => {
     }
   }
 
+  const handleSaveAsTemplate = async () => {
+    const name = window.prompt('Template name')
+    if (!name) return
+    const description = window.prompt('Template description') || ''
+    const category = window.prompt('Template category', 'General') || 'General'
+    const difficulty = window.prompt('Difficulty (beginner/intermediate/advanced)', 'intermediate') || 'intermediate'
+    const tagsInput = window.prompt('Comma-separated tags', '') || ''
+    const tags = tagsInput
+      .split(',')
+      .map((tag) => tag.trim())
+      .filter(Boolean)
+
+    const defaultWorkflow = allTemplates[0]?.workflow
+    if (!defaultWorkflow) return
+
+    await createTemplate.mutateAsync({
+      name,
+      description,
+      category,
+      difficulty,
+      tags,
+      nodes: defaultWorkflow.nodes,
+      edges: defaultWorkflow.edges,
+      metadata: defaultWorkflow.metadata,
+    })
+  }
+
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
       case 'beginner':
@@ -71,6 +117,16 @@ const TemplatesPage = () => {
         <p className="text-sm text-slate-500">
           Start with pre-built templates to quickly create workflows
         </p>
+      </div>
+
+      <div className="flex items-center gap-3">
+        <button
+          className="rounded-xl bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700"
+          onClick={handleSaveAsTemplate}
+          disabled={createTemplate.isPending}
+        >
+          {createTemplate.isPending ? 'Saving...' : 'Save Template'}
+        </button>
       </div>
 
       {/* Filters */}
@@ -156,13 +212,24 @@ const TemplatesPage = () => {
               {template.workflow.nodes.length} nodes • {template.workflow.edges.length} edges
             </div>
 
-            <button
-              className="w-full rounded-xl bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700 disabled:opacity-50"
-              onClick={() => handleUseTemplate(template)}
-              disabled={createWorkflow.isPending}
-            >
-              {createWorkflow.isPending ? 'Creating...' : 'Use Template'}
-            </button>
+            <div className="space-y-2">
+              <button
+                className="w-full rounded-xl bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700 disabled:opacity-50"
+                onClick={() => handleUseTemplate(template)}
+                disabled={createWorkflow.isPending}
+              >
+                {createWorkflow.isPending ? 'Creating...' : 'Use Template'}
+              </button>
+              {savedTemplates.find((saved) => saved.id === template.id) && (
+                <button
+                  className="w-full rounded-xl border border-red-200 px-4 py-2 text-sm font-semibold text-red-600 hover:bg-red-50"
+                  onClick={() => deleteTemplate.mutateAsync(template.id)}
+                  disabled={deleteTemplate.isPending}
+                >
+                  {deleteTemplate.isPending ? 'Deleting...' : 'Delete Template'}
+                </button>
+              )}
+            </div>
           </div>
         ))}
       </div>

@@ -22,6 +22,7 @@ except ModuleNotFoundError:
 
 router = APIRouter()
 executions_router = APIRouter()
+templates_router = APIRouter()
 
 
 class WorkflowCreate(BaseModel):
@@ -59,6 +60,35 @@ class WorkflowDownloadResponse(BaseModel):
     success: bool
     workflow_id: str
     download_path: str
+
+
+class TemplateCreate(BaseModel):
+    """Workflow template creation request."""
+
+    name: str
+    description: str = ""
+    category: str = "General"
+    difficulty: str = "intermediate"
+    tags: List[str] = []
+    nodes: List[Dict[str, Any]]
+    edges: List[Dict[str, Any]]
+    metadata: Dict[str, Any] = {}
+
+
+class TemplateResponse(BaseModel):
+    """Workflow template response."""
+
+    id: str
+    name: str
+    description: str
+    category: str
+    difficulty: str
+    tags: List[str]
+    nodes: List[Dict[str, Any]]
+    edges: List[Dict[str, Any]]
+    metadata: Dict[str, Any]
+    created_at: str
+    updated_at: str
 
 
 @router.get("/")
@@ -233,6 +263,7 @@ async def execute_workflow(
         "status": status,
         "logs": logs,
         "result": execution_result,
+        "node_events": execution_result.get("node_events", []),
         "started_at": started_at,
         "completed_at": datetime.utcnow().isoformat(),
     }
@@ -287,12 +318,139 @@ async def get_execution(execution_id: str) -> Dict[str, Any]:
     if not execution:
         raise HTTPException(status_code=404, detail="Execution not found")
 
+    result_payload = json_loads(execution["result"], {})
     return {
         "id": execution["id"],
         "workflow_id": execution["workflow_id"],
         "status": execution["status"],
         "logs": json_loads(execution["logs"], []),
-        "result": json_loads(execution["result"], {}),
+        "result": result_payload,
+        "node_events": result_payload.get("node_events", []),
         "started_at": execution["started_at"],
         "completed_at": execution["completed_at"],
     }
+
+
+@executions_router.get("/")
+async def list_executions() -> List[Dict[str, Any]]:
+    """List workflow executions."""
+    executions = fetch_all("SELECT * FROM executions ORDER BY started_at DESC")
+    response: List[Dict[str, Any]] = []
+    for execution in executions:
+        result_payload = json_loads(execution["result"], {})
+        response.append(
+            {
+                "id": execution["id"],
+                "workflow_id": execution["workflow_id"],
+                "status": execution["status"],
+                "logs": json_loads(execution["logs"], []),
+                "result": result_payload,
+                "node_events": result_payload.get("node_events", []),
+                "started_at": execution["started_at"],
+                "completed_at": execution["completed_at"],
+            }
+        )
+    return response
+
+
+@templates_router.get("/")
+async def list_templates() -> List[TemplateResponse]:
+    """List workflow templates."""
+    templates = fetch_all("SELECT * FROM workflow_templates ORDER BY created_at DESC")
+    return [
+        TemplateResponse(
+            id=template["id"],
+            name=template["name"],
+            description=template["description"],
+            category=template["category"],
+            difficulty=template["difficulty"],
+            tags=json_loads(template["tags"], []),
+            nodes=json_loads(template["nodes"], []),
+            edges=json_loads(template["edges"], []),
+            metadata=json_loads(template["metadata"], {}),
+            created_at=template["created_at"],
+            updated_at=template["updated_at"],
+        )
+        for template in templates
+    ]
+
+
+@templates_router.post("/")
+async def create_template(template: TemplateCreate) -> TemplateResponse:
+    """Create a new workflow template."""
+    template_id = f"tpl_{uuid.uuid4().hex[:8]}"
+    timestamp = datetime.utcnow().isoformat()
+    template_data = template.dict()
+    execute(
+        """
+        INSERT INTO workflow_templates (id, name, description, category, difficulty, tags, nodes, edges, metadata, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            template_id,
+            template_data["name"],
+            template_data.get("description", ""),
+            template_data.get("category", "General"),
+            template_data.get("difficulty", "intermediate"),
+            json_dumps(template_data.get("tags", [])),
+            json_dumps(template_data.get("nodes", [])),
+            json_dumps(template_data.get("edges", [])),
+            json_dumps(template_data.get("metadata", {})),
+            timestamp,
+            timestamp,
+        ),
+    )
+
+    return TemplateResponse(
+        id=template_id,
+        created_at=timestamp,
+        updated_at=timestamp,
+        **template_data,
+    )
+
+
+@templates_router.put("/{template_id}")
+async def update_template(template_id: str, template: TemplateCreate) -> TemplateResponse:
+    """Update an existing workflow template."""
+    existing = fetch_one("SELECT * FROM workflow_templates WHERE id = ?", (template_id,))
+    if not existing:
+        raise HTTPException(status_code=404, detail="Template not found")
+
+    template_data = template.dict()
+    timestamp = datetime.utcnow().isoformat()
+    execute(
+        """
+        UPDATE workflow_templates
+        SET name = ?, description = ?, category = ?, difficulty = ?, tags = ?, nodes = ?, edges = ?, metadata = ?, updated_at = ?
+        WHERE id = ?
+        """,
+        (
+            template_data["name"],
+            template_data.get("description", ""),
+            template_data.get("category", "General"),
+            template_data.get("difficulty", "intermediate"),
+            json_dumps(template_data.get("tags", [])),
+            json_dumps(template_data.get("nodes", [])),
+            json_dumps(template_data.get("edges", [])),
+            json_dumps(template_data.get("metadata", {})),
+            timestamp,
+            template_id,
+        ),
+    )
+
+    return TemplateResponse(
+        id=template_id,
+        created_at=existing["created_at"],
+        updated_at=timestamp,
+        **template_data,
+    )
+
+
+@templates_router.delete("/{template_id}")
+async def delete_template(template_id: str) -> Dict[str, str]:
+    """Delete a workflow template."""
+    existing = fetch_one("SELECT id FROM workflow_templates WHERE id = ?", (template_id,))
+    if not existing:
+        raise HTTPException(status_code=404, detail="Template not found")
+    execute("DELETE FROM workflow_templates WHERE id = ?", (template_id,))
+    return {"message": "Template deleted successfully"}

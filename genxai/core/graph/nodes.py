@@ -15,6 +15,7 @@ class NodeType(str, Enum):
     HUMAN = "human"
     INPUT = "input"
     OUTPUT = "output"
+    LOOP = "loop"
 
 
 class NodeConfig(BaseModel):
@@ -158,4 +159,31 @@ class OutputNode(Node):
         """Initialize output node."""
         super().__init__(
             id=id, type=NodeType.OUTPUT, config=NodeConfig(type=NodeType.OUTPUT), **kwargs
+        )
+
+
+class SubgraphNode(Node):
+    """Node that executes a nested workflow."""
+
+    def __init__(self, id: str, workflow_id: str, **kwargs: Any) -> None:
+        super().__init__(
+            id=id,
+            type=NodeType.SUBGRAPH,
+            config=NodeConfig(type=NodeType.SUBGRAPH, data={"workflow_id": workflow_id}),
+            **kwargs,
+        )
+
+
+class LoopNode(Node):
+    """Node that represents a loop with a termination condition."""
+
+    def __init__(self, id: str, condition: str, max_iterations: int = 5, **kwargs: Any) -> None:
+        super().__init__(
+            id=id,
+            type=NodeType.LOOP,
+            config=NodeConfig(
+                type=NodeType.LOOP,
+                data={"condition": condition, "max_iterations": max_iterations},
+            ),
+            **kwargs,
         )

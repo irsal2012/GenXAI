@@ -1,15 +1,16 @@
 import { NavLink } from 'react-router-dom'
 import { useEffect, useState } from 'react'
-import { 
-  Squares2X2Icon, 
-  PlayCircleIcon, 
-  UserCircleIcon, 
+import {
+  Squares2X2Icon,
+  PlayCircleIcon,
+  UserCircleIcon,
   WrenchScrewdriverIcon,
   DocumentDuplicateIcon,
   BeakerIcon,
   Cog6ToothIcon,
   SunIcon,
   MoonIcon,
+  ClockIcon,
 } from '@heroicons/react/24/outline'
 
 const links = [
@@ -17,6 +18,7 @@ const links = [
   { to: '/tools', label: 'Tools', icon: WrenchScrewdriverIcon },
   { to: '/agents', label: 'Agents', icon: UserCircleIcon },
   { to: '/workflows', label: 'Workflows', icon: PlayCircleIcon },
+  { to: '/executions', label: 'Executions', icon: ClockIcon },
   { to: '/templates', label: 'Templates', icon: DocumentDuplicateIcon },
   { to: '/playground', label: 'Playground', icon: BeakerIcon },
 ]

@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import api from './api'
-import type { ExecutionResult, Workflow, WorkflowExport, WorkflowInput } from '../types/api'
+import type { ExecutionResult, Workflow, WorkflowExport, WorkflowInput, WorkflowTemplate } from '../types/api'
 
 export const workflowsKeys = {
   all: ['workflows'] as const,
@@ -90,5 +90,47 @@ export const useDownloadWorkflowCode = () => {
       })
       return response
     },
+  })
+}
+
+export const useExecutions = () => {
+  return useQuery({
+    queryKey: ['executions'],
+    queryFn: async () => {
+      const { data } = await api.get<ExecutionResult[]>('/executions')
+      return data
+    },
+  })
+}
+
+export const useTemplates = () => {
+  return useQuery({
+    queryKey: ['templates'],
+    queryFn: async () => {
+      const { data } = await api.get<WorkflowTemplate[]>('/templates')
+      return data
+    },
+  })
+}
+
+export const useCreateTemplate = () => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (payload: Omit<WorkflowTemplate, 'id' | 'created_at' | 'updated_at'>) => {
+      const { data } = await api.post<WorkflowTemplate>('/templates', payload)
+      return data
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['templates'] }),
+  })
+}
+
+export const useDeleteTemplate = () => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (templateId: string) => {
+      const { data } = await api.delete(`/templates/${templateId}`)
+      return data
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['templates'] }),
   })
 }

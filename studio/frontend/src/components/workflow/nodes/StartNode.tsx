@@ -11,6 +11,12 @@ type StartNodeType = Node<StartNodeData, 'start'>
 
 const StartNode = memo(({ id, data, isConnectable, selected }: NodeProps<StartNodeType>) => {
   const { deleteElements } = useReactFlow()
+  const status = (data as { status?: string }).status
+  const statusStyles: Record<string, string> = {
+    running: 'border-blue-500 bg-blue-50/80',
+    completed: 'border-emerald-500 bg-emerald-50/80',
+    failed: 'border-red-500 bg-red-50/80',
+  }
 
   const containerClass = selected
     ? 'border-green-500 bg-green-50'
@@ -18,7 +24,9 @@ const StartNode = memo(({ id, data, isConnectable, selected }: NodeProps<StartNo
 
   return (
     <div
-      className={`relative flex items-start gap-2 px-3 py-2 rounded-lg border-2 shadow-sm min-w-[180px] transition-colors ${containerClass}`}
+      className={`relative flex items-start gap-2 px-3 py-2 rounded-lg border-2 shadow-sm min-w-[180px] transition-colors ${
+        status ? statusStyles[status] || containerClass : containerClass
+      }`}
     >
       <Handle
         type="source"
@@ -37,6 +45,11 @@ const StartNode = memo(({ id, data, isConnectable, selected }: NodeProps<StartNo
         <div className="text-sm font-semibold text-slate-800">{data.label}</div>
         <div className="text-xs text-slate-500">Workflow entry point</div>
       </div>
+      {status && (
+        <div className="absolute top-2 right-2 rounded-full bg-white/80 px-2 py-0.5 text-[9px] uppercase text-slate-500">
+          {status}
+        </div>
+      )}
 
       {/* Delete button (always visible on hover) */}
       <button
