@@ -28,6 +28,15 @@ _REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")
 if _REPO_ROOT not in sys.path:
     sys.path.insert(0, _REPO_ROOT)
 
+# Load environment variables from repo root .env (if present)
+try:
+    from dotenv import load_dotenv
+
+    load_dotenv(os.path.join(_REPO_ROOT, ".env"))
+except Exception:
+    # Fail silently if dotenv isn't available or .env is missing
+    pass
+
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from typing import Dict, Any
@@ -50,6 +59,17 @@ logging.basicConfig(
     datefmt="%Y-%m-%d %H:%M:%S",
 )
 logger = logging.getLogger(__name__)
+
+
+def _mask_key(value: str) -> str:
+    if not value:
+        return "<not set>"
+    if len(value) <= 8:
+        return "<masked>"
+    return f"{value[:4]}...{value[-4:]}"
+
+
+logger.info("OPENAI_API_KEY loaded: %s", _mask_key(os.getenv("OPENAI_API_KEY")))
 
 # Create FastAPI app
 app = FastAPI(
