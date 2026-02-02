@@ -34,6 +34,8 @@ class AgentRuntime:
         agent: Agent,
         llm_provider: Optional[LLMProvider] = None,
         api_key: Optional[str] = None,
+        openai_api_key: Optional[str] = None,
+        anthropic_api_key: Optional[str] = None,
         enable_memory: bool = True,
     ) -> None:
         """Initialize agent runtime.
@@ -41,7 +43,9 @@ class AgentRuntime:
         Args:
             agent: Agent to execute
             llm_provider: LLM provider instance (optional, will be created if not provided)
-            api_key: API key for LLM provider (optional, will use env var if not provided)
+            api_key: API key for LLM provider (optional, deprecated - use openai_api_key or anthropic_api_key)
+            openai_api_key: OpenAI API key (for GPT models)
+            anthropic_api_key: Anthropic API key (for Claude models)
             enable_memory: Whether to initialize memory system
         """
         self.agent = agent
@@ -54,9 +58,25 @@ class AgentRuntime:
         else:
             # Create provider from agent config
             try:
+                # Determine which API key to use based on model
+                model = agent.config.llm_model.lower()
+                selected_api_key = api_key  # Fallback to deprecated api_key parameter
+                
+                if model.startswith('claude'):
+                    # Claude models use Anthropic API key
+                    selected_api_key = anthropic_api_key or api_key
+                    logger.info(f"Using Anthropic API key for Claude model: {agent.config.llm_model}")
+                elif model.startswith('gpt'):
+                    # GPT models use OpenAI API key
+                    selected_api_key = openai_api_key or api_key
+                    logger.info(f"Using OpenAI API key for GPT model: {agent.config.llm_model}")
+                else:
+                    # For other models, try to infer or use openai_api_key as default
+                    selected_api_key = openai_api_key or anthropic_api_key or api_key
+                
                 self._llm_provider = LLMProviderFactory.create_provider(
                     model=agent.config.llm_model,
-                    api_key=api_key,
+                    api_key=selected_api_key,
                     temperature=agent.config.llm_temperature,
                     max_tokens=agent.config.llm_max_tokens,
                 )
@@ -198,9 +218,12 @@ class AgentRuntime:
             "task": task,
             "status": "completed",
             "output": response,
-            "context": context,
             "tokens_used": self.agent._total_tokens,
         }
+
+        # Avoid embedding full execution context in result to keep it serializable.
+        # The workflow state already tracks context; including it here can create
+        # circular references when persisted.
         
         # Store episode in episodic memory
         if self._memory and hasattr(self._memory, 'episodic') and self._memory.episodic:

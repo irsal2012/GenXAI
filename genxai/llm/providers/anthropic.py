@@ -12,6 +12,13 @@ logger = logging.getLogger(__name__)
 class AnthropicProvider(LLMProvider):
     """Anthropic Claude LLM provider."""
 
+    _MODEL_ALIASES = {
+        "claude-3-opus": "claude-3-opus-20240229",
+        "claude-3-sonnet": "claude-3-sonnet-20240229",
+        "claude-3-haiku": "claude-3-haiku-20240307",
+        "claude-3-5-sonnet": "claude-3-5-sonnet-20241022",
+    }
+
     def __init__(
         self,
         model: str = "claude-3-opus-20240229",
@@ -29,7 +36,8 @@ class AnthropicProvider(LLMProvider):
             max_tokens: Maximum tokens to generate
             **kwargs: Additional Anthropic-specific parameters
         """
-        super().__init__(model, temperature, max_tokens, **kwargs)
+        resolved_model = self._normalize_model(model)
+        super().__init__(resolved_model, temperature, max_tokens, **kwargs)
         
         self.api_key = api_key or os.getenv("ANTHROPIC_API_KEY")
         if not self.api_key:
@@ -126,6 +134,35 @@ class AnthropicProvider(LLMProvider):
             )
 
         except Exception as e:
+            if self._is_model_not_found_error(e):
+                fallback_model = self._fallback_model(self.model)
+                if fallback_model and fallback_model != self.model:
+                    logger.warning(
+                        "Anthropic model '%s' not found. Falling back to '%s'.",
+                        self.model,
+                        fallback_model,
+                    )
+                    self.model = fallback_model
+                    params["model"] = fallback_model
+                    response = await self._client.messages.create(**params)
+                    content = response.content[0].text if response.content else ""
+                    finish_reason = response.stop_reason
+                    usage = {
+                        "prompt_tokens": response.usage.input_tokens if response.usage else 0,
+                        "completion_tokens": response.usage.output_tokens if response.usage else 0,
+                        "total_tokens": (
+                            (response.usage.input_tokens + response.usage.output_tokens)
+                            if response.usage else 0
+                        ),
+                    }
+                    self._update_stats(usage)
+                    return LLMResponse(
+                        content=content,
+                        model=response.model,
+                        usage=usage,
+                        finish_reason=finish_reason,
+                        metadata={"response_id": response.id, "type": response.type},
+                    )
             logger.error(f"Anthropic API call failed: {e}")
             raise
 
@@ -245,5 +282,59 @@ class AnthropicProvider(LLMProvider):
             )
 
         except Exception as e:
+            if self._is_model_not_found_error(e):
+                fallback_model = self._fallback_model(self.model)
+                if fallback_model and fallback_model != self.model:
+                    logger.warning(
+                        "Anthropic model '%s' not found. Falling back to '%s'.",
+                        self.model,
+                        fallback_model,
+                    )
+                    self.model = fallback_model
+                    params["model"] = fallback_model
+                    response = await self._client.messages.create(**params)
+                    content = response.content[0].text if response.content else ""
+                    finish_reason = response.stop_reason
+                    usage = {
+                        "prompt_tokens": response.usage.input_tokens if response.usage else 0,
+                        "completion_tokens": response.usage.output_tokens if response.usage else 0,
+                        "total_tokens": (
+                            (response.usage.input_tokens + response.usage.output_tokens)
+                            if response.usage else 0
+                        ),
+                    }
+                    self._update_stats(usage)
+                    return LLMResponse(
+                        content=content,
+                        model=response.model,
+                        usage=usage,
+                        finish_reason=finish_reason,
+                        metadata={"response_id": response.id, "type": response.type},
+                    )
             logger.error(f"Anthropic chat API call failed: {e}")
             raise
+
+    @classmethod
+    def _normalize_model(cls, model: str) -> str:
+        model_key = model.strip().lower()
+        return cls._MODEL_ALIASES.get(model_key, model)
+
+    @staticmethod
+    def _is_model_not_found_error(error: Exception) -> bool:
+        message = str(error).lower()
+        return "not_found_error" in message or "model:" in message
+
+    @staticmethod
+    def _fallback_model(model: str) -> Optional[str]:
+        model_lower = model.lower()
+        if model_lower.startswith("claude-3-5"):
+            return "claude-3-sonnet-20240229"
+        if model_lower.startswith("claude-3-opus"):
+            return "claude-3-sonnet-20240229"
+        if model_lower.startswith("claude-3-sonnet"):
+            return "claude-3-haiku-20240307"
+        if model_lower.startswith("claude-3-haiku"):
+            return "claude-3-haiku-20240307"
+        if model_lower.startswith("claude"):
+            return "claude-3-haiku-20240307"
+        return None

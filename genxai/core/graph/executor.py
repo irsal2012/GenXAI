@@ -107,7 +107,13 @@ class EnhancedGraph(Graph):
         # Use AgentRuntime for full integration
         from genxai.core.agent.runtime import AgentRuntime
         
-        runtime = AgentRuntime(agent=agent, enable_memory=True)
+        # Pass both API keys to runtime so it can select the correct one based on model
+        runtime = AgentRuntime(
+            agent=agent,
+            openai_api_key=getattr(self, "openai_api_key", None),
+            anthropic_api_key=getattr(self, "anthropic_api_key", None),
+            enable_memory=True
+        )
         
         # Load tools from registry
         if agent.config.tools:
@@ -268,6 +274,8 @@ class WorkflowExecutor:
             Constructed graph
         """
         graph = EnhancedGraph(name="workflow")
+        graph.openai_api_key = self.openai_api_key
+        graph.anthropic_api_key = self.anthropic_api_key
 
         # Add nodes
         for node in nodes:

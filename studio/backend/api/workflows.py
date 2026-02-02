@@ -235,6 +235,8 @@ async def execute_workflow(
             model_override=model_override,
         )
         execution_result["node_models"] = node_models
+        execution_result.setdefault("node_events", execution_result.get("result", {}).get("node_events", []))
+        execution_result.setdefault("node_results", execution_result.get("result", {}).get("node_results", {}))
         
         status = execution_result.get("status", "completed")
         logs = [execution_result.get("message", "Execution completed")]

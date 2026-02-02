@@ -3,8 +3,9 @@
  * Allows users to configure agent properties and assign tools
  */
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useTools } from '../../services/tools'
+import { getDefaultLlmModel } from '../../utils/defaultModel'
 
 interface AgentConfigModalProps {
   isOpen: boolean
@@ -47,7 +48,12 @@ interface AgentConfigShape {
 
 const AgentConfigModal = ({ isOpen, onClose, agentData, onSave }: AgentConfigModalProps) => {
   const { data: availableTools, isLoading: toolsLoading } = useTools()
+  const defaultModel = useMemo(
+    () => agentData.config?.llm_model || getDefaultLlmModel(),
+    [agentData.config?.llm_model]
+  )
   const [selectedTools, setSelectedTools] = useState<string[]>(agentData.config?.tools || [])
+  const [selectedModel, setSelectedModel] = useState<string>(defaultModel)
 
   if (!isOpen) return null
 
@@ -60,6 +66,7 @@ const AgentConfigModal = ({ isOpen, onClose, agentData, onSave }: AgentConfigMod
   const handleSave = () => {
     onSave({
       ...agentData.config,
+      llm_model: selectedModel,
       tools: selectedTools,
     })
     onClose()
@@ -91,6 +98,33 @@ const AgentConfigModal = ({ isOpen, onClose, agentData, onSave }: AgentConfigMod
                 </div>
               )}
             </div>
+          </div>
+
+          {/* LLM Model Selection */}
+          <div className="mb-6">
+            <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-2">LLM Model</h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">
+              Choose the model this agent should use during execution
+            </p>
+            <select
+              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-slate-700 dark:bg-slate-950"
+              value={selectedModel}
+              onChange={(event) => setSelectedModel(event.target.value)}
+            >
+              <optgroup label="OpenAI Models">
+                <option value="gpt-4">GPT-4</option>
+                <option value="gpt-4-turbo">GPT-4 Turbo</option>
+                <option value="gpt-4o">GPT-4o</option>
+                <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+              </optgroup>
+              <optgroup label="Anthropic Models (Claude)">
+                <option value="claude-3-5-sonnet-20241022">Claude 3.5 Sonnet (Latest)</option>
+                <option value="claude-3-5-sonnet-20240620">Claude 3.5 Sonnet</option>
+                <option value="claude-3-opus-20240229">Claude 3 Opus</option>
+                <option value="claude-3-sonnet-20240229">Claude 3 Sonnet</option>
+                <option value="claude-3-haiku-20240307">Claude 3 Haiku</option>
+              </optgroup>
+            </select>
           </div>
 
           {/* Tools Selection */}

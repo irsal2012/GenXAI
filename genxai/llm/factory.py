@@ -37,6 +37,11 @@ class LLMProviderFactory:
         "claude-3-opus": "genxai.llm.providers.anthropic.AnthropicProvider",
         "claude-3-sonnet": "genxai.llm.providers.anthropic.AnthropicProvider",
         "claude-3-haiku": "genxai.llm.providers.anthropic.AnthropicProvider",
+        "claude-3-5-sonnet-20241022": "genxai.llm.providers.anthropic.AnthropicProvider",
+        "claude-3-5-sonnet-20240620": "genxai.llm.providers.anthropic.AnthropicProvider",
+        "claude-3-opus-20240229": "genxai.llm.providers.anthropic.AnthropicProvider",
+        "claude-3-sonnet-20240229": "genxai.llm.providers.anthropic.AnthropicProvider",
+        "claude-3-haiku-20240307": "genxai.llm.providers.anthropic.AnthropicProvider",
         "google": "genxai.llm.providers.google.GoogleProvider",
         "gemini-pro": "genxai.llm.providers.google.GoogleProvider",
         "gemini-ultra": "genxai.llm.providers.google.GoogleProvider",
@@ -235,41 +240,43 @@ class LLMProviderFactory:
         Returns:
             Provider class or None
         """
+        model_key = model.lower()
+
         # Direct match in pre-loaded providers
-        if model in cls._providers:
-            return cls._providers[model]
+        if model_key in cls._providers:
+            return cls._providers[model_key]
 
         # Check lazy-loaded providers
-        if model in cls._provider_modules:
-            provider_class = cls._load_provider_class(cls._provider_modules[model])
+        if model_key in cls._provider_modules:
+            provider_class = cls._load_provider_class(cls._provider_modules[model_key])
             if provider_class:
                 # Cache it for future use
-                cls._providers[model] = provider_class
+                cls._providers[model_key] = provider_class
                 return provider_class
 
         # Check if model starts with known provider prefix
-        model_lower = model.lower()
+        model_lower = model_key
         if model_lower.startswith("gpt"):
             return OpenAIProvider
         elif model_lower.startswith("claude"):
             provider_class = cls._load_provider_class("genxai.llm.providers.anthropic.AnthropicProvider")
             if provider_class:
-                cls._providers[model] = provider_class
+                cls._providers[model_key] = provider_class
                 return provider_class
         elif model_lower.startswith("gemini"):
             provider_class = cls._load_provider_class("genxai.llm.providers.google.GoogleProvider")
             if provider_class:
-                cls._providers[model] = provider_class
+                cls._providers[model_key] = provider_class
                 return provider_class
         elif model_lower.startswith("command"):
             provider_class = cls._load_provider_class("genxai.llm.providers.cohere.CohereProvider")
             if provider_class:
-                cls._providers[model] = provider_class
+                cls._providers[model_key] = provider_class
                 return provider_class
         elif model_lower.startswith("llama") or model_lower.startswith("mistral") or model_lower.startswith("phi"):
             provider_class = cls._load_provider_class("genxai.llm.providers.ollama.OllamaProvider")
             if provider_class:
-                cls._providers[model] = provider_class
+                cls._providers[model_key] = provider_class
                 return provider_class
 
         return None

@@ -176,11 +176,19 @@ const AgentBuilderCanvas = ({ onAgentChange }: AgentBuilderCanvasProps) => {
                 onChange={(e) => updateAgentData({ llm_model: e.target.value })}
                 className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               >
-                <option value="gpt-4">GPT-4</option>
-                <option value="gpt-4-turbo">GPT-4 Turbo</option>
-                <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
-                <option value="claude-3-opus">Claude 3 Opus</option>
-                <option value="claude-3-sonnet">Claude 3 Sonnet</option>
+                <optgroup label="OpenAI Models">
+                  <option value="gpt-4">GPT-4</option>
+                  <option value="gpt-4-turbo">GPT-4 Turbo</option>
+                  <option value="gpt-4o">GPT-4o</option>
+                  <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+                </optgroup>
+                <optgroup label="Anthropic Models (Claude)">
+                  <option value="claude-3-5-sonnet-20241022">Claude 3.5 Sonnet (Latest)</option>
+                  <option value="claude-3-5-sonnet-20240620">Claude 3.5 Sonnet</option>
+                  <option value="claude-3-opus-20240229">Claude 3 Opus</option>
+                  <option value="claude-3-sonnet-20240229">Claude 3 Sonnet</option>
+                  <option value="claude-3-haiku-20240307">Claude 3 Haiku</option>
+                </optgroup>
               </select>
             </div>
           </div>
