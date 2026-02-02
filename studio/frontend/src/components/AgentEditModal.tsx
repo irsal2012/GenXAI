@@ -1,4 +1,4 @@
-import { Fragment, useMemo, useState } from 'react'
+import { Fragment, useEffect, useMemo, useState } from 'react'
 import { Dialog, Transition } from '@headlessui/react'
 import { XMarkIcon } from '@heroicons/react/24/outline'
 import type { Agent, AgentInput } from '../types/api'
@@ -36,6 +36,11 @@ const AgentEditModal = ({ isOpen, onClose, onSave, agent, isSaving }: AgentEditM
 
   const [formData, setFormData] = useState<AgentInput>(initialFormData)
   const [toolsInput, setToolsInput] = useState(() => (initialFormData.tools || []).join(', '))
+
+  useEffect(() => {
+    setFormData(initialFormData)
+    setToolsInput((initialFormData.tools || []).join(', '))
+  }, [initialFormData])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
