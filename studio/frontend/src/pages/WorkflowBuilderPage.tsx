@@ -60,9 +60,9 @@ const WorkflowBuilderPage = () => {
     const payload = {
       name: workflowQuery.data.name,
       description: workflowQuery.data.description,
-      nodes: JSON.parse(draftNodes || '[]'),
-      edges: JSON.parse(draftEdges || '[]'),
-      metadata: JSON.parse(draftMetadata || '{}'),
+      nodes: JSON.parse(draftNodes || '[]') as Record<string, unknown>[],
+      edges: JSON.parse(draftEdges || '[]') as Record<string, unknown>[],
+      metadata: JSON.parse(draftMetadata || '{}') as Record<string, unknown>,
     }
     await updateWorkflow.mutateAsync(payload)
   }, [workflowQuery.data, workflowId, draftNodes, draftEdges, draftMetadata, updateWorkflow])
@@ -73,9 +73,9 @@ const WorkflowBuilderPage = () => {
         id: workflowQuery.data?.id,
         name: workflowQuery.data?.name,
         description: workflowQuery.data?.description,
-        nodes: JSON.parse(draftNodes || '[]'),
-        edges: JSON.parse(draftEdges || '[]'),
-        metadata: JSON.parse(draftMetadata || '{}'),
+        nodes: JSON.parse(draftNodes || '[]') as Record<string, unknown>[],
+        edges: JSON.parse(draftEdges || '[]') as Record<string, unknown>[],
+        metadata: JSON.parse(draftMetadata || '{}') as Record<string, unknown>,
         exportedAt: new Date().toISOString(),
       }
       const formatted = JSON.stringify(exportPayload, null, 2)
@@ -180,10 +180,15 @@ const WorkflowBuilderPage = () => {
           onSave={(updatedConfig) => {
             // Update the node's config in the workflow
             try {
-              const nodes = JSON.parse(draftNodes || '[]')
-              const nodeIndex = nodes.findIndex((n: ReactFlowNode) => n.id === agentConfigModalNode.id)
+              const nodes = JSON.parse(draftNodes || '[]') as Record<string, unknown>[]
+              const nodeIndex = nodes.findIndex(
+                (node) => typeof node.id === 'string' && node.id === agentConfigModalNode.id
+              )
               if (nodeIndex !== -1) {
-                nodes[nodeIndex].config = updatedConfig
+                nodes[nodeIndex] = {
+                  ...nodes[nodeIndex],
+                  config: updatedConfig,
+                }
                 setDraftNodes(JSON.stringify(nodes, null, 2))
                 
                 // Update selectedNode if it's the same node we just configured

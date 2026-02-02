@@ -438,7 +438,9 @@ result = {
                                     onChange={(e) => {
                                       try {
                                         setTemplateConfig({ ...templateConfig, [key]: JSON.parse(e.target.value) })
-                                      } catch {}
+                                      } catch (parseError) {
+                                        console.warn('Invalid JSON for template config', parseError)
+                                      }
                                     }}
                                     rows={3}
                                   />

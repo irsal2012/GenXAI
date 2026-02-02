@@ -56,6 +56,7 @@ const ToolPlaygroundPage = () => {
     } catch (err) {
       // Tool code endpoint not available or request failed.
       // We keep the editor closed in this case.
+      console.warn('Failed to fetch tool code', err)
     }
   }
 

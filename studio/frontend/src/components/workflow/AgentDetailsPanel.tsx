@@ -12,9 +12,24 @@ interface AgentDetailsPanelProps {
   onConfigure?: (node: ReactFlowNode) => void
 }
 
+interface AgentConfigShape {
+  role?: string
+  goal?: string
+  backstory?: string
+  llm_model?: string
+  tools?: string[]
+  description?: string
+  temperature?: number
+  max_tokens?: number
+  max_iterations?: number
+  allow_delegation?: boolean
+  verbose?: boolean
+  metadata?: Record<string, unknown>
+}
+
 interface AgentNodeDataShape {
   label: string
-  config?: Record<string, any>
+  config?: AgentConfigShape
   agentId?: string
 }
 
@@ -29,7 +44,7 @@ const AgentDetailsPanel = ({ selectedNode, onClose, onConfigure }: AgentDetailsP
   const config = agentData.config || {}
   const tools = config.tools || []
   const hasBackstory = Boolean(config.backstory)
-  const hasMetadata = config.metadata && Object.keys(config.metadata).length > 0
+  const hasMetadata = Boolean(config.metadata && Object.keys(config.metadata).length > 0)
 
   return (
     <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col h-full">
