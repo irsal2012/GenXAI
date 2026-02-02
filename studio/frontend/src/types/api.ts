@@ -45,6 +45,51 @@ export interface ToolSummary {
   metrics?: Record<string, unknown>
 }
 
+export interface ToolParameter {
+  name: string
+  type: string
+  description: string
+  required: boolean
+  default?: unknown
+  enum?: string[]
+}
+
+export interface ToolTemplateConfigField {
+  type?: string
+  description?: string
+  required?: boolean
+  enum?: string[]
+  default?: unknown
+}
+
+export interface ToolTemplate {
+  id: string
+  name: string
+  description?: string
+  config_schema?: Record<string, ToolTemplateConfigField>
+}
+
+export interface ToolCreatePayload {
+  name: string
+  description: string
+  category: string
+  tags: string[]
+  version?: string
+  author?: string
+  code?: string
+  parameters?: ToolParameter[]
+  template?: string
+  template_config?: Record<string, unknown>
+}
+
+export interface ToolExecutionResponse {
+  data: unknown
+  execution_time: number
+  success: boolean
+  rate_limit_stats?: Record<string, unknown>
+  error?: string
+}
+
 export interface ToolStats {
   total_tools: number
   categories: Record<string, number>

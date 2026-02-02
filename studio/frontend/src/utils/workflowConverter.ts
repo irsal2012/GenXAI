@@ -10,7 +10,7 @@ export interface ReactFlowNode {
   position: { x: number; y: number }
   data: {
     label: string
-    config: Record<string, any>
+    config: Record<string, unknown>
   }
 }
 
@@ -38,14 +38,19 @@ export function convertToReactFlow(workflow: Workflow): {
 
   // Convert nodes
   if (Array.isArray(workflow.nodes)) {
-    workflow.nodes.forEach((node: any, index: number) => {
+    workflow.nodes.forEach((node: Record<string, unknown>, index: number) => {
+      const nodeData = node as Record<string, unknown>
+      const position = nodeData.position as { x?: number; y?: number } | undefined
+      const config = (nodeData.config || nodeData.data || {}) as Record<string, unknown>
       nodes.push({
-        id: node.id || `node-${index}`,
-        type: node.type || 'default',
-        position: node.position || { x: 100 + index * 200, y: 100 },
+        id: (nodeData.id as string) || `node-${index}`,
+        type: (nodeData.type as string) || 'default',
+        position: position?.x !== undefined && position?.y !== undefined
+          ? { x: position.x, y: position.y }
+          : { x: 100 + index * 200, y: 100 },
         data: {
-          label: node.label || node.name || `Node ${index + 1}`,
-          config: node.config || node.data || {},
+          label: (nodeData.label as string) || (nodeData.name as string) || `Node ${index + 1}`,
+          config,
         },
       })
     })
@@ -53,16 +58,17 @@ export function convertToReactFlow(workflow: Workflow): {
 
   // Convert edges
   if (Array.isArray(workflow.edges)) {
-    workflow.edges.forEach((edge: any, index: number) => {
+    workflow.edges.forEach((edge: Record<string, unknown>, index: number) => {
+      const edgeData = edge as Record<string, unknown>
       edges.push({
-        id: edge.id || `edge-${index}`,
-        source: edge.source || edge.from,
-        target: edge.target || edge.to,
-        sourceHandle: edge.sourceHandle,
-        targetHandle: edge.targetHandle,
+        id: (edgeData.id as string) || `edge-${index}`,
+        source: (edgeData.source as string) || (edgeData.from as string),
+        target: (edgeData.target as string) || (edgeData.to as string),
+        sourceHandle: edgeData.sourceHandle as string | undefined,
+        targetHandle: edgeData.targetHandle as string | undefined,
         data: {
-          condition: edge.condition,
-          label: edge.label,
+          condition: edgeData.condition as string | undefined,
+          label: edgeData.label as string | undefined,
         },
       })
     })
@@ -77,7 +83,7 @@ export function convertToReactFlow(workflow: Workflow): {
 export function convertFromReactFlow(
   nodes: ReactFlowNode[],
   edges: ReactFlowEdge[]
-): { nodes: any[]; edges: any[] } {
+): { nodes: Record<string, unknown>[]; edges: Record<string, unknown>[] } {
   const backendNodes = nodes.map((node) => ({
     id: node.id,
     type: node.type,

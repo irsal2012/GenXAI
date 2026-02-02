@@ -1,4 +1,4 @@
-import { Fragment, useState, useEffect } from 'react'
+import { Fragment, useMemo, useState } from 'react'
 import { Dialog, Transition } from '@headlessui/react'
 import { XMarkIcon } from '@heroicons/react/24/outline'
 import type { Agent, AgentInput } from '../types/api'
@@ -12,30 +12,30 @@ interface AgentEditModalProps {
 }
 
 const AgentEditModal = ({ isOpen, onClose, onSave, agent, isSaving }: AgentEditModalProps) => {
-  const [formData, setFormData] = useState<AgentInput>({
-    role: '',
-    goal: '',
-    backstory: '',
-    llm_model: 'gpt-4',
-    tools: [],
-    metadata: {},
-  })
+  const initialFormData = useMemo<AgentInput>(() => {
+    if (!agent) {
+      return {
+        role: '',
+        goal: '',
+        backstory: '',
+        llm_model: 'gpt-4',
+        tools: [],
+        metadata: {},
+      }
+    }
 
-  const [toolsInput, setToolsInput] = useState('')
-
-  useEffect(() => {
-    if (agent) {
-      setFormData({
-        role: agent.role,
-        goal: agent.goal,
-        backstory: agent.backstory || '',
-        llm_model: agent.llm_model || 'gpt-4',
-        tools: agent.tools || [],
-        metadata: agent.metadata || {},
-      })
-      setToolsInput((agent.tools || []).join(', '))
+    return {
+      role: agent.role,
+      goal: agent.goal,
+      backstory: agent.backstory || '',
+      llm_model: agent.llm_model || 'gpt-4',
+      tools: agent.tools || [],
+      metadata: agent.metadata || {},
     }
   }, [agent])
+
+  const [formData, setFormData] = useState<AgentInput>(initialFormData)
+  const [toolsInput, setToolsInput] = useState(() => (initialFormData.tools || []).join(', '))
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

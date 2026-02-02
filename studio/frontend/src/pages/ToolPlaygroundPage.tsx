@@ -7,13 +7,13 @@ import ExecutionMetrics from '../components/playground/ExecutionMetrics'
 import ErrorDisplay from '../components/playground/ErrorDisplay'
 import CodeEditorModal from '../components/playground/CodeEditorModal'
 import { CodeBracketIcon } from '@heroicons/react/24/outline'
-import type { ToolSummary } from '../types/api'
+import type { ToolExecutionResponse, ToolSummary } from '../types/api'
 
 interface ExecutionHistoryEntry {
   id: string
   toolName: string
-  parameters: Record<string, any>
-  result: any
+  parameters: Record<string, unknown>
+  result: unknown
   timestamp: Date
   executionTime: number
   success: boolean
@@ -25,10 +25,23 @@ const ToolPlaygroundPage = () => {
   const executeTool = useExecuteTool()
   
   const [selectedTool, setSelectedTool] = useState<ToolSummary | null>(null)
-  const [parameters, setParameters] = useState<Record<string, any>>({})
-  const [result, setResult] = useState<any>(null)
+  const [parameters, setParameters] = useState<Record<string, unknown>>({})
+  const [result, setResult] = useState<unknown>(null)
   const [error, setError] = useState<string>('')
-  const [executionMetrics, setExecutionMetrics] = useState<any>(null)
+  const [executionMetrics, setExecutionMetrics] = useState<
+    {
+      executionTime: number
+      success: boolean
+      rateLimitStats?: {
+        executions_last_minute: number
+        executions_last_hour: number
+        max_per_minute: number
+        max_per_hour: number
+        remaining_minute: number
+        remaining_hour: number
+      }
+    } | null
+  >(null)
   const [history, setHistory] = useState<ExecutionHistoryEntry[]>([])
   const [isCodeEditorOpen, setIsCodeEditorOpen] = useState(false)
   const [toolCode, setToolCode] = useState<string>('')
@@ -75,7 +88,7 @@ const ToolPlaygroundPage = () => {
     alert('Code updated successfully! You can now test the updated tool.')
   }
 
-  const handleParameterChange = (key: string, value: any) => {
+  const handleParameterChange = (key: string, value: string | number | boolean) => {
     setParameters((prev) => ({
       ...prev,
       [key]: value,
@@ -87,9 +100,9 @@ const ToolPlaygroundPage = () => {
     const savedHistory = localStorage.getItem('tool_execution_history')
     if (savedHistory) {
       try {
-        const parsed = JSON.parse(savedHistory)
+        const parsed = JSON.parse(savedHistory) as ExecutionHistoryEntry[]
         setHistory(
-          parsed.map((entry: any) => ({
+          parsed.map((entry) => ({
             ...entry,
             timestamp: new Date(entry.timestamp),
           }))
@@ -118,13 +131,22 @@ const ToolPlaygroundPage = () => {
       const response = await executeTool.mutateAsync({
         toolName: selectedTool.name,
         parameters,
-      })
+      }) as ToolExecutionResponse
 
       setResult(response.data)
       setExecutionMetrics({
         executionTime: response.execution_time,
         success: response.success,
-        rateLimitStats: response.rate_limit_stats,
+        rateLimitStats: response.rate_limit_stats as
+          | {
+              executions_last_minute: number
+              executions_last_hour: number
+              max_per_minute: number
+              max_per_hour: number
+              remaining_minute: number
+              remaining_hour: number
+            }
+          | undefined,
       })
 
       // Add to history
@@ -140,8 +162,9 @@ const ToolPlaygroundPage = () => {
       }
 
       setHistory((prev) => [historyEntry, ...prev].slice(0, 50)) // Keep last 50
-    } catch (err: any) {
-      const errorMessage = err.response?.data?.detail || err.message || 'Execution failed'
+    } catch (err) {
+      const errorPayload = err as { response?: { data?: { detail?: string } }; message?: string }
+      const errorMessage = errorPayload.response?.data?.detail || errorPayload.message || 'Execution failed'
       setError(errorMessage)
       
       // Add failed execution to history
@@ -180,14 +203,15 @@ const ToolPlaygroundPage = () => {
     if (!selectedTool?.schema) return []
 
     // Extract parameters from schema
-    const schema = selectedTool.schema as any
-    const properties = schema.properties || {}
+    const schema = selectedTool.schema as Record<string, unknown>
+    const properties = (schema.properties || {}) as Record<string, { type?: string; description?: string }>
+    const required = (schema.required || []) as string[]
     
-    return Object.entries(properties).map(([key, value]: [string, any]) => ({
+    return Object.entries(properties).map(([key, value]) => ({
       name: key,
       type: value.type || 'string',
       description: value.description || '',
-      required: schema.required?.includes(key) || false,
+      required: required.includes(key),
     }))
   }
 
@@ -293,7 +317,7 @@ const ToolPlaygroundPage = () => {
                         {field.type === 'boolean' ? (
                           <select
                             className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
-                            value={parameters[field.name] || 'false'}
+                            value={String(parameters[field.name] ?? 'false')}
                             onChange={(e) =>
                               handleParameterChange(field.name, e.target.value === 'true')
                             }
@@ -305,7 +329,7 @@ const ToolPlaygroundPage = () => {
                           <input
                             type="number"
                             className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
-                            value={parameters[field.name] || ''}
+                            value={String(parameters[field.name] ?? '')}
                             onChange={(e) =>
                               handleParameterChange(field.name, parseFloat(e.target.value))
                             }
@@ -315,7 +339,7 @@ const ToolPlaygroundPage = () => {
                           <input
                             type="text"
                             className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
-                            value={parameters[field.name] || ''}
+                            value={String(parameters[field.name] ?? '')}
                             onChange={(e) => handleParameterChange(field.name, e.target.value)}
                             placeholder={`Enter ${field.name}`}
                           />

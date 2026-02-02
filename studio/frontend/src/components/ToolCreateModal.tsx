@@ -2,22 +2,14 @@ import { Fragment, useState } from 'react'
 import { Dialog, Transition, Tab } from '@headlessui/react'
 import { XMarkIcon, PlusIcon, TrashIcon } from '@heroicons/react/24/outline'
 import Editor from '@monaco-editor/react'
-
-interface ToolParameter {
-  name: string
-  type: string
-  description: string
-  required: boolean
-  default?: any
-  enum?: string[]
-}
+import type { ToolCreatePayload, ToolParameter, ToolTemplate, ToolTemplateConfigField } from '../types/api'
 
 interface ToolCreateModalProps {
   isOpen: boolean
   onClose: () => void
-  onCreate: (data: any) => Promise<void>
+  onCreate: (data: ToolCreatePayload) => Promise<void>
   isCreating: boolean
-  templates: any[]
+  templates: ToolTemplate[]
 }
 
 const ToolCreateModal = ({ isOpen, onClose, onCreate, isCreating, templates }: ToolCreateModalProps) => {
@@ -49,7 +41,7 @@ result = {
 
   // Template-based fields
   const [selectedTemplate, setSelectedTemplate] = useState('')
-  const [templateConfig, setTemplateConfig] = useState<Record<string, any>>({})
+  const [templateConfig, setTemplateConfig] = useState<Record<string, unknown>>({})
 
   const handleAddParameter = () => {
     setParameters([
@@ -62,7 +54,11 @@ result = {
     setParameters(parameters.filter((_, i) => i !== index))
   }
 
-  const handleParameterChange = (index: number, field: keyof ToolParameter, value: any) => {
+  const handleParameterChange = (
+    index: number,
+    field: keyof ToolParameter,
+    value: string | number | boolean
+  ) => {
     const newParams = [...parameters]
     newParams[index] = { ...newParams[index], [field]: value }
     setParameters(newParams)
@@ -126,13 +122,14 @@ result = {
 
   const handleTemplateChange = (templateId: string) => {
     setSelectedTemplate(templateId)
-    const template = templates.find(t => t.id === templateId)
+    const template = templates.find((t) => t.id === templateId)
     if (template) {
       // Initialize config with defaults
-      const config: Record<string, any> = {}
-      Object.entries(template.config_schema || {}).forEach(([key, schema]: [string, any]) => {
-        if (schema.default !== undefined) {
-          config[key] = schema.default
+      const config: Record<string, unknown> = {}
+      Object.entries(template.config_schema || {}).forEach(([key, schema]) => {
+        const schemaValue = schema as ToolTemplateConfigField
+        if (schemaValue.default !== undefined) {
+          config[key] = schemaValue.default
         }
       })
       setTemplateConfig(config)
@@ -401,7 +398,7 @@ result = {
                           </select>
                           {selectedTemplate && (
                             <p className="mt-2 text-sm text-slate-600">
-                              {templates.find(t => t.id === selectedTemplate)?.description}
+                              {templates.find((t) => t.id === selectedTemplate)?.description}
                             </p>
                           )}
                         </div>
@@ -412,25 +409,28 @@ result = {
                               Template Configuration
                             </label>
                             {Object.entries(
-                              templates.find(t => t.id === selectedTemplate)?.config_schema || {}
-                            ).map(([key, schema]: [string, any]) => (
+                              templates.find((t) => t.id === selectedTemplate)?.config_schema || {}
+                            ).map(([key, schema]) => (
+                              (() => {
+                                const field = schema as ToolTemplateConfigField
+                                return (
                               <div key={key}>
                                 <label className="block text-xs font-medium text-slate-600 mb-1">
-                                  {key} {schema.required && <span className="text-red-500">*</span>}
+                                  {key} {field.required && <span className="text-red-500">*</span>}
                                 </label>
-                                {schema.enum ? (
+                                {field.enum ? (
                                   <select
                                     className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
-                                    value={templateConfig[key] || ''}
+                                    value={String(templateConfig[key] ?? '')}
                                     onChange={(e) => setTemplateConfig({ ...templateConfig, [key]: e.target.value })}
-                                    required={schema.required}
+                                    required={field.required}
                                   >
                                     <option value="">Select...</option>
-                                    {schema.enum.map((opt: string) => (
+                                    {field.enum.map((opt) => (
                                       <option key={opt} value={opt}>{opt}</option>
                                     ))}
                                   </select>
-                                ) : schema.type === 'object' ? (
+                                ) : field.type === 'object' ? (
                                   <textarea
                                     className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm font-mono"
                                     placeholder='{"key": "value"}'
@@ -446,21 +446,23 @@ result = {
                                   />
                                 ) : (
                                   <input
-                                    type={schema.type === 'number' ? 'number' : 'text'}
+                                    type={field.type === 'number' ? 'number' : 'text'}
                                     className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
-                                    value={templateConfig[key] || ''}
+                                    value={String(templateConfig[key] ?? '')}
                                     onChange={(e) => setTemplateConfig({ 
                                       ...templateConfig, 
-                                      [key]: schema.type === 'number' ? Number(e.target.value) : e.target.value 
+                                      [key]: field.type === 'number' ? Number(e.target.value) : e.target.value 
                                     })}
-                                    required={schema.required}
-                                    placeholder={schema.description}
+                                    required={field.required}
+                                    placeholder={field.description}
                                   />
                                 )}
-                                {schema.description && (
-                                  <p className="mt-1 text-xs text-slate-500">{schema.description}</p>
+                                {field.description && (
+                                  <p className="mt-1 text-xs text-slate-500">{field.description}</p>
                                 )}
                               </div>
+                              )
+                              })()
                             ))}
                           </div>
                         )}

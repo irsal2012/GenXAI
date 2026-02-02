@@ -3,7 +3,7 @@
  * Allows users to configure decision/condition nodes with a visual interface
  */
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 
 interface DecisionConfigModalProps {
   isOpen: boolean
@@ -28,44 +28,58 @@ interface DecisionConfigModalProps {
 }
 
 const DecisionConfigModal = ({ isOpen, onClose, decisionData, onSave }: DecisionConfigModalProps) => {
-  const [label, setLabel] = useState(decisionData.label || 'Decision')
-  const [mode, setMode] = useState<'simple' | 'advanced'>('simple')
-  
-  // Simple mode fields
-  const [leftOperand, setLeftOperand] = useState('')
-  const [operator, setOperator] = useState('>')
-  const [rightOperand, setRightOperand] = useState('')
-  
-  // Advanced mode field
-  const [customCondition, setCustomCondition] = useState('')
-  
-  // Edge labels
-  const [trueLabel, setTrueLabel] = useState('True')
-  const [falseLabel, setFalseLabel] = useState('False')
+  const defaultCondition = decisionData.config?.condition || ''
+  const defaultLabels = {
+    trueLabel: decisionData.config?.trueLabel || 'True',
+    falseLabel: decisionData.config?.falseLabel || 'False',
+  }
 
-  // Initialize from existing config
-  useEffect(() => {
-    if (decisionData.config?.condition) {
-      const condition = decisionData.config.condition
-      setCustomCondition(condition)
-      
-      // Try to parse simple conditions
-      const simplePattern = /^\s*(\w+)\s*([><=!]+)\s*(.+)\s*$/
-      const match = condition.match(simplePattern)
-      
-      if (match) {
-        setLeftOperand(match[1].trim())
-        setOperator(match[2].trim())
-        setRightOperand(match[3].trim())
-        setMode('simple')
-      } else {
-        setMode('advanced')
+  const parsedCondition = (() => {
+    if (!defaultCondition) {
+      return {
+        leftOperand: '',
+        operator: '>',
+        rightOperand: '',
+        mode: 'simple' as const,
+        customCondition: '',
       }
     }
-    
-    setTrueLabel(decisionData.config?.trueLabel || 'True')
-    setFalseLabel(decisionData.config?.falseLabel || 'False')
-  }, [decisionData])
+
+    const simplePattern = /^\s*(\w+)\s*([><=!]+)\s*(.+)\s*$/
+    const match = defaultCondition.match(simplePattern)
+    if (match) {
+      return {
+        leftOperand: match[1].trim(),
+        operator: match[2].trim(),
+        rightOperand: match[3].trim(),
+        mode: 'simple' as const,
+        customCondition: defaultCondition,
+      }
+    }
+
+    return {
+      leftOperand: '',
+      operator: '>',
+      rightOperand: '',
+      mode: 'advanced' as const,
+      customCondition: defaultCondition,
+    }
+  })()
+
+  const [label, setLabel] = useState(decisionData.label || 'Decision')
+  const [mode, setMode] = useState<'simple' | 'advanced'>(parsedCondition.mode)
+
+  // Simple mode fields
+  const [leftOperand, setLeftOperand] = useState(parsedCondition.leftOperand)
+  const [operator, setOperator] = useState(parsedCondition.operator)
+  const [rightOperand, setRightOperand] = useState(parsedCondition.rightOperand)
+
+  // Advanced mode field
+  const [customCondition, setCustomCondition] = useState(parsedCondition.customCondition)
+
+  // Edge labels
+  const [trueLabel, setTrueLabel] = useState(defaultLabels.trueLabel)
+  const [falseLabel, setFalseLabel] = useState(defaultLabels.falseLabel)
 
   // Build condition from simple mode
   const buildSimpleCondition = () => {

@@ -4,6 +4,7 @@ import { useToolCategories, useToolSearch, useTools, useToolTemplates, useCreate
 import ErrorState from '../components/ErrorState'
 import LoadingState from '../components/LoadingState'
 import ToolCreateModal from '../components/ToolCreateModal'
+import type { ToolCreatePayload } from '../types/api'
 
 const ToolsPage = () => {
   const [query, setQuery] = useState('')
@@ -21,7 +22,7 @@ const ToolsPage = () => {
     return toolsQuery.data ?? []
   }, [query, searchQuery.data, toolsQuery.data])
 
-  const handleCreateTool = async (toolData: any) => {
+  const handleCreateTool = async (toolData: ToolCreatePayload) => {
     console.log('handleCreateTool called with:', toolData)
     await createToolMutation.mutateAsync(toolData)
   }

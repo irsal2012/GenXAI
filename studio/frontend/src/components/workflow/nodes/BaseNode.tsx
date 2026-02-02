@@ -4,7 +4,9 @@ import { Handle, Position } from '@xyflow/react'
 interface BaseNodeProps {
   data: {
     label: string
-    config?: Record<string, any>
+    config?: {
+      description?: string
+    }
   }
   isConnectable?: boolean
   color?: string

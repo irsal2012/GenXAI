@@ -187,7 +187,7 @@ const WorkflowBuilderPage = () => {
               if (nodeIndex !== -1) {
                 nodes[nodeIndex] = {
                   ...nodes[nodeIndex],
-                  config: updatedConfig,
+                  config: updatedConfig as Record<string, unknown>,
                 }
                 setDraftNodes(JSON.stringify(nodes, null, 2))
                 
@@ -197,7 +197,7 @@ const WorkflowBuilderPage = () => {
                     ...selectedNode,
                     data: {
                       ...selectedNode.data,
-                      config: updatedConfig,
+                      config: updatedConfig as Record<string, unknown>,
                     },
                   })
                 }

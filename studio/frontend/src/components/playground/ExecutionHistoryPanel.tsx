@@ -4,8 +4,8 @@ import { ChevronDownIcon, ChevronUpIcon, TrashIcon } from '@heroicons/react/24/o
 interface ExecutionHistoryEntry {
   id: string
   toolName: string
-  parameters: Record<string, any>
-  result: any
+  parameters: Record<string, unknown>
+  result: unknown
   timestamp: Date
   executionTime: number
   success: boolean

@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import api from './api'
-import type { ToolStats, ToolSummary } from '../types/api'
+import type { ToolCreatePayload, ToolExecutionResponse, ToolStats, ToolSummary, ToolTemplate } from '../types/api'
 
 export const toolsKeys = {
   all: ['tools'] as const,
@@ -56,7 +56,7 @@ export const useToolTemplates = () => {
   return useQuery({
     queryKey: toolsKeys.templates,
     queryFn: async () => {
-      const { data } = await api.get<any[]>('/tools/templates/list')
+      const { data } = await api.get<ToolTemplate[]>('/tools/templates/list')
       return data
     },
   })
@@ -66,7 +66,7 @@ export const useCreateTool = () => {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async (toolData: any) => {
+    mutationFn: async (toolData: ToolCreatePayload) => {
       const { data } = await api.post('/tools', toolData)
       return data
     },
@@ -101,9 +101,9 @@ export const useExecuteTool = () => {
       parameters,
     }: {
       toolName: string
-      parameters: Record<string, any>
+      parameters: Record<string, unknown>
     }) => {
-      const { data } = await api.post(`/tools/${toolName}/execute`, parameters)
+      const { data } = await api.post<ToolExecutionResponse>(`/tools/${toolName}/execute`, parameters)
       return data
     },
   })

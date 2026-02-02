@@ -5,6 +5,7 @@
 
 import { useState } from 'react'
 import { useTools, useToolCategories } from '../../services/tools'
+import type { ToolSummary } from '../../types/api'
 
 const ToolPalette = () => {
   const { data: tools, isLoading: toolsLoading } = useTools()
@@ -12,7 +13,7 @@ const ToolPalette = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
   const [searchQuery, setSearchQuery] = useState('')
 
-  const onDragStart = (event: React.DragEvent, _toolName: string, toolData: any) => {
+  const onDragStart = (event: React.DragEvent, _toolName: string, toolData: ToolSummary) => {
     event.dataTransfer.setData('application/tool', JSON.stringify(toolData))
     event.dataTransfer.effectAllowed = 'copy'
   }
