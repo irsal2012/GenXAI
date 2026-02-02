@@ -373,7 +373,7 @@ open htmlcov/index.html
 - Read [ARCHITECTURE.md](../ARCHITECTURE.md) for system design
 - Check [examples/](../examples/) for more examples
 - See [docs/](../docs/) for detailed documentation
-- Explore [no-code templates](../examples/nocode/README.md)
+- Explore [no-code templates](../examples/nocode/README.md) (including shared agents in `examples/nocode/agents/`)
 - Run [benchmarks](./BENCHMARKING.md)
 
 ### Explore Features

@@ -1,7 +1,7 @@
 """GenXAI CLI - Main entry point."""
 
 import click
-from cli.commands import tool, metrics, connector
+from cli.commands import tool, metrics, connector, workflow
 from cli.commands.approval import approval
 from cli.commands.audit import audit
 
@@ -20,6 +20,7 @@ def cli():
 cli.add_command(tool)
 cli.add_command(metrics)
 cli.add_command(connector)
+cli.add_command(workflow)
 cli.add_command(approval)
 cli.add_command(audit)
 

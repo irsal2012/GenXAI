@@ -2,6 +2,8 @@ workflow:
   name: "Content Generation Pipeline"
   description: "Draft, refine, and publish content assets"
 
+  agents_ref: "examples/nocode/agents/content_agents.yaml"
+
   agents:
     - id: "researcher"
       role: "Research Agent"

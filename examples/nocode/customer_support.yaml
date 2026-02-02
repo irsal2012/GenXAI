@@ -2,6 +2,8 @@ workflow:
   name: "Customer Support Workflow"
   description: "Classify and resolve incoming support requests"
 
+  agents_ref: "examples/nocode/agents/support_agents.yaml"
+
   agents:
     - id: "classifier"
       role: "Request Classifier"

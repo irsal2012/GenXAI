@@ -2,6 +2,8 @@ workflow:
   name: "Data Validation Pipeline"
   description: "Ingest, validate, and store structured datasets"
 
+  agents_ref: "examples/nocode/agents/data_agents.yaml"
+
   agents:
     - id: "validator"
       role: "Data Validator"

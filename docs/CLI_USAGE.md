@@ -28,6 +28,13 @@ List all available tools:
 genxai tool list
 ```
 
+### Run a Workflow (YAML)
+
+```bash
+genxai workflow run examples/nocode/content_generation.yaml \
+  --input '{"topic": "AI workflow design"}'
+```
+
 Filter by category:
 
 ```bash

@@ -102,7 +102,7 @@ const AgentEditModal = ({ isOpen, onClose, onSave, agent, isSaving }: AgentEditM
                     <input
                       type="text"
                       required
-                      className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                      className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
                       value={formData.role}
                       onChange={(e) => setFormData({ ...formData, role: e.target.value })}
                       placeholder="e.g., Research Assistant"
@@ -116,7 +116,7 @@ const AgentEditModal = ({ isOpen, onClose, onSave, agent, isSaving }: AgentEditM
                     <textarea
                       required
                       rows={3}
-                      className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                      className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
                       value={formData.goal}
                       onChange={(e) => setFormData({ ...formData, goal: e.target.value })}
                       placeholder="What is this agent's primary objective?"
@@ -129,7 +129,7 @@ const AgentEditModal = ({ isOpen, onClose, onSave, agent, isSaving }: AgentEditM
                     </label>
                     <textarea
                       rows={3}
-                      className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                      className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
                       value={formData.backstory}
                       onChange={(e) => setFormData({ ...formData, backstory: e.target.value })}
                       placeholder="Provide context about the agent's expertise and personality"
@@ -159,7 +159,7 @@ const AgentEditModal = ({ isOpen, onClose, onSave, agent, isSaving }: AgentEditM
                     </label>
                     <input
                       type="text"
-                      className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                      className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
                       value={toolsInput}
                       onChange={(e) => setToolsInput(e.target.value)}
                       placeholder="e.g., calculator, file_reader, web_search (comma-separated)"
