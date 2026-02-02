@@ -141,25 +141,46 @@ const WorkflowBuilderPage = () => {
 
   const handleExecute = useCallback(async () => {
     if (!workflowId) return
-    setNodeStatuses({})
-    setLastEvent(undefined)
+    const statuses: Record<string, 'running' | 'completed' | 'failed' | 'pending'> = {}
+    const nodeIds = visualWorkflow.nodes.map((node) => node.id)
+    nodeIds.forEach((nodeId) => {
+      statuses[nodeId] = 'pending'
+    })
+
+    const incomingCounts = new Map<string, number>()
+    visualWorkflow.edges.forEach((edge) => {
+      incomingCounts.set(edge.target, (incomingCounts.get(edge.target) || 0) + 1)
+    })
+    const entryNodes = nodeIds.filter((nodeId) => (incomingCounts.get(nodeId) || 0) === 0)
+    const nodesToRun = entryNodes.length > 0 ? entryNodes : nodeIds.slice(0, 1)
+    nodesToRun.forEach((nodeId) => {
+      statuses[nodeId] = 'running'
+    })
+
+    setNodeStatuses(statuses)
+    if (nodesToRun.length > 0) {
+      setLastEvent({ node_id: nodesToRun[0], status: 'running', timestamp: Date.now() })
+    } else {
+      setLastEvent(undefined)
+    }
     setExecutionResult(undefined)
+
     const result = await executeWorkflow.mutateAsync({
       input: 'demo payload',
       model_override: runModelOverride || undefined,
     })
     setExecutionResult(result)
     if (result?.node_events) {
-      const statuses: Record<string, 'running' | 'completed' | 'failed' | 'pending'> = {}
+      const nextStatuses: Record<string, 'running' | 'completed' | 'failed' | 'pending'> = {}
       result.node_events.forEach((event) => {
         if (event.status === 'running' || event.status === 'completed' || event.status === 'failed') {
-          statuses[event.node_id] = event.status
+          nextStatuses[event.node_id] = event.status
           setLastEvent({ node_id: event.node_id, status: event.status, timestamp: event.timestamp })
         }
       })
-      setNodeStatuses(statuses)
+      setNodeStatuses({ ...statuses, ...nextStatuses })
     }
-  }, [workflowId, executeWorkflow, runModelOverride])
+  }, [workflowId, executeWorkflow, runModelOverride, visualWorkflow.nodes, visualWorkflow.edges])
 
   const nodeLabels = useMemo(() => {
     const labels: Record<string, string> = {}

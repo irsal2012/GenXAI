@@ -130,7 +130,10 @@ const AgentNode = memo(({ id, data, isConnectable, selected }: NodeProps<AgentNo
       )}
 
       {status && (
-        <div className="absolute top-1 right-1 rounded-full bg-white/80 px-2 py-0.5 text-[9px] uppercase text-slate-500">
+        <div className="absolute top-1 right-1 inline-flex items-center gap-1 rounded-full bg-white/80 px-2 py-0.5 text-[9px] uppercase text-slate-500">
+          {status === 'running' && (
+            <span className="inline-flex h-2.5 w-2.5 animate-spin items-center justify-center rounded-full border border-blue-400 border-t-transparent" />
+          )}
           {status}
         </div>
       )}
