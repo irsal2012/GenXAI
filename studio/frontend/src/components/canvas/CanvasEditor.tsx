@@ -6,7 +6,6 @@ import FloatingNodePalette from './FloatingNodePalette'
 import QuickActionsPanel from './QuickActionsPanel'
 import CanvasContextMenu from './CanvasContextMenu'
 import CommandPalette from './CommandPalette'
-import NodeQuickAdd from './NodeQuickAdd'
 import HamburgerMenu from './HamburgerMenu'
 import type { ReactFlowEdge, ReactFlowNode } from '../../utils/workflowConverter'
 
@@ -42,10 +41,6 @@ const CanvasEditor = ({
   const [commandOpen, setCommandOpen] = useState(false)
   const [contextMenu, setContextMenu] = useState({ x: 0, y: 0, open: false })
   const [isMenuOpen, setIsMenuOpen] = useState(false)
-  const quickAddPosition = useMemo(
-    () => ({ x: window.innerWidth / 2 + 160, y: window.innerHeight / 2 - 120 }),
-    []
-  )
   const reactFlowRef = useRef<
     {
       screenToFlowPosition: (point: { x: number; y: number }) => { x: number; y: number }
@@ -119,9 +114,6 @@ const CanvasEditor = ({
           reactFlowRef.current = instance
         }}
       />
-      <div className="absolute z-10" style={{ left: quickAddPosition.x, top: quickAddPosition.y }}>
-        <NodeQuickAdd onClick={() => setCommandOpen(true)} />
-      </div>
       <FloatingNodePalette />
       <QuickActionsPanel
         onFitView={handleFitView}
