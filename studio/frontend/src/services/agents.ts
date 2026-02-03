@@ -63,3 +63,16 @@ export const useDeleteAgent = () => {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: agentsKeys.all }),
   })
 }
+
+export const useSyncAgentsFromWorkflows = () => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async () => {
+      const { data } = await api.post<{ synced: number; skipped: number; created_ids: string[] }>(
+        '/agents/sync-from-workflows'
+      )
+      return data
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: agentsKeys.all }),
+  })
+}

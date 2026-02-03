@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useCreateAgent, useDeleteAgent, useUpdateAgent, useAgents } from '../services/agents'
+import { useCreateAgent, useDeleteAgent, useUpdateAgent, useAgents, useSyncAgentsFromWorkflows } from '../services/agents'
 import ErrorState from '../components/ErrorState'
 import LoadingState from '../components/LoadingState'
 import AgentEditModal from '../components/AgentEditModal'
@@ -12,6 +12,7 @@ const AgentsPage = () => {
   const agentsQuery = useAgents()
   const createAgent = useCreateAgent()
   const deleteAgent = useDeleteAgent()
+  const syncAgents = useSyncAgentsFromWorkflows()
   const [editingAgent, setEditingAgent] = useState<Agent | null>(null)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
@@ -23,6 +24,11 @@ const AgentsPage = () => {
 
   const handleOpenCreateModal = () => {
     setIsCreateModalOpen(true)
+  }
+
+  const handleSyncAgents = async () => {
+    const result = await syncAgents.mutateAsync()
+    window.alert(`Synced ${result.synced} agents from workflows. Skipped ${result.skipped}.`)
   }
 
   const handleDelete = async (agentId: string) => {
@@ -64,6 +70,14 @@ const AgentsPage = () => {
             title="Quick-create a new agent"
           >
             Quick Create
+          </button>
+          <button
+            className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
+            onClick={handleSyncAgents}
+            title="Sync agents from workflow nodes"
+            disabled={syncAgents.isPending}
+          >
+            {syncAgents.isPending ? 'Syncing...' : 'Sync Workflow Agents'}
           </button>
           <button
             className="rounded-xl bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700 transition-colors flex items-center gap-2"
