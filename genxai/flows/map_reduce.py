@@ -1,5 +1,6 @@
 """MapReduce flow orchestrator."""
 
+import asyncio
 from typing import Any, Dict, List, Optional
 
 from genxai.core.agent.runtime import AgentRuntime
@@ -38,14 +39,21 @@ class MapReduceFlow(FlowOrchestrator):
         }
         reducer_runtime = AgentRuntime(agent=reducer, llm_provider=self.llm_provider)
 
-        for mapper in mappers:
-            result = await mapper_runtimes[mapper.id].execute(
-                task=state.get("map_task", "Process shard"),
+        map_task = state.get("map_task", "Process shard")
+        tasks = [
+            self._execute_with_retry(
+                mapper_runtimes[mapper.id],
+                task=map_task,
                 context={**state, "mapper_id": mapper.id},
             )
+            for mapper in mappers
+        ]
+        results = await self._gather_tasks(tasks)
+        for mapper, result in zip(mappers, results):
             state["map_results"].append({"mapper_id": mapper.id, "result": result})
 
-        reduce_result = await reducer_runtime.execute(
+        reduce_result = await self._execute_with_retry(
+            reducer_runtime,
             task=state.get("reduce_task", "Summarize map results"),
             context={**state, "map_results": state["map_results"]},
         )

@@ -12,7 +12,15 @@ async def main() -> None:
         AgentFactory.create_agent(id="reviewer", role="Reviewer", goal="Review"),
     ]
 
-    flow = RoundRobinFlow(agents, name="round_robin_demo")
+    flow = RoundRobinFlow(
+        agents,
+        name="round_robin_demo",
+        timeout_seconds=80,
+        retry_count=2,
+        backoff_base=1.0,
+        backoff_multiplier=2.0,
+        cancel_on_failure=True,
+    )
     result = await flow.run({"topic": "AI adoption"})
     print("RoundRobinFlow result keys:", list(result.keys()))
 

@@ -405,7 +405,7 @@ class Graph:
                     if edge.evaluate_condition(state):
                         tasks.append(self._execute_node(edge.target, state, max_iterations, event_callback))
                 if tasks:
-                    await asyncio.gather(*tasks)
+                    await self._gather_with_config(tasks, state)
 
             # Execute sequential edges in order
             for edge in sorted(sequential_edges, key=lambda e: e.priority):
@@ -507,7 +507,70 @@ class Graph:
                     tools[tool_name] = tool
             runtime.set_tools(tools)
 
-        return await runtime.execute(task, context=state)
+        return await self._execute_with_config(runtime, task=task, context=state, state=state)
+
+    def _get_execution_config(self, state: Dict[str, Any]) -> Dict[str, Any]:
+        config = state.get("execution_config") or {}
+        return {
+            "timeout_seconds": config.get("timeout_seconds", 120.0),
+            "retry_count": config.get("retry_count", 3),
+            "backoff_base": config.get("backoff_base", 1.0),
+            "backoff_multiplier": config.get("backoff_multiplier", 2.0),
+            "cancel_on_failure": config.get("cancel_on_failure", True),
+        }
+
+    async def _execute_with_config(
+        self,
+        runtime: AgentRuntime,
+        task: str,
+        context: Dict[str, Any],
+        state: Dict[str, Any],
+    ) -> Any:
+        config = self._get_execution_config(state)
+        delay = config["backoff_base"]
+        for attempt in range(config["retry_count"] + 1):
+            try:
+                coro = runtime.execute(task=task, context=context)
+                timeout = config["timeout_seconds"]
+                if timeout:
+                    return await asyncio.wait_for(coro, timeout=timeout)
+                return await coro
+            except asyncio.CancelledError:
+                raise
+            except Exception:
+                if attempt >= config["retry_count"]:
+                    raise
+                await asyncio.sleep(delay)
+                delay *= config["backoff_multiplier"]
+
+    async def _gather_with_config(self, coros: List[Any], state: Dict[str, Any]) -> List[Any]:
+        config = self._get_execution_config(state)
+        tasks = [asyncio.create_task(coro) for coro in coros]
+        if not tasks:
+            return []
+        if not config["cancel_on_failure"]:
+            return await asyncio.gather(*tasks, return_exceptions=True)
+
+        results: List[Any] = [None] * len(tasks)
+        index_map = {task: idx for idx, task in enumerate(tasks)}
+        done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_EXCEPTION)
+
+        for task in done:
+            idx = index_map[task]
+            exc = task.exception()
+            if exc:
+                for pending_task in pending:
+                    pending_task.cancel()
+                await asyncio.gather(*pending, return_exceptions=True)
+                raise exc
+            results[idx] = task.result()
+
+        if pending:
+            pending_results = await asyncio.gather(*pending, return_exceptions=True)
+            for task, result in zip(pending, pending_results):
+                results[index_map[task]] = result
+
+        return results
 
     async def _execute_tool_node(self, node: Node, state: Dict[str, Any]) -> Any:
         """Execute a ToolNode using ToolRegistry.

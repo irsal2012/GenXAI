@@ -15,7 +15,15 @@ async def main() -> None:
         AgentFactory.create_agent(id="reviewer", role="Reviewer", goal="Review"),
     ]
 
-    flow = ConditionalFlow(agents, condition=choose_agent)
+    flow = ConditionalFlow(
+        agents,
+        condition=choose_agent,
+        timeout_seconds=90,
+        retry_count=1,
+        backoff_base=1.0,
+        backoff_multiplier=2.0,
+        cancel_on_failure=True,
+    )
     result = await flow.run({"priority": "high"})
     print("ConditionalFlow nodes:", result.get("node_results", {}).keys())
 

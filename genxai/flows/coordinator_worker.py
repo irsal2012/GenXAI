@@ -39,17 +39,24 @@ class CoordinatorWorkerFlow(FlowOrchestrator):
             for agent in workers
         }
 
-        plan = await coordinator_runtime.execute(
+        plan = await self._execute_with_retry(
+            coordinator_runtime,
             task=state.get("task", "Break the task into worker assignments"),
             context=state,
         )
         state["plan"] = plan
 
-        for worker in workers:
-            result = await worker_runtimes[worker.id].execute(
-                task=state.get("worker_task", "Execute assigned task"),
+        worker_task = state.get("worker_task", "Execute assigned task")
+        tasks = [
+            self._execute_with_retry(
+                worker_runtimes[worker.id],
+                task=worker_task,
                 context={**state, "worker_id": worker.id},
             )
+            for worker in workers
+        ]
+        results = await self._gather_tasks(tasks)
+        for worker, result in zip(workers, results):
             state["worker_results"].append({"worker_id": worker.id, "result": result})
 
         return state

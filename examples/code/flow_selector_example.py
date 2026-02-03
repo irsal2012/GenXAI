@@ -15,7 +15,16 @@ async def main() -> None:
         AgentFactory.create_agent(id="builder", role="Builder", goal="Build"),
     ]
 
-    flow = SelectorFlow(agents, selector=choose_next, max_hops=4)
+    flow = SelectorFlow(
+        agents,
+        selector=choose_next,
+        max_hops=3,
+        timeout_seconds=70,
+        retry_count=2,
+        backoff_base=1.0,
+        backoff_multiplier=2.0,
+        cancel_on_failure=True,
+    )
     result = await flow.run({"goal": "Ship v1"})
     print("SelectorFlow hops:", result.get("selector_hop"))
 

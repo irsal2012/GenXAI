@@ -33,12 +33,14 @@ class EnsembleVotingFlow(FlowOrchestrator):
             for agent in self.agents
         }
 
-        for agent in self.agents:
-            result = await runtimes[agent.id].execute(
-                task=state.get("task", "Provide your answer"),
-                context=state,
-            )
-            output = str(result.get("output", "")).strip()
+        task = state.get("task", "Provide your answer")
+        tasks = [
+            self._execute_with_retry(runtimes[agent.id], task=task, context=state)
+            for agent in self.agents
+        ]
+        results = await self._gather_tasks(tasks)
+        for result in results:
+            output = str(getattr(result, "get", lambda *_: "")("output", "")).strip()
             state["votes"].setdefault(output, 0)
             state["votes"][output] += 1
 

@@ -195,12 +195,35 @@ FlowOrchestrator(
     name: str = "flow",
     llm_provider: Optional[LLMProvider] = None,
     allow_empty_agents: bool = False,
+    timeout_seconds: float = 120.0,
+    retry_count: int = 3,
+    backoff_base: float = 1.0,
+    backoff_multiplier: float = 2.0,
+    cancel_on_failure: bool = True,
 )
 ```
 
 **Key Methods**
 - `build_graph() -> Graph`: build the graph definition for the flow.
 - `run(input_data, state=None, max_iterations=100) -> Dict[str, Any]`: execute the flow.
+
+**Execution safeguards (defaults)**
+- Timeout: 120s per agent execution
+- Retries: 3 with exponential backoff (1s base, 2x multiplier)
+- Parallel cancel: cancel remaining tasks on first failure when enabled
+
+Override these by passing the settings into any flow constructor, e.g.
+
+```python
+flow = RoundRobinFlow(
+    agents,
+    timeout_seconds=60,
+    retry_count=2,
+    backoff_base=0.5,
+    backoff_multiplier=2.0,
+    cancel_on_failure=False,
+)
+```
 
 #### RoundRobinFlow
 
@@ -336,6 +359,7 @@ CriticReviewFlow(
 
 **Behavior**
 - Generator → critic loop that iterates `max_iterations` times.
+- Set `state["accept"] = True` to short-circuit the review loop early.
 
 #### CoordinatorWorkerFlow
 

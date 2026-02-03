@@ -40,4 +40,6 @@ class ConditionalFlow(FlowOrchestrator):
             )
             graph.add_edge(Edge(source=node.id, target=end.id))
 
+        graph.add_edge(Edge(source=start.id, target=end.id))
+
         return graph

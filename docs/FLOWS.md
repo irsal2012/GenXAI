@@ -153,6 +153,9 @@ flow = CriticReviewFlow(agents, max_iterations=2)
 result_state = await flow.run({"topic": "Launch"})
 ```
 
+You can short-circuit the review loop by setting `state["accept"] = True`
+from within your workflow state.
+
 ### `CoordinatorWorkerFlow`
 Coordinator assigns work to worker agents.
 
@@ -211,6 +214,10 @@ result_state = await flow.run({"task": "Handle request"})
 
 ## Notes
 - These flows register agents in `AgentRegistry` automatically.
+- Flow orchestrators include default execution safeguards: 120s timeout per agent call,
+  3 retries with exponential backoff (1s base, 2x multiplier), and optional cancellation
+  of parallel tasks on first failure (configurable via `cancel_on_failure`).
+- Override safeguards by passing settings into any flow constructor (see examples).
 - `SelectorFlow` uses a callback to pick the next agent each hop.
 - `P2PFlow` executes agents directly to allow decentralized patterns.
 - P2P termination checks include consensus, convergence, timeout, and quality thresholds.

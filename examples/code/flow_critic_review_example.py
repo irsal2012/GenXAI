@@ -11,7 +11,15 @@ async def main() -> None:
         AgentFactory.create_agent(id="critic", role="Critic", goal="Review"),
     ]
 
-    flow = CriticReviewFlow(agents, max_iterations=2)
+    flow = CriticReviewFlow(
+        agents,
+        max_iterations=2,
+        timeout_seconds=90,
+        retry_count=2,
+        backoff_base=1.0,
+        backoff_multiplier=2.0,
+        cancel_on_failure=True,
+    )
     result = await flow.run({"topic": "Product launch"})
     print("CriticReviewFlow drafts:", len(result.get("drafts", [])))
 

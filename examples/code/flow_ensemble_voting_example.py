@@ -11,7 +11,14 @@ async def main() -> None:
         AgentFactory.create_agent(id="a2", role="Reviewer", goal="Answer"),
     ]
 
-    flow = EnsembleVotingFlow(agents)
+    flow = EnsembleVotingFlow(
+        agents,
+        timeout_seconds=65,
+        retry_count=2,
+        backoff_base=0.5,
+        backoff_multiplier=2.0,
+        cancel_on_failure=True,
+    )
     result = await flow.run({"question": "Best architecture?"})
     print("Ensemble winner:", result.get("winner"))
 

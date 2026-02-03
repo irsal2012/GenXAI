@@ -27,4 +27,9 @@ class SubworkflowFlow(FlowOrchestrator):
         state: Optional[Dict[str, Any]] = None,
         max_iterations: int = 100,
     ) -> Dict[str, Any]:
-        return await self.graph.run(input_data=input_data, state=state)
+        return await self.graph.run(
+            input_data=input_data,
+            state=state,
+            max_iterations=max_iterations,
+            llm_provider=self.llm_provider,
+        )

@@ -4,7 +4,7 @@ from typing import List
 
 from genxai.core.graph.engine import Graph
 from genxai.core.graph.edges import Edge
-from genxai.core.graph.nodes import AgentNode, InputNode, LoopNode
+from genxai.core.graph.nodes import AgentNode, InputNode, LoopNode, OutputNode
 from genxai.flows.base import FlowOrchestrator
 
 
@@ -28,12 +28,15 @@ class LoopFlow(FlowOrchestrator):
         start = InputNode(id="input")
         loop = LoopNode(id="loop", condition=self.condition_key, max_iterations=self.loop_iterations)
         agent = self._agent_nodes()[0]
+        end = OutputNode(id="output")
 
         graph.add_node(start)
         graph.add_node(loop)
         graph.add_node(agent)
+        graph.add_node(end)
 
         graph.add_edge(Edge(source=start.id, target=loop.id))
         graph.add_edge(Edge(source=loop.id, target=agent.id))
+        graph.add_edge(Edge(source=agent.id, target=end.id))
 
         return graph

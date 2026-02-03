@@ -17,7 +17,14 @@ async def main() -> None:
     graph.add_edge(Edge(source="input", target="sub_agent"))
     graph.add_edge(Edge(source="sub_agent", target="output"))
 
-    flow = SubworkflowFlow(graph)
+    flow = SubworkflowFlow(
+        graph,
+        timeout_seconds=30,
+        retry_count=1,
+        backoff_base=0.5,
+        backoff_multiplier=2.0,
+        cancel_on_failure=True,
+    )
     result = await flow.run({"topic": "Subworkflow"})
     print("SubworkflowFlow keys:", list(result.keys()))
 

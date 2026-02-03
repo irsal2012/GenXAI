@@ -40,18 +40,23 @@ class CriticReviewFlow(FlowOrchestrator):
 
         draft = None
         for _ in range(self.max_iterations):
-            gen_result = await gen_runtime.execute(
+            gen_result = await self._execute_with_retry(
+                gen_runtime,
                 task=state.get("task", "Generate a draft"),
                 context={**state, "draft": draft},
             )
             draft = gen_result.get("output")
             state["drafts"].append(draft)
 
-            critique = await critic_runtime.execute(
+            critique = await self._execute_with_retry(
+                critic_runtime,
                 task=state.get("critic_task", "Critique the draft"),
                 context={**state, "draft": draft},
             )
             state["last_critique"] = critique
+
+            if state.get("accept", False):
+                break
 
         state["final"] = draft
         return state
