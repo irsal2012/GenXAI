@@ -152,7 +152,18 @@ const WorkflowBuilderPage = () => {
       incomingCounts.set(edge.target, (incomingCounts.get(edge.target) || 0) + 1)
     })
     const entryNodes = nodeIds.filter((nodeId) => (incomingCounts.get(nodeId) || 0) === 0)
-    const nodesToRun = entryNodes.length > 0 ? entryNodes : nodeIds.slice(0, 1)
+    const startNodeIds = visualWorkflow.nodes.filter((node) => node.type === 'start').map((node) => node.id)
+    const edgesBySource = new Map<string, string[]>()
+    visualWorkflow.edges.forEach((edge) => {
+      const list = edgesBySource.get(edge.source) || []
+      list.push(edge.target)
+      edgesBySource.set(edge.source, list)
+    })
+    const potentialTargets = entryNodes.flatMap((nodeId) => edgesBySource.get(nodeId) || [])
+    const agentTargets = potentialTargets.filter((targetId) => {
+      return visualWorkflow.nodes.find((node) => node.id === targetId)?.type === 'agent'
+    })
+    const nodesToRun = agentTargets.length > 0 ? agentTargets : entryNodes.filter((id) => !startNodeIds.includes(id))
     nodesToRun.forEach((nodeId) => {
       statuses[nodeId] = 'running'
     })
