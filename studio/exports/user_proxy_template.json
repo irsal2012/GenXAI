@@ -1,0 +1,52 @@
+{
+  "name": "User Proxy Workflow",
+  "description": "Collects human input before the assistant runs",
+  "nodes": [
+    {
+      "id": "start",
+      "type": "start",
+      "position": { "x": 200, "y": 50 },
+      "label": "Start",
+      "config": {}
+    },
+    {
+      "id": "user_input",
+      "type": "tool",
+      "position": { "x": 200, "y": 200 },
+      "label": "Human Input",
+      "config": {
+        "tool_name": "human_input",
+        "tool_params": {
+          "prompt": "What do you need?"
+        }
+      }
+    },
+    {
+      "id": "assistant",
+      "type": "agent",
+      "position": { "x": 200, "y": 350 },
+      "label": "Assistant",
+      "config": {
+        "agent_id": "assistant"
+      }
+    },
+    {
+      "id": "end",
+      "type": "end",
+      "position": { "x": 200, "y": 500 },
+      "label": "End",
+      "config": {}
+    }
+  ],
+  "edges": [
+    { "id": "e1", "source": "start", "target": "user_input" },
+    { "id": "e2", "source": "user_input", "target": "assistant" },
+    { "id": "e3", "source": "assistant", "target": "end" }
+  ],
+  "metadata": {
+    "template": "user_proxy",
+    "category": "interaction",
+    "difficulty": "beginner",
+    "tags": ["user_proxy", "human_input", "tool", "assistant"]
+  }
+}

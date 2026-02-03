@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import sqlite3
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, Iterable, Optional
 
@@ -83,6 +84,91 @@ def init_db() -> None:
                 updated_at TEXT NOT NULL
             )
             """
+        )
+
+        _seed_default_templates(conn)
+
+
+def _seed_default_templates(conn: sqlite3.Connection) -> None:
+    """Insert bundled workflow templates if they do not exist yet."""
+    templates = [
+        {
+            "id": "tpl_user_proxy",
+            "name": "User Proxy Workflow",
+            "description": "Collects human input before the assistant runs",
+            "category": "interaction",
+            "difficulty": "beginner",
+            "tags": ["user_proxy", "human_input", "tool", "assistant"],
+            "nodes": [
+                {
+                    "id": "start",
+                    "type": "start",
+                    "position": {"x": 200, "y": 50},
+                    "label": "Start",
+                    "config": {},
+                },
+                {
+                    "id": "user_input",
+                    "type": "tool",
+                    "position": {"x": 200, "y": 200},
+                    "label": "Human Input",
+                    "config": {
+                        "tool_name": "human_input",
+                        "tool_params": {"prompt": "What do you need?"},
+                    },
+                },
+                {
+                    "id": "assistant",
+                    "type": "agent",
+                    "position": {"x": 200, "y": 350},
+                    "label": "Assistant",
+                    "config": {"agent_id": "assistant"},
+                },
+                {
+                    "id": "end",
+                    "type": "end",
+                    "position": {"x": 200, "y": 500},
+                    "label": "End",
+                    "config": {},
+                },
+            ],
+            "edges": [
+                {"id": "e1", "source": "start", "target": "user_input"},
+                {"id": "e2", "source": "user_input", "target": "assistant"},
+                {"id": "e3", "source": "assistant", "target": "end"},
+            ],
+            "metadata": {"template": "user_proxy"},
+        }
+    ]
+
+    for template in templates:
+        existing = conn.execute(
+            "SELECT id FROM workflow_templates WHERE id = ?",
+            (template["id"],),
+        ).fetchone()
+        if existing:
+            continue
+
+        timestamp = datetime.utcnow().isoformat()
+        conn.execute(
+            """
+            INSERT INTO workflow_templates
+            (id, name, description, category, difficulty, tags, nodes, edges, metadata, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                template["id"],
+                template["name"],
+                template["description"],
+                template["category"],
+                template["difficulty"],
+                json.dumps(template["tags"]),
+                json.dumps(template["nodes"]),
+                json.dumps(template["edges"]),
+                json.dumps(template["metadata"]),
+                timestamp,
+                timestamp,
+            ),
         )
 
 

@@ -34,6 +34,7 @@ from genxai.tools.builtin.database.database_inspector import DatabaseInspectorTo
 
 # Communication tools
 from genxai.tools.builtin.communication.email_sender import EmailSenderTool
+from genxai.tools.builtin.communication.human_input import HumanInputTool
 from genxai.tools.builtin.communication.slack_notifier import SlackNotifierTool
 from genxai.tools.builtin.communication.sms_sender import SMSSenderTool
 from genxai.tools.builtin.communication.webhook_caller import WebhookCallerTool
@@ -75,6 +76,7 @@ _tools_to_register = [
     DatabaseInspectorTool(),
     # Communication
     EmailSenderTool(),
+    HumanInputTool(),
     SlackNotifierTool(),
     SMSSenderTool(),
     WebhookCallerTool(),
@@ -119,6 +121,7 @@ __all__ = [
     "VectorSearchTool",
     "DatabaseInspectorTool",
     "EmailSenderTool",
+    "HumanInputTool",
     "SlackNotifierTool",
     "SMSSenderTool",
     "WebhookCallerTool",

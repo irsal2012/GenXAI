@@ -18,6 +18,9 @@ Reusable agent templates are available in `examples/nocode/agents/`. Each file d
 3. **Data Validation Pipeline** (`data_pipeline.yaml`)
    - Validate, transform, and output structured data
 
+4. **User Proxy Workflow** (`user_proxy_workflow.yaml`)
+   - Collect human input via a tool step before the assistant agent runs
+
 ## How to Use
 
 ```bash

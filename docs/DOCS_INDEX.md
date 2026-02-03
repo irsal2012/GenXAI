@@ -11,6 +11,9 @@ Complete guide to GenXAI framework documentation.
 | [README](../README.md) | Project overview and quick start |
 | [GETTING_STARTED](../GETTING_STARTED.md) | Installation and first workflow |
 | [QUICK_START_TUTORIAL](./QUICK_START_TUTORIAL.md) | Step-by-step tutorial with examples |
+| [Studio Guide](../studio/README.md#-studio-walkthrough-userproxy-workflow) | UserProxy walkthrough in Studio |
+| [Studio JSON Defaults](../studio/README.md#canvas-json-defaults-userproxy-template) | Copy-paste canvas starter JSON |
+| [Studio Template JSON](../studio/exports/user_proxy_template.json) | Importable UserProxy template |
 
 ---
 

@@ -108,6 +108,86 @@ studio/
 - ⏳ Real-time Testing Playground
 - ⏳ One-click Deployment
 
+## 🧭 Studio Walkthrough: UserProxy Workflow
+
+This walkthrough shows how to build a UserProxy-style workflow in Studio using
+the built-in `human_input` tool.
+
+1. **Open Studio** and create a new workflow in the **Workflows** page.
+2. **Add Nodes** on the canvas:
+   - **Start** (Input)
+   - **Tool** (Human Input)
+   - **Agent** (Assistant)
+   - **End** (Output)
+3. **Configure the Tool node**:
+   - Tool: `human_input`
+   - Params: `{ "prompt": "What do you need?" }`
+4. **Create or select the Assistant agent**:
+   - Role: `Assistant`
+   - Goal: `Help the user`
+   - Tools: optional (e.g., `text_analyzer`)
+5. **Connect edges**: Start → Tool → Agent → End
+6. **Save the workflow**, then execute with a test input.
+
+Tips:
+- The `human_input` tool runs in the backend context and will prompt in the
+  terminal where the backend server is running.
+- For web-based user input, replace `human_input` with a webhook or UI tool.
+
+### Canvas JSON Defaults (UserProxy Template)
+
+Use this as a quick JSON starter for the Studio workflow builder:
+
+```json
+{
+  "name": "User Proxy Workflow",
+  "description": "Collects human input before the assistant runs",
+  "nodes": [
+    { "id": "start", "type": "start", "position": { "x": 200, "y": 50 }, "label": "Start", "config": {} },
+    {
+      "id": "user_input",
+      "type": "tool",
+      "position": { "x": 200, "y": 200 },
+      "label": "Human Input",
+      "config": { "tool_name": "human_input", "tool_params": { "prompt": "What do you need?" } }
+    },
+    {
+      "id": "assistant",
+      "type": "agent",
+      "position": { "x": 200, "y": 350 },
+      "label": "Assistant",
+      "config": { "agent_id": "assistant" }
+    },
+    { "id": "end", "type": "end", "position": { "x": 200, "y": 500 }, "label": "End", "config": {} }
+  ],
+  "edges": [
+    { "id": "e1", "source": "start", "target": "user_input" },
+    { "id": "e2", "source": "user_input", "target": "assistant" },
+    { "id": "e3", "source": "assistant", "target": "end" }
+  ],
+  "metadata": { "template": "user_proxy" }
+}
+```
+
+### Screenshots (Placeholders)
+
+> 📸 Add Studio screenshots here when available:
+> - Workflow canvas with Start → Tool → Agent → End
+> - Tool configuration panel showing `human_input`
+> - Agent configuration panel for the Assistant
+
+### Downloadable Template
+
+You can import a ready-made JSON template from:
+
+- `studio/exports/user_proxy_template.json`
+
+### Templates Page
+
+The **Templates** page ships with a preloaded **User Proxy Workflow** template.
+It will appear automatically after the backend starts and initializes the
+database.
+
 ## 🛠️ Development
 
 ### Backend Development

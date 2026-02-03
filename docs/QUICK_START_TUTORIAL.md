@@ -59,7 +59,7 @@ async def main():
         llm_model="gpt-4",
         temperature=0.7,
     )
-    
+
     # Create runtime
     runtime = AgentRuntime(agent=agent, api_key=os.getenv("OPENAI_API_KEY"))
     
@@ -73,6 +73,17 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+```
+
+### Preset Agents (Assistant/UserProxy)
+
+If you want AutoGen-style presets, use the thin wrappers:
+
+```python
+from genxai import AssistantAgent, UserProxyAgent
+
+assistant = AssistantAgent.create(id="assistant", goal="Help the user")
+user_proxy = UserProxyAgent.create(id="user_proxy", tools=["human_input"])
 ```
 
 Run it:

@@ -25,6 +25,41 @@ config = AgentConfig(
 )
 ```
 
+**AgentConfig Parameters**
+
+Required:
+- `role: str`
+- `goal: str`
+
+Optional:
+- `backstory: str = ""`
+
+LLM:
+- `llm_provider: str = "openai"`
+- `llm_model: str = "gpt-4"`
+- `llm_temperature: float = 0.7`
+- `llm_max_tokens: Optional[int] = None`
+
+Tools:
+- `tools: List[str] = []`
+- `allow_tool_creation: bool = False`
+
+Memory:
+- `enable_memory: bool = True`
+- `memory_type: str = "short_term"`
+
+Behavior:
+- `agent_type: AgentType = "reactive"`
+- `max_iterations: int = 10`
+- `verbose: bool = False`
+
+Guardrails:
+- `max_execution_time: Optional[float] = None`
+- `allowed_domains: List[str] = []`
+
+Metadata:
+- `metadata: Dict[str, Any] = {}`
+
 ### AgentFactory
 
 ```python
@@ -37,6 +72,21 @@ agent = AgentFactory.create_agent(
     llm_model="gpt-4",
     llm_temperature=0.4,
     tools=["web_scraper", "calculator"],
+)
+```
+
+### Preset Agents (Assistant/UserProxy)
+
+```python
+from genxai import AssistantAgent, UserProxyAgent
+
+assistant = AssistantAgent.create(
+    id="assistant",
+    goal="Help the user",
+)
+user_proxy = UserProxyAgent.create(
+    id="user_proxy",
+    tools=["human_input"],
 )
 ```
 
@@ -488,6 +538,7 @@ from genxai.tools.builtin import *  # auto-registers all built-in tools
 
 stats = ToolRegistry.get_stats()
 calculator = ToolRegistry.get("calculator")
+human_input = ToolRegistry.get("human_input")
 ```
 
 ### Export Tool Schema Bundle

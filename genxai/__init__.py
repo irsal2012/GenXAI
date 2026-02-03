@@ -17,6 +17,7 @@ from genxai.core.agent import (
     AgentRuntime,
     AgentType,
 )
+from genxai.agents import AssistantAgent, UserProxyAgent
 from genxai.core.graph import (
     Edge,
     EnhancedGraph,
@@ -71,6 +72,8 @@ __all__ = [
     "AgentRegistry",
     "AgentRuntime",
     "AgentType",
+    "AssistantAgent",
+    "UserProxyAgent",
     "Graph",
     "EnhancedGraph",
     "WorkflowExecutor",
