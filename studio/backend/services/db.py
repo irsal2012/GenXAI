@@ -92,6 +92,7 @@ def init_db() -> None:
         )
 
         _seed_default_templates(conn)
+        conn.commit()
 
 
 def _seed_default_templates(conn: sqlite3.Connection) -> None:
