@@ -187,7 +187,7 @@ result = {
                       <input
                         type="text"
                         required
-                        className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                        className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-500 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
                         value={name}
                         onChange={(e) => setName(e.target.value)}
                         placeholder="e.g., my_custom_tool"
@@ -200,7 +200,7 @@ result = {
                       </label>
                       <select
                         required
-                        className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                        className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
                         value={category}
                         onChange={(e) => setCategory(e.target.value)}
                       >
@@ -224,7 +224,7 @@ result = {
                     <textarea
                       required
                       rows={2}
-                      className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                      className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-500 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
                       value={description}
                       onChange={(e) => setDescription(e.target.value)}
                       placeholder="What does this tool do?"
@@ -236,7 +236,7 @@ result = {
                       <label className="block text-sm font-medium text-slate-700 mb-1">Tags</label>
                       <input
                         type="text"
-                        className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                        className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-500 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
                         value={tags}
                         onChange={(e) => setTags(e.target.value)}
                         placeholder="tag1, tag2, tag3"
@@ -246,7 +246,7 @@ result = {
                       <label className="block text-sm font-medium text-slate-700 mb-1">Version</label>
                       <input
                         type="text"
-                        className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                        className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-500 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
                         value={version}
                         onChange={(e) => setVersion(e.target.value)}
                       />
@@ -255,7 +255,7 @@ result = {
                       <label className="block text-sm font-medium text-slate-700 mb-1">Author</label>
                       <input
                         type="text"
-                        className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                        className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-500 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
                         value={author}
                         onChange={(e) => setAuthor(e.target.value)}
                       />
@@ -301,12 +301,12 @@ result = {
                                 <input
                                   type="text"
                                   placeholder="Name"
-                                  className="flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                                  className="flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-500"
                                   value={param.name}
                                   onChange={(e) => handleParameterChange(index, 'name', e.target.value)}
                                 />
                                 <select
-                                  className="rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                                  className="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900"
                                   value={param.type}
                                   onChange={(e) => handleParameterChange(index, 'type', e.target.value)}
                                 >
@@ -319,7 +319,7 @@ result = {
                                 <input
                                   type="text"
                                   placeholder="Description"
-                                  className="flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                                  className="flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-500"
                                   value={param.description}
                                   onChange={(e) => handleParameterChange(index, 'description', e.target.value)}
                                 />
@@ -385,7 +385,7 @@ result = {
                             Select Template <span className="text-red-500">*</span>
                           </label>
                           <select
-                            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
                             value={selectedTemplate}
                             onChange={(e) => handleTemplateChange(e.target.value)}
                           >
@@ -420,7 +420,7 @@ result = {
                                 </label>
                                 {field.enum ? (
                                   <select
-                                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900"
                                     value={String(templateConfig[key] ?? '')}
                                     onChange={(e) => setTemplateConfig({ ...templateConfig, [key]: e.target.value })}
                                     required={field.required}
@@ -432,7 +432,7 @@ result = {
                                   </select>
                                 ) : field.type === 'object' ? (
                                   <textarea
-                                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm font-mono"
+                                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm font-mono text-slate-900 placeholder:text-slate-500"
                                     placeholder='{"key": "value"}'
                                     value={JSON.stringify(templateConfig[key] || {}, null, 2)}
                                     onChange={(e) => {
@@ -447,7 +447,7 @@ result = {
                                 ) : (
                                   <input
                                     type={field.type === 'number' ? 'number' : 'text'}
-                                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-500"
                                     value={String(templateConfig[key] ?? '')}
                                     onChange={(e) => setTemplateConfig({ 
                                       ...templateConfig, 
