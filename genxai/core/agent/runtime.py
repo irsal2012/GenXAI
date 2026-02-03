@@ -219,11 +219,8 @@ class AgentRuntime:
             "status": "completed",
             "output": response,
             "tokens_used": self.agent._total_tokens,
+            "context": context,
         }
-
-        # Avoid embedding full execution context in result to keep it serializable.
-        # The workflow state already tracks context; including it here can create
-        # circular references when persisted.
         
         # Store episode in episodic memory
         if self._memory and hasattr(self._memory, 'episodic') and self._memory.episodic:
