@@ -8,6 +8,7 @@ interface CodeEditorModalProps {
   initialCode: string
   onClose: () => void
   onSave: (code: string) => Promise<void>
+  readOnly?: boolean
 }
 
 const CodeEditorModal = ({
@@ -16,6 +17,7 @@ const CodeEditorModal = ({
   initialCode,
   onClose,
   onSave,
+  readOnly = false,
 }: CodeEditorModalProps) => {
   const [code, setCode] = useState(initialCode)
   const [isSaving, setIsSaving] = useState(false)
@@ -29,6 +31,8 @@ const CodeEditorModal = ({
   }, [initialCode, isOpen])
 
   const handleCodeChange = (value: string | undefined) => {
+    if (readOnly) return
+
     if (value !== undefined) {
       setCode(value)
       setHasChanges(value !== initialCode)
@@ -37,6 +41,9 @@ const CodeEditorModal = ({
   }
 
   const validateCode = useCallback(() => {
+    if (readOnly) {
+      return true
+    }
     // Basic Python syntax validation
     if (!code.trim()) {
       setValidationError('Code cannot be empty')
@@ -56,6 +63,10 @@ const CodeEditorModal = ({
   }, [code])
 
   const handleSave = useCallback(async () => {
+    if (readOnly) {
+      onClose()
+      return
+    }
     if (!validateCode()) {
       return
     }
@@ -89,14 +100,16 @@ const CodeEditorModal = ({
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     // Ctrl+S or Cmd+S to save
     if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-      e.preventDefault()
-      handleSave()
+      if (!readOnly) {
+        e.preventDefault()
+        handleSave()
+      }
     }
     if (e.key === 'Escape') {
       e.preventDefault()
       handleClose()
     }
-  }, [handleSave, handleClose])
+  }, [handleSave, handleClose, readOnly])
 
   useEffect(() => {
     if (isOpen) {
@@ -118,7 +131,9 @@ const CodeEditorModal = ({
           {/* Header */}
           <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4 dark:border-slate-800">
             <div>
-              <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Edit Tool Code</h2>
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                {readOnly ? 'Tool Code (Read-Only)' : 'Edit Tool Code'}
+              </h2>
               <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
                 {toolName}
                 {hasChanges && <span className="ml-2 text-orange-600">• Unsaved changes</span>}
@@ -161,57 +176,76 @@ const CodeEditorModal = ({
                   automaticLayout: true,
                   tabSize: 4,
                   wordWrap: 'on',
+                  readOnly,
                 }}
               />
             </div>
 
-            <div className="mt-4 rounded-lg bg-blue-50 border border-blue-200 p-4 dark:bg-blue-950/60 dark:border-blue-900">
-              <h4 className="text-sm font-semibold text-blue-900 dark:text-blue-200 mb-2">💡 Code Requirements</h4>
-              <ul className="text-sm text-blue-800 dark:text-blue-200 space-y-1">
-                <li>• Access parameters via <code className="bg-blue-100 px-1 rounded">params</code> dict (e.g., <code className="bg-blue-100 px-1 rounded">params['name']</code>)</li>
-                <li>• Set a <code className="bg-blue-100 px-1 rounded">result</code> variable with your output</li>
-                <li>• Use only safe built-in functions (no file I/O, network access, or imports)</li>
-                <li>• Keep execution under 30 seconds</li>
-              </ul>
-            </div>
+            {readOnly ? (
+              <div className="mt-4 rounded-lg bg-slate-100 border border-slate-200 p-4 dark:bg-slate-900 dark:border-slate-800">
+                <p className="text-sm text-slate-600 dark:text-slate-300">
+                  This tool is built-in and its code is read-only.
+                </p>
+              </div>
+            ) : (
+              <div className="mt-4 rounded-lg bg-blue-50 border border-blue-200 p-4 dark:bg-blue-950/60 dark:border-blue-900">
+                <h4 className="text-sm font-semibold text-blue-900 dark:text-blue-200 mb-2">💡 Code Requirements</h4>
+                <ul className="text-sm text-blue-800 dark:text-blue-200 space-y-1">
+                  <li>• Access parameters via <code className="bg-blue-100 px-1 rounded">params</code> dict (e.g., <code className="bg-blue-100 px-1 rounded">params['name']</code>)</li>
+                  <li>• Set a <code className="bg-blue-100 px-1 rounded">result</code> variable with your output</li>
+                  <li>• Use only safe built-in functions (no file I/O, network access, or imports)</li>
+                  <li>• Keep execution under 30 seconds</li>
+                </ul>
+              </div>
+            )}
           </div>
 
           {/* Footer */}
           <div className="flex items-center justify-between border-t border-slate-200 px-6 py-4 bg-slate-50 dark:border-slate-800 dark:bg-slate-900">
             <div className="text-sm text-slate-600 dark:text-slate-300">
-              Press <kbd className="px-2 py-1 bg-white border border-slate-300 rounded text-xs">Ctrl+S</kbd> or{' '}
-              <kbd className="px-2 py-1 bg-white border border-slate-300 rounded text-xs">⌘+S</kbd> to save
+              {readOnly ? (
+                'Viewing built-in tool source (read-only)'
+              ) : (
+                <>
+                  Press <kbd className="px-2 py-1 bg-white border border-slate-300 rounded text-xs">Ctrl+S</kbd> or{' '}
+                  <kbd className="px-2 py-1 bg-white border border-slate-300 rounded text-xs">⌘+S</kbd> to save
+                </>
+              )}
             </div>
             <div className="flex gap-3">
               <button
                 onClick={handleClose}
                 className="px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-200 rounded-lg transition dark:text-slate-200 dark:hover:bg-slate-800"
               >
-                Cancel
+                {readOnly ? 'Close' : 'Cancel'}
               </button>
-              <button
-                onClick={validateCode}
-                className="px-4 py-2 text-sm font-medium text-blue-700 bg-blue-100 hover:bg-blue-200 rounded-lg transition"
-              >
-                Validate
-              </button>
-              <button
-                onClick={handleSave}
-                disabled={isSaving || !hasChanges}
-                className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isSaving ? (
-                  <>
-                    <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    Saving...
-                  </>
-                ) : (
-                  <>
-                    <CheckIcon className="h-4 w-4" />
-                    Save & Test
-                  </>
-                )}
-              </button>
+              {!readOnly ? (
+                <>
+                  <button
+                    onClick={validateCode}
+                    className="px-4 py-2 text-sm font-medium text-blue-700 bg-blue-100 hover:bg-blue-200 rounded-lg transition"
+                  >
+                    Validate
+                  </button>
+                  <button
+                    onClick={handleSave}
+                    disabled={isSaving || !hasChanges}
+                    className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isSaving ? (
+                      <>
+                        <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        <CheckIcon className="h-4 w-4" />
+                        Save & Test
+                      </>
+                    )}
+                  </button>
+                </>
+              ) : null}
             </div>
           </div>
         </div>

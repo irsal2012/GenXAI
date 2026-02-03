@@ -45,6 +45,8 @@ const ToolPlaygroundPage = () => {
   const [history, setHistory] = useState<ExecutionHistoryEntry[]>([])
   const [isCodeEditorOpen, setIsCodeEditorOpen] = useState(false)
   const [toolCode, setToolCode] = useState<string>('')
+  const [isCodeEditable, setIsCodeEditable] = useState(false)
+  const [isCodeAvailable, setIsCodeAvailable] = useState(false)
 
   const updateToolCode = useUpdateToolCode()
 
@@ -54,10 +56,31 @@ const ToolPlaygroundPage = () => {
     setResult('')
     setError('')
     setIsCodeEditorOpen(false)
+    setIsCodeEditable(false)
+    setToolCode('')
+    setIsCodeAvailable(false)
+
+    void checkToolEditable(tool.name)
+  }
+
+  const checkToolEditable = async (toolName: string) => {
+    try {
+      const response = await fetch(`/api/tools/${toolName}/code`)
+      if (response.ok) {
+        const data = await response.json()
+        setToolCode(data.code || '')
+        setIsCodeEditable(Boolean(data.editable))
+        setIsCodeAvailable(true)
+      }
+    } catch (err) {
+      setIsCodeEditable(false)
+      setIsCodeAvailable(false)
+      console.warn('Failed to determine tool editability', err)
+    }
   }
 
   const handleOpenCodeEditor = async () => {
-    if (!selectedTool) return
+    if (!selectedTool || (!isCodeEditable && !isCodeAvailable)) return
 
     try {
       const response = await fetch(`/api/tools/${selectedTool.name}/code`)
@@ -231,6 +254,7 @@ const ToolPlaygroundPage = () => {
         initialCode={toolCode}
         onClose={() => setIsCodeEditorOpen(false)}
         onSave={handleSaveCode}
+        readOnly={!isCodeEditable}
       />
 
       <div className="space-y-6">
@@ -276,14 +300,16 @@ const ToolPlaygroundPage = () => {
                     <h3 className="text-base font-semibold">{selectedTool.name}</h3>
                     <p className="text-sm text-slate-600 mt-2">{selectedTool.description}</p>
                   </div>
-                  <button
-                    onClick={handleOpenCodeEditor}
-                    className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-primary-700 bg-primary-50 hover:bg-primary-100 rounded-lg transition"
-                    title="View/Edit Tool Code"
-                  >
-                    <CodeBracketIcon className="h-4 w-4" />
-                    Edit Code
-                  </button>
+                  {isCodeAvailable ? (
+                    <button
+                      onClick={handleOpenCodeEditor}
+                      className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-primary-700 bg-primary-50 hover:bg-primary-100 rounded-lg transition"
+                      title={isCodeEditable ? 'View/Edit Tool Code' : 'View Tool Code'}
+                    >
+                      <CodeBracketIcon className="h-4 w-4" />
+                      {isCodeEditable ? 'Edit Code' : 'Show Code'}
+                    </button>
+                  ) : null}
                 </div>
                 <div className="flex flex-wrap gap-2 mt-3">
                   <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">

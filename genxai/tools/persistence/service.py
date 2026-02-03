@@ -94,7 +94,7 @@ class ToolService:
             logger.info(f"Saved tool to database: {name}")
             
             # Optionally export to file
-            ToolService._export_to_file(tool_model)
+            # ToolService._export_to_file(tool_model)
             
             return tool_model
         except Exception as e:
@@ -153,7 +153,7 @@ class ToolService:
                 logger.info(f"Updated tool code in database: {name}")
                 
                 # Update file if exists
-                ToolService._export_to_file(tool)
+                # ToolService._export_to_file(tool)
                 
                 return True
             return False
@@ -183,7 +183,7 @@ class ToolService:
                 logger.info(f"Deleted tool from database: {name}")
                 
                 # Delete file if exists
-                ToolService._delete_file(name)
+                # ToolService._delete_file(name)
                 
                 return True
             return False

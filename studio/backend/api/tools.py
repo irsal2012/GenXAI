@@ -330,7 +330,7 @@ async def execute_tool(tool_name: str, parameters: Dict[str, Any]) -> Dict[str, 
 
 @router.get("/{tool_name}/code")
 async def get_tool_code(tool_name: str) -> Dict[str, Any]:
-    """Get the source code of a dynamic tool.
+    """Get the source code of a tool.
     
     Args:
         tool_name: Name of the tool
@@ -339,23 +339,32 @@ async def get_tool_code(tool_name: str) -> Dict[str, Any]:
         Tool code and metadata
     """
     from genxai.tools.dynamic import DynamicTool
+    import inspect
     
     tool = ToolRegistry.get(tool_name)
     if not tool:
         raise HTTPException(status_code=404, detail=f"Tool '{tool_name}' not found")
     
-    # Check if tool is a DynamicTool
-    if not isinstance(tool, DynamicTool):
-        raise HTTPException(
-            status_code=400,
-            detail=f"Tool '{tool_name}' is not a dynamic tool and cannot be edited"
-        )
-    
+    # Dynamic tools can be edited
+    if isinstance(tool, DynamicTool):
+        return {
+            "name": tool.metadata.name,
+            "code": tool.get_code(),
+            "editable": True,
+            "timeout": tool.timeout,
+        }
+
+    # Built-in tools are read-only
+    code = f"# Source unavailable for tool '{tool_name}'"
+    try:
+        code = inspect.getsource(tool.__class__)
+    except (OSError, TypeError) as exc:
+        logger.warning(f"Unable to load source for tool '{tool_name}': {exc}")
+
     return {
         "name": tool.metadata.name,
-        "code": tool.get_code(),
-        "editable": True,
-        "timeout": tool.timeout,
+        "code": code,
+        "editable": False,
     }
 
 
