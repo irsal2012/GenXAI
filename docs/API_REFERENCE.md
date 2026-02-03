@@ -194,6 +194,7 @@ FlowOrchestrator(
     agents: Iterable[Agent],
     name: str = "flow",
     llm_provider: Optional[LLMProvider] = None,
+    allow_empty_agents: bool = False,
 )
 ```
 
@@ -252,6 +253,141 @@ P2PFlow(
 **Behavior**
 - Executes agents directly (peer-style) with consensus, convergence, timeout,
   and quality thresholds for termination.
+
+#### ParallelFlow
+
+```python
+ParallelFlow(
+    agents: Iterable[Agent],
+    name: str = "flow",
+    llm_provider: Optional[LLMProvider] = None,
+)
+```
+
+**Behavior**
+- Fans out from input to all agents in parallel and merges at output.
+
+#### ConditionalFlow
+
+```python
+ConditionalFlow(
+    agents: Iterable[Agent],
+    condition: Callable[[Dict[str, Any]], str],
+    name: str = "conditional_flow",
+    llm_provider: Optional[LLMProvider] = None,
+)
+```
+
+**Behavior**
+- Routes to the agent ID returned by `condition(state)`.
+
+#### LoopFlow
+
+```python
+LoopFlow(
+    agents: Iterable[Agent],
+    condition_key: str,
+    max_iterations: int = 5,
+    name: str = "loop_flow",
+    llm_provider: Optional[LLMProvider] = None,
+)
+```
+
+**Behavior**
+- Runs until `state[condition_key]` is truthy or loop limit is reached.
+
+#### RouterFlow
+
+```python
+RouterFlow(
+    agents: Iterable[Agent],
+    router: Callable[[Dict[str, Any]], str],
+    name: str = "router_flow",
+    llm_provider: Optional[LLMProvider] = None,
+)
+```
+
+**Behavior**
+- Deterministic routing based on `router(state)`.
+
+#### EnsembleVotingFlow
+
+```python
+EnsembleVotingFlow(
+    agents: Iterable[Agent],
+    name: str = "ensemble_voting_flow",
+    llm_provider: Optional[LLMProvider] = None,
+)
+```
+
+**Behavior**
+- Executes all agents and selects the most common output.
+
+#### CriticReviewFlow
+
+```python
+CriticReviewFlow(
+    agents: Iterable[Agent],
+    name: str = "critic_review_flow",
+    llm_provider: Optional[LLMProvider] = None,
+    max_iterations: int = 3,
+)
+```
+
+**Behavior**
+- Generator → critic loop that iterates `max_iterations` times.
+
+#### CoordinatorWorkerFlow
+
+```python
+CoordinatorWorkerFlow(
+    agents: Iterable[Agent],
+    name: str = "coordinator_worker_flow",
+    llm_provider: Optional[LLMProvider] = None,
+)
+```
+
+**Behavior**
+- Coordinator creates a plan; workers execute assignments.
+
+#### MapReduceFlow
+
+```python
+MapReduceFlow(
+    agents: Iterable[Agent],
+    name: str = "map_reduce_flow",
+    llm_provider: Optional[LLMProvider] = None,
+)
+```
+
+**Behavior**
+- All but the last agent run in map phase; last agent reduces.
+
+#### SubworkflowFlow
+
+```python
+SubworkflowFlow(
+    graph: Graph,
+    name: str = "subworkflow_flow",
+    llm_provider: Optional[LLMProvider] = None,
+)
+```
+
+**Behavior**
+- Executes a pre-built graph as a flow.
+
+#### AuctionFlow
+
+```python
+AuctionFlow(
+    agents: Iterable[Agent],
+    name: str = "auction_flow",
+    llm_provider: Optional[LLMProvider] = None,
+)
+```
+
+**Behavior**
+- Agents bid for the task; highest bid executes.
 
 ---
 

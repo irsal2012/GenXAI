@@ -234,6 +234,16 @@ See runnable examples in:
 - `examples/code/flow_round_robin_example.py`
 - `examples/code/flow_selector_example.py`
 - `examples/code/flow_p2p_example.py`
+- `examples/code/flow_parallel_example.py`
+- `examples/code/flow_conditional_example.py`
+- `examples/code/flow_loop_example.py`
+- `examples/code/flow_router_example.py`
+- `examples/code/flow_ensemble_voting_example.py`
+- `examples/code/flow_critic_review_example.py`
+- `examples/code/flow_coordinator_worker_example.py`
+- `examples/code/flow_map_reduce_example.py`
+- `examples/code/flow_subworkflow_example.py`
+- `examples/code/flow_auction_example.py`
 
 Full flow documentation: [docs/FLOWS.md](./docs/FLOWS.md)
 

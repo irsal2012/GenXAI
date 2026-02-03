@@ -99,6 +99,10 @@ Complete guide to GenXAI framework documentation.
 
 ### Examples
 - [examples/code/](../examples/code/) - Code-based workflow examples
+  - Flow examples: `flow_parallel_example.py`, `flow_conditional_example.py`,
+    `flow_loop_example.py`, `flow_router_example.py`, `flow_ensemble_voting_example.py`,
+    `flow_critic_review_example.py`, `flow_coordinator_worker_example.py`,
+    `flow_map_reduce_example.py`, `flow_subworkflow_example.py`, `flow_auction_example.py`
 - [examples/nocode/](../examples/nocode/) - YAML workflow templates
 - [examples/patterns/](../examples/patterns/) - Common workflow patterns
 

@@ -23,9 +23,10 @@ class FlowOrchestrator(ABC):
         agents: Iterable[Agent],
         name: str = "flow",
         llm_provider: Any = None,
+        allow_empty_agents: bool = False,
     ) -> None:
         self.agents = list(agents)
-        if not self.agents:
+        if not self.agents and not allow_empty_agents:
             raise ValueError("FlowOrchestrator requires at least one agent")
 
         self.name = name
