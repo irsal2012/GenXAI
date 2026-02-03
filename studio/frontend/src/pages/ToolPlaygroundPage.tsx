@@ -226,9 +226,23 @@ const ToolPlaygroundPage = () => {
     if (!selectedTool?.schema) return []
 
     // Extract parameters from schema
-    const schema = selectedTool.schema as Record<string, unknown>
-    const properties = (schema.properties || {}) as Record<string, { type?: string; description?: string }>
-    const required = (schema.required || []) as string[]
+    let schema: Record<string, unknown> = selectedTool.schema as Record<string, unknown>
+
+    if (typeof schema === 'string') {
+      try {
+        schema = JSON.parse(schema) as Record<string, unknown>
+      } catch (parseError) {
+        console.warn('Failed to parse tool schema', parseError)
+        return []
+      }
+    }
+
+    const parametersSchema = (schema.parameters as Record<string, unknown>) || schema
+    const properties = (parametersSchema?.properties || {}) as Record<
+      string,
+      { type?: string; description?: string }
+    >
+    const required = (parametersSchema?.required || []) as string[]
     
     return Object.entries(properties).map(([key, value]) => ({
       name: key,

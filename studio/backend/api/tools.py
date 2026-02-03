@@ -1,6 +1,6 @@
 """Tool API endpoints."""
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Body
 from typing import List, Dict, Any, Optional
 from pydantic import BaseModel
 import logging
@@ -277,7 +277,10 @@ async def list_templates() -> List[Dict[str, Any]]:
 
 
 @router.post("/{tool_name}/execute")
-async def execute_tool(tool_name: str, parameters: Dict[str, Any]) -> Dict[str, Any]:
+async def execute_tool(
+    tool_name: str,
+    parameters: Dict[str, Any] = Body(...),
+) -> Dict[str, Any]:
     """Execute a tool with given parameters.
     
     Args:
