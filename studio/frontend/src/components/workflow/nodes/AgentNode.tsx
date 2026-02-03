@@ -138,6 +138,12 @@ const AgentNode = memo(({ id, data, isConnectable, selected }: NodeProps<AgentNo
         </div>
       )}
 
+      {status === 'running' && (
+        <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+          <span className="inline-flex h-10 w-10 animate-spin items-center justify-center rounded-full border-4 border-blue-400 border-t-transparent bg-white/70" />
+        </div>
+      )}
+
       {/* Delete button (always visible on hover) */}
       <button
         type="button"
