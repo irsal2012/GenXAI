@@ -40,14 +40,45 @@ def register_workflow_agents(workflow: Dict[str, Any]) -> List[Agent]:
     if not agents_payload:
         return []
 
+    workflow_memory = workflow.get("memory") if isinstance(workflow.get("memory"), dict) else {}
+
     agents: List[Agent] = []
     for agent_data in agents_payload:
         if not isinstance(agent_data, dict):
             raise ValueError("Invalid agent definition in workflow")
-        agent = _agent_from_workflow_dict(agent_data)
+        merged_agent = _apply_workflow_memory_defaults(agent_data, workflow_memory)
+        agent = _agent_from_workflow_dict(merged_agent)
         AgentRegistry.register(agent)
         agents.append(agent)
     return agents
+
+
+def _apply_workflow_memory_defaults(
+    agent_data: Dict[str, Any], workflow_memory: Dict[str, Any]
+) -> Dict[str, Any]:
+    if not workflow_memory:
+        return agent_data
+
+    defaults: Dict[str, Any] = {}
+    if "enabled" in workflow_memory:
+        defaults["enabled"] = workflow_memory.get("enabled")
+    if "type" in workflow_memory:
+        defaults["type"] = workflow_memory.get("type")
+
+    if not defaults:
+        return agent_data
+
+    if isinstance(agent_data.get("memory"), dict):
+        memory_block = dict(agent_data.get("memory") or {})
+        memory_block.setdefault("enabled", defaults.get("enabled"))
+        memory_block.setdefault("type", defaults.get("type"))
+        agent_data = {**agent_data, "memory": memory_block}
+        return agent_data
+
+    if "enable_memory" in agent_data or "memory_type" in agent_data:
+        return agent_data
+
+    return {**agent_data, "memory": {k: v for k, v in defaults.items() if v is not None}}
 
 
 def _merge_agents_ref(workflow: Dict[str, Any], base_path: Path) -> None:

@@ -343,6 +343,22 @@ You can enable a shared memory bus for all agents in a workflow. This lets agent
 read/write a shared state during execution. See the no-code example at
 `examples/nocode/shared_memory_workflow.yaml`.
 
+You can also set workflow-level memory defaults that apply to all agents unless
+explicitly overridden on the agent itself:
+
+```yaml
+workflow:
+  name: "Shared Memory Example"
+  memory:
+    enabled: true
+    type: "short_term"
+  agents:
+    - id: "agent_one"
+      role: "Agent One"
+      memory:
+        enabled: false  # overrides workflow defaults
+```
+
 **Workflow YAML example:**
 
 ```yaml
