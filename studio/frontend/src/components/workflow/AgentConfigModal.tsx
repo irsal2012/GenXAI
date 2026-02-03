@@ -54,6 +54,7 @@ const AgentConfigModal = ({ isOpen, onClose, agentData, onSave }: AgentConfigMod
   )
   const [selectedTools, setSelectedTools] = useState<string[]>(agentData.config?.tools || [])
   const [selectedModel, setSelectedModel] = useState<string>(defaultModel)
+  const [backstory, setBackstory] = useState<string>(agentData.config?.backstory || '')
 
   if (!isOpen) return null
 
@@ -66,6 +67,7 @@ const AgentConfigModal = ({ isOpen, onClose, agentData, onSave }: AgentConfigMod
   const handleSave = () => {
     onSave({
       ...agentData.config,
+      backstory,
       llm_model: selectedModel,
       tools: selectedTools,
     })
@@ -98,6 +100,21 @@ const AgentConfigModal = ({ isOpen, onClose, agentData, onSave }: AgentConfigMod
                 </div>
               )}
             </div>
+          </div>
+
+          {/* LLM Model Selection */}
+          <div className="mb-6">
+            <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-2">Backstory</h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">
+              Provide context about the agent's expertise and personality
+            </p>
+            <textarea
+              rows={3}
+              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+              value={backstory}
+              onChange={(event) => setBackstory(event.target.value)}
+              placeholder="Describe this agent's background, expertise, and persona"
+            />
           </div>
 
           {/* LLM Model Selection */}
