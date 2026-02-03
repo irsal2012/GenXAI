@@ -4,7 +4,7 @@ import json
 import logging
 import sys
 from contextvars import ContextVar
-from datetime import datetime
+from datetime import datetime, UTC
 from typing import Any, Dict, Optional
 
 
@@ -250,7 +250,7 @@ class StructuredLogger:
             JSON formatted log string
         """
         log_entry = {
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "level": level,
             "message": message,
             "context": {**get_log_context(), **self.context},

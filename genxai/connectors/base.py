@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, UTC
 from enum import Enum
 from typing import Any, Awaitable, Callable, Dict, Optional
 import asyncio
@@ -29,7 +29,7 @@ class ConnectorEvent:
 
     connector_id: str
     payload: Dict[str, Any]
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=lambda: datetime.now(UTC))
     metadata: Dict[str, Any] = field(default_factory=dict)
 
 
@@ -106,7 +106,7 @@ class Connector(ABC):
             "lifecycle": self.status.value,
             "last_error": self._last_error,
         }
-        self._last_healthcheck = datetime.utcnow().isoformat()
+        self._last_healthcheck = datetime.now(UTC).isoformat()
         return payload
 
     async def validate_config(self) -> None:

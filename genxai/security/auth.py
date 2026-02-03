@@ -4,7 +4,7 @@ import secrets
 import hashlib
 import time
 from typing import Optional, List, Dict, Any
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, UTC
 from dataclasses import dataclass
 import sqlite3
 import os
@@ -94,7 +94,7 @@ class APIKeyManager:
         # Calculate expiration
         expires_at = None
         if expires_in_days:
-            expires_at = datetime.utcnow() + timedelta(days=expires_in_days)
+            expires_at = datetime.now(UTC) + timedelta(days=expires_in_days)
         
         # Store in database
         conn = sqlite3.connect(self.db_path)
@@ -103,7 +103,7 @@ class APIKeyManager:
         cursor.execute("""
             INSERT INTO api_keys (key_id, user_id, name, key_hash, created_at, expires_at)
             VALUES (?, ?, ?, ?, ?, ?)
-        """, (key_id, user_id, name, key_hash, datetime.utcnow(), expires_at))
+        """, (key_id, user_id, name, key_hash, datetime.now(UTC), expires_at))
         
         conn.commit()
         conn.close()
@@ -144,14 +144,16 @@ class APIKeyManager:
         # Check expiration
         if expires_at:
             expires_dt = datetime.fromisoformat(expires_at)
-            if datetime.utcnow() > expires_dt:
+            if expires_dt.tzinfo is None:
+                expires_dt = expires_dt.replace(tzinfo=UTC)
+            if datetime.now(UTC) > expires_dt:
                 conn.close()
                 return None
         
         # Update last used
         cursor.execute("""
             UPDATE api_keys SET last_used = ? WHERE key_id = ?
-        """, (datetime.utcnow(), key_id))
+        """, (datetime.now(UTC), key_id))
         
         conn.commit()
         conn.close()
@@ -257,7 +259,9 @@ class APIKeyManager:
         expires_in_days = None
         if expires_at:
             expires_dt = datetime.fromisoformat(expires_at)
-            expires_in_days = (expires_dt - datetime.utcnow()).days
+            if expires_dt.tzinfo is None:
+                expires_dt = expires_dt.replace(tzinfo=UTC)
+            expires_in_days = (expires_dt - datetime.now(UTC)).days
         
         return self.generate_key(user_id, name, expires_in_days)
 

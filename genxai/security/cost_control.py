@@ -2,7 +2,7 @@
 
 import sqlite3
 from typing import Dict, Any, Optional
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, UTC
 from dataclasses import dataclass
 import os
 
@@ -106,7 +106,7 @@ class TokenUsageTracker:
             INSERT INTO token_usage 
             (user_id, provider, model, prompt_tokens, completion_tokens, cost, timestamp)
             VALUES (?, ?, ?, ?, ?, ?, ?)
-        """, (user_id, provider, model, prompt_tokens, completion_tokens, cost, datetime.utcnow()))
+        """, (user_id, provider, model, prompt_tokens, completion_tokens, cost, datetime.now(UTC)))
         
         conn.commit()
         conn.close()
@@ -126,7 +126,7 @@ class TokenUsageTracker:
             Usage statistics
         """
         # Calculate time range
-        now = datetime.utcnow()
+        now = datetime.now(UTC)
         if period == "day":
             start_time = now - timedelta(days=1)
         elif period == "week":
@@ -223,7 +223,7 @@ class BudgetManager:
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
         
-        now = datetime.utcnow()
+        now = datetime.now(UTC)
         
         cursor.execute("""
             INSERT OR REPLACE INTO budgets (user_id, amount, period, created_at, updated_at)
@@ -447,7 +447,7 @@ class CostAlertManager:
             # Check if we already sent alert recently (within 1 hour)
             if last_alert:
                 last_alert_time = datetime.fromisoformat(last_alert)
-                if datetime.utcnow() - last_alert_time < timedelta(hours=1):
+                if datetime.now(UTC) - last_alert_time < timedelta(hours=1):
                     conn.close()
                     return
             
@@ -462,7 +462,7 @@ class CostAlertManager:
             # Update last alert time
             cursor.execute("""
                 UPDATE cost_alerts SET last_alert = ? WHERE user_id = ?
-            """, (datetime.utcnow(), user_id))
+            """, (datetime.now(UTC), user_id))
             
             conn.commit()
         

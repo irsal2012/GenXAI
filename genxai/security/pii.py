@@ -3,7 +3,7 @@
 import re
 from typing import List, Dict, Any, Optional
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, UTC
 
 
 # PII patterns
@@ -254,7 +254,7 @@ class PIIAuditLogger:
             context: Additional context
         """
         log_entry = {
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "user_id": user_id,
             "pii_type": pii_type,
             "action": action,

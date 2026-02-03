@@ -1,6 +1,6 @@
 """Workflow API endpoints."""
 
-from datetime import datetime
+from datetime import datetime, UTC
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import FileResponse, StreamingResponse
 from typing import List, Dict, Any
@@ -200,7 +200,7 @@ async def execute_workflow(
     anthropic_api_key = getattr(request.state, 'anthropic_api_key', None)
 
     execution_id = f"exec_{uuid.uuid4().hex[:8]}"
-    started_at = datetime.utcnow().isoformat()
+    started_at = datetime.now(UTC).isoformat()
     
     # Parse workflow nodes and edges
     nodes = json_loads(workflow_data["nodes"], [])
@@ -275,7 +275,7 @@ async def execute_workflow(
             json_dumps(logs),
             json_dumps(execution_result),
             started_at,
-            datetime.utcnow().isoformat(),
+            datetime.now(UTC).isoformat(),
         ),
     )
 
@@ -288,7 +288,7 @@ async def execute_workflow(
         "node_events": execution_result.get("node_events", []),
         "node_results": execution_result.get("node_results", {}),
         "started_at": started_at,
-        "completed_at": datetime.utcnow().isoformat(),
+        "completed_at": datetime.now(UTC).isoformat(),
     }
 
 
@@ -321,7 +321,7 @@ async def execute_workflow_stream(
             node_models[node.get("id")] = model_override or config.get("llm_model", "gpt-4")
 
     execution_id = f"exec_{uuid.uuid4().hex[:8]}"
-    started_at = datetime.utcnow().isoformat()
+    started_at = datetime.now(UTC).isoformat()
 
     async def event_generator():
         queue: asyncio.Queue[Dict[str, Any]] = asyncio.Queue()
@@ -373,7 +373,7 @@ async def execute_workflow_stream(
                     "node_results": execution_result.get("node_results", {}),
                     "node_models": node_models,
                     "started_at": started_at,
-                    "completed_at": datetime.utcnow().isoformat(),
+                    "completed_at": datetime.now(UTC).isoformat(),
                 }
                 await queue.put({"type": "result", "payload": response_payload})
 
@@ -390,7 +390,7 @@ async def execute_workflow_stream(
                             json_dumps(logs),
                             json_dumps(execution_result),
                             started_at,
-                            datetime.utcnow().isoformat(),
+                            datetime.now(UTC).isoformat(),
                         ),
                     )
                 except Exception as exc:
@@ -525,7 +525,7 @@ async def list_templates() -> List[TemplateResponse]:
 async def create_template(template: TemplateCreate) -> TemplateResponse:
     """Create a new workflow template."""
     template_id = f"tpl_{uuid.uuid4().hex[:8]}"
-    timestamp = datetime.utcnow().isoformat()
+    timestamp = datetime.now(UTC).isoformat()
     template_data = template.dict()
     execute(
         """
@@ -563,7 +563,7 @@ async def update_template(template_id: str, template: TemplateCreate) -> Templat
         raise HTTPException(status_code=404, detail="Template not found")
 
     template_data = template.dict()
-    timestamp = datetime.utcnow().isoformat()
+    timestamp = datetime.now(UTC).isoformat()
     execute(
         """
         UPDATE workflow_templates

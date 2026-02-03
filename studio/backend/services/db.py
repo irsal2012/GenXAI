@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import sqlite3
 from contextlib import contextmanager
-from datetime import datetime
+from datetime import datetime, UTC
 from pathlib import Path
 from typing import Any, Dict, Iterable, Iterator, Optional
 
@@ -155,7 +155,7 @@ def _seed_default_templates(conn: sqlite3.Connection) -> None:
         if existing:
             continue
 
-        timestamp = datetime.utcnow().isoformat()
+        timestamp = datetime.now(UTC).isoformat()
         conn.execute(
             """
             INSERT INTO workflow_templates

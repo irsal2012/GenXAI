@@ -2,7 +2,7 @@
 
 import jwt
 import os
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, UTC
 from typing import Dict, Any, Optional
 from dataclasses import dataclass
 
@@ -50,7 +50,7 @@ class JWTManager:
         Returns:
             JWT token string
         """
-        now = datetime.utcnow()
+        now = datetime.now(UTC)
         exp = now + timedelta(seconds=expires_in)
         
         payload = {

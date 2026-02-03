@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, UTC
 from typing import Any, Dict, Optional
 import logging
 
@@ -52,7 +52,7 @@ class ScheduleTrigger(BaseTrigger):
             trigger = IntervalTrigger(seconds=self.interval_seconds)
 
         async def _emit_wrapper() -> None:
-            await self.emit(payload={"scheduled_at": datetime.utcnow().isoformat(), **self.payload})
+            await self.emit(payload={"scheduled_at": datetime.now(UTC).isoformat(), **self.payload})
 
         scheduler.add_job(_emit_wrapper, trigger=trigger)
         scheduler.start()
