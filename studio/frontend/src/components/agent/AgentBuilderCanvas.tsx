@@ -177,14 +177,32 @@ const AgentBuilderCanvas = ({ onAgentChange }: AgentBuilderCanvasProps) => {
                 className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               >
                 <optgroup label="OpenAI Models">
+                  <option value="gpt-5.2">GPT-5.2 (Latest)</option>
+                  <option value="gpt-5.2-codex">GPT-5.2 Codex</option>
+                  <option value="gpt-5.1-2025-11-13">GPT-5.1 (2025-11-13)</option>
+                  <option value="gpt-5.1">GPT-5.1</option>
+                  <option value="gpt-5.1-codex">GPT-5.1 Codex</option>
+                  <option value="gpt-5.1-chat-latest">GPT-5.1 Chat Latest</option>
+                  <option value="gpt-5-2025-08-07">GPT-5 (2025-08-07)</option>
+                  <option value="gpt-5-codex">GPT-5 Codex</option>
+                  <option value="gpt-5-mini-2025-08-07">GPT-5 Mini</option>
+                  <option value="gpt-5-nano-2025-08-07">GPT-5 Nano</option>
                   <option value="gpt-4">GPT-4</option>
                   <option value="gpt-4-turbo">GPT-4 Turbo</option>
                   <option value="gpt-4o">GPT-4o</option>
                   <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
                 </optgroup>
                 <optgroup label="Anthropic Models (Claude)">
-                  <option value="claude-3-5-sonnet-20241022">Claude 3.5 Sonnet (Latest)</option>
-                  <option value="claude-3-5-sonnet-20240620">Claude 3.5 Sonnet</option>
+                  <option value="claude-sonnet-4-5-20250929">Claude Sonnet 4.5 (Latest)</option>
+                  <option value="claude-sonnet-4-5-20250929:1m">Claude Sonnet 4.5 (1M context)</option>
+                  <option value="claude-haiku-4-5-20251001">Claude Haiku 4.5</option>
+                  <option value="claude-sonnet-4-20250514">Claude Sonnet 4</option>
+                  <option value="claude-sonnet-4-20250514:1m">Claude Sonnet 4 (1M context)</option>
+                  <option value="claude-opus-4-5-20251101">Claude Opus 4.5</option>
+                  <option value="claude-opus-4-1-20250805">Claude Opus 4.1</option>
+                  <option value="claude-opus-4-20250514">Claude Opus 4</option>
+                  <option value="claude-3-5-sonnet-20241022">Claude 3.5 Sonnet</option>
+                  <option value="claude-3-5-sonnet-20240620">Claude 3.5 Sonnet (June)</option>
                   <option value="claude-3-opus-20240229">Claude 3 Opus</option>
                   <option value="claude-3-sonnet-20240229">Claude 3 Sonnet</option>
                   <option value="claude-3-haiku-20240307">Claude 3 Haiku</option>

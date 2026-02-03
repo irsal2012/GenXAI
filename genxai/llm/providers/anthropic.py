@@ -13,10 +13,20 @@ class AnthropicProvider(LLMProvider):
     """Anthropic Claude LLM provider."""
 
     _MODEL_ALIASES = {
+        # Claude 4.5 models
+        "claude-sonnet-4-5": "claude-sonnet-4-5-20250929",
+        "claude-haiku-4-5": "claude-haiku-4-5-20251001",
+        "claude-opus-4-5": "claude-opus-4-5-20251101",
+        # Claude 4 models
+        "claude-sonnet-4": "claude-sonnet-4-20250514",
+        "claude-opus-4": "claude-opus-4-20250514",
+        "claude-opus-4-1": "claude-opus-4-1-20250805",
+        # Claude 3.5 models
+        "claude-3-5-sonnet": "claude-3-5-sonnet-20241022",
+        # Claude 3 models
         "claude-3-opus": "claude-3-opus-20240229",
         "claude-3-sonnet": "claude-3-sonnet-20240229",
         "claude-3-haiku": "claude-3-haiku-20240307",
-        "claude-3-5-sonnet": "claude-3-5-sonnet-20241022",
     }
 
     def __init__(
@@ -327,14 +337,27 @@ class AnthropicProvider(LLMProvider):
     @staticmethod
     def _fallback_model(model: str) -> Optional[str]:
         model_lower = model.lower()
+        # Claude 4.5 fallbacks
+        if model_lower.startswith("claude-sonnet-4-5") or model_lower.startswith("claude-opus-4-5"):
+            return "claude-sonnet-4-20250514"
+        if model_lower.startswith("claude-haiku-4-5"):
+            return "claude-haiku-4-5-20251001"
+        # Claude 4 fallbacks
+        if model_lower.startswith("claude-opus-4"):
+            return "claude-sonnet-4-20250514"
+        if model_lower.startswith("claude-sonnet-4"):
+            return "claude-3-5-sonnet-20241022"
+        # Claude 3.5 fallbacks
         if model_lower.startswith("claude-3-5"):
             return "claude-3-sonnet-20240229"
+        # Claude 3 fallbacks
         if model_lower.startswith("claude-3-opus"):
             return "claude-3-sonnet-20240229"
         if model_lower.startswith("claude-3-sonnet"):
             return "claude-3-haiku-20240307"
         if model_lower.startswith("claude-3-haiku"):
             return "claude-3-haiku-20240307"
+        # Generic Claude fallback
         if model_lower.startswith("claude"):
             return "claude-3-haiku-20240307"
         return None
