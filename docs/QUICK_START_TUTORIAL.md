@@ -195,7 +195,43 @@ python multi_agent_workflow.py
 
 ---
 
-## 🧠 Example 4: Agent with Memory
+## 🔁 Example 4: Flow Orchestrators
+
+Use the flow wrappers for common coordination patterns:
+
+```python
+import asyncio
+from genxai import AgentFactory, RoundRobinFlow, SelectorFlow, P2PFlow
+
+def choose_next(state, agent_ids):
+    return agent_ids[state.get("selector_hop", 0) % len(agent_ids)]
+
+async def main():
+    agents = [
+        AgentFactory.create_agent(id="analyst", role="Analyst", goal="Analyze"),
+        AgentFactory.create_agent(id="writer", role="Writer", goal="Write"),
+    ]
+
+    round_robin = RoundRobinFlow(agents)
+    selector = SelectorFlow(agents, selector=choose_next, max_hops=3)
+    p2p = P2PFlow(agents, max_rounds=3, consensus_threshold=0.7)
+
+    await round_robin.run({"topic": "AI adoption"})
+    await selector.run({"goal": "Ship v1"})
+    await p2p.run({"topic": "Decentralized coordination"})
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+See runnable examples in:
+- `examples/code/flow_round_robin_example.py`
+- `examples/code/flow_selector_example.py`
+- `examples/code/flow_p2p_example.py`
+
+---
+
+## 🧠 Example 5: Agent with Memory
 
 Create a file `agent_with_memory.py`:
 
@@ -255,7 +291,7 @@ python agent_with_memory.py
 
 ---
 
-## 📊 Example 5: Check Available Tools
+## 📊 Example 6: Check Available Tools
 
 Create a file `list_tools.py`:
 
@@ -284,7 +320,7 @@ python list_tools.py
 
 ---
 
-## ⏰ Example 6: Trigger a Workflow
+## ⏰ Example 7: Trigger a Workflow
 
 ```python
 import asyncio
@@ -304,7 +340,7 @@ await trigger.start()
 
 ---
 
-## 🔌 Example 7: Connector Event Handler
+## 🔌 Example 8: Connector Event Handler
 
 ```python
 from genxai.connectors import WebhookConnector

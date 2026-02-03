@@ -162,6 +162,97 @@ engine.add_edge(Edge(source="agent", target="output"))
 result = await engine.execute(start_node="input", input_data={"task": "..."})
 ```
 
+### Flow Orchestrators
+
+Flow orchestrators provide lightweight wrappers for common coordination
+patterns without introducing a new execution engine.
+
+```python
+from genxai import AgentFactory, RoundRobinFlow, SelectorFlow, P2PFlow
+
+agents = [
+    AgentFactory.create_agent(id="analyst", role="Analyst", goal="Analyze"),
+    AgentFactory.create_agent(id="writer", role="Writer", goal="Write"),
+]
+
+round_robin = RoundRobinFlow(agents)
+
+def choose_next(state, agent_ids):
+    return agent_ids[state.get("selector_hop", 0) % len(agent_ids)]
+
+selector = SelectorFlow(agents, selector=choose_next, max_hops=3)
+
+p2p = P2PFlow(agents, max_rounds=4, consensus_threshold=0.7)
+```
+
+See [docs/FLOWS.md](./FLOWS.md) for details.
+
+#### FlowOrchestrator (base)
+
+```python
+FlowOrchestrator(
+    agents: Iterable[Agent],
+    name: str = "flow",
+    llm_provider: Optional[LLMProvider] = None,
+)
+```
+
+**Key Methods**
+- `build_graph() -> Graph`: build the graph definition for the flow.
+- `run(input_data, state=None, max_iterations=100) -> Dict[str, Any]`: execute the flow.
+
+#### RoundRobinFlow
+
+```python
+RoundRobinFlow(
+    agents: Iterable[Agent],
+    name: str = "flow",
+    llm_provider: Optional[LLMProvider] = None,
+)
+```
+
+**Behavior**
+- Executes agents in fixed order (A → B → C).
+- Uses the core graph engine for execution.
+
+#### SelectorFlow
+
+```python
+SelectorFlow(
+    agents: Iterable[Agent],
+    selector: Callable[[Dict[str, Any], List[str]], str],
+    name: str = "selector_flow",
+    llm_provider: Optional[LLMProvider] = None,
+    max_hops: int = 1,
+)
+```
+
+**Parameters**
+- `selector`: function that returns the next agent ID.
+- `max_hops`: max number of selections to execute.
+
+**Behavior**
+- Executes the selected agent each hop using the graph engine.
+
+#### P2PFlow
+
+```python
+P2PFlow(
+    agents: Iterable[Agent],
+    name: str = "p2p_flow",
+    llm_provider: Optional[LLMProvider] = None,
+    max_rounds: int = 5,
+    timeout_seconds: float = 300,
+    consensus_threshold: float = 0.6,
+    convergence_window: int = 3,
+    quality_threshold: float = 0.85,
+)
+```
+
+**Behavior**
+- Executes agents directly (peer-style) with consensus, convergence, timeout,
+  and quality thresholds for termination.
+
 ---
 
 ## Triggers

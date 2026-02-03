@@ -21,6 +21,7 @@ Complete guide to GenXAI framework documentation.
 | [ARCHITECTURE](../ARCHITECTURE.md) | System architecture and design principles |
 | [WORKFLOW_BEST_PRACTICES](./WORKFLOW_BEST_PRACTICES.md) | Best practices for workflow design |
 | [AGENT_TOOL_INTEGRATION](./AGENT_TOOL_INTEGRATION.md) | Agent and tool integration guide |
+| [FLOWS](./FLOWS.md) | Flow orchestrators for common coordination patterns |
 
 ---
 

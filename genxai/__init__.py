@@ -27,6 +27,12 @@ from genxai.core.graph import (
     WorkflowExecutor,
     execute_workflow_sync,
 )
+from genxai.flows import (
+    FlowOrchestrator,
+    RoundRobinFlow,
+    SelectorFlow,
+    P2PFlow,
+)
 from genxai.core.memory.manager import MemorySystem
 from genxai.tools import (
     DynamicTool,
@@ -71,6 +77,10 @@ __all__ = [
     "ToolResult",
     "DynamicTool",
     "MemorySystem",
+    "FlowOrchestrator",
+    "RoundRobinFlow",
+    "SelectorFlow",
+    "P2PFlow",
     "BaseTrigger",
     "TriggerEvent",
     "TriggerRegistry",

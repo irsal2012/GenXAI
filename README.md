@@ -205,6 +205,38 @@ graph.add_edge(Edge(source="support", target="end"))
 result = await graph.run(input_data="My app crashed")
 ```
 
+### Flow Orchestrator Examples
+
+GenXAI also ships with lightweight flow orchestrators for common patterns:
+
+```python
+from genxai import AgentFactory, RoundRobinFlow, SelectorFlow, P2PFlow
+
+agents = [
+    AgentFactory.create_agent(id="analyst", role="Analyst", goal="Analyze"),
+    AgentFactory.create_agent(id="writer", role="Writer", goal="Write"),
+]
+
+# Round-robin flow
+round_robin = RoundRobinFlow(agents)
+
+# Selector flow
+def choose_next(state, agent_ids):
+    return agent_ids[state.get("selector_hop", 0) % len(agent_ids)]
+
+selector = SelectorFlow(agents, selector=choose_next, max_hops=3)
+
+# P2P flow
+p2p = P2PFlow(agents, max_rounds=4, consensus_threshold=0.7)
+```
+
+See runnable examples in:
+- `examples/code/flow_round_robin_example.py`
+- `examples/code/flow_selector_example.py`
+- `examples/code/flow_p2p_example.py`
+
+Full flow documentation: [docs/FLOWS.md](./docs/FLOWS.md)
+
 ### Trigger SDK Quick Start
 
 ```python
