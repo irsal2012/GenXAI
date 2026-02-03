@@ -58,6 +58,7 @@ const CanvasEditor = ({
   const [commandOpen, setCommandOpen] = useState(false)
   const [contextMenu, setContextMenu] = useState({ x: 0, y: 0, open: false })
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [showExecutionOverlay, setShowExecutionOverlay] = useState(true)
   const reactFlowRef = useRef<
     {
       screenToFlowPosition: (point: { x: number; y: number }) => { x: number; y: number }
@@ -135,11 +136,12 @@ const CanvasEditor = ({
           reactFlowRef.current = instance
         }}
       />
-      {nodeStatuses && (
+      {nodeStatuses && showExecutionOverlay && (
         <ExecutionOverlay
           nodeStatuses={nodeStatuses}
           lastEvent={lastEvent}
           nodes={nodes}
+          onClose={() => setShowExecutionOverlay(false)}
         />
       )}
       {showValidation && !validation.valid && (

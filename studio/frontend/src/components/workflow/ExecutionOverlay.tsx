@@ -1,3 +1,4 @@
+import { XMarkIcon } from '@heroicons/react/24/outline'
 import type { ReactFlowNode } from '../../utils/workflowConverter'
 
 interface ExecutionOverlayProps {
@@ -8,9 +9,10 @@ interface ExecutionOverlayProps {
     timestamp: number
   }
   nodes: ReactFlowNode[]
+  onClose?: () => void
 }
 
-const ExecutionOverlay = ({ nodeStatuses, lastEvent, nodes }: ExecutionOverlayProps) => {
+const ExecutionOverlay = ({ nodeStatuses, lastEvent, nodes, onClose }: ExecutionOverlayProps) => {
   const totalNodes = nodes.length
   const completedNodes = Object.values(nodeStatuses).filter((status) => status === 'completed').length
   const progress = totalNodes > 0 ? Math.round((completedNodes / totalNodes) * 100) : 0
@@ -19,9 +21,20 @@ const ExecutionOverlay = ({ nodeStatuses, lastEvent, nodes }: ExecutionOverlayPr
     <div className="absolute right-6 top-6 z-30 w-72 rounded-2xl border border-white/40 bg-white/90 p-4 text-xs text-slate-600 shadow-xl backdrop-blur">
       <div className="flex items-center justify-between">
         <div className="text-sm font-semibold text-slate-800">Execution Status</div>
-        <span className="rounded-full bg-slate-100 px-2 py-1 text-[10px] font-semibold text-slate-500">
-          {progress}%
-        </span>
+        <div className="flex items-center gap-2">
+          <span className="rounded-full bg-slate-100 px-2 py-1 text-[10px] font-semibold text-slate-500">
+            {progress}%
+          </span>
+          {onClose && (
+            <button
+              onClick={onClose}
+              className="rounded-lg p-1 hover:bg-slate-200 transition-colors"
+              title="Close execution status"
+            >
+              <XMarkIcon className="h-4 w-4 text-slate-600" />
+            </button>
+          )}
+        </div>
       </div>
       <div className="mt-3 h-2 w-full rounded-full bg-slate-100">
         <div
