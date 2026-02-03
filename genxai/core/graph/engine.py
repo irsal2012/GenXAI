@@ -1,7 +1,7 @@
 """Graph execution engine for orchestrating agent workflows."""
 
 import asyncio
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Callable, Dict, List, Optional, Set
 from collections import defaultdict, deque
 import logging
 import time
@@ -212,6 +212,7 @@ class Graph:
         state: Optional[Dict[str, Any]] = None,
         resume_from: Optional[WorkflowCheckpoint] = None,
         llm_provider: Any = None,
+        event_callback: Optional[Callable[[Dict[str, Any]], Any]] = None,
     ) -> Dict[str, Any]:
         """Execute the graph workflow.
 
@@ -275,7 +276,7 @@ class Graph:
         try:
             with span("genxai.workflow.execute", {"workflow_id": self.name}):
                 for entry_point in entry_points:
-                    await self._execute_node(entry_point, state, max_iterations)
+                    await self._execute_node(entry_point, state, max_iterations, event_callback)
         except Exception as exc:
             status = "error"
             record_exception(exc)
@@ -309,7 +310,11 @@ class Graph:
         return manager.load(name)
 
     async def _execute_node(
-        self, node_id: str, state: Dict[str, Any], max_iterations: int
+        self,
+        node_id: str,
+        state: Dict[str, Any],
+        max_iterations: int,
+        event_callback: Optional[Callable[[Dict[str, Any]], Any]] = None,
     ) -> None:
         """Execute a single node and its descendants.
 
@@ -336,13 +341,16 @@ class Graph:
         node.status = NodeStatus.RUNNING
         logger.debug(f"Executing node: {node_id}")
         node_start = time.time()
-        state.setdefault("node_events", []).append(
-            {
-                "node_id": node_id,
-                "status": NodeStatus.RUNNING.value,
-                "timestamp": time.time(),
-            }
-        )
+        running_event = {
+            "node_id": node_id,
+            "status": NodeStatus.RUNNING.value,
+            "timestamp": time.time(),
+        }
+        state.setdefault("node_events", []).append(running_event)
+        if event_callback:
+            callback_result = event_callback(running_event)
+            if asyncio.iscoroutine(callback_result):
+                await callback_result
 
         try:
             # Execute node (placeholder - will be implemented with actual executors)
@@ -362,14 +370,17 @@ class Graph:
                 node_id=node_id,
                 status="success",
             )
-            state.setdefault("node_events", []).append(
-                {
-                    "node_id": node_id,
-                    "status": NodeStatus.COMPLETED.value,
-                    "timestamp": time.time(),
-                    "duration_ms": node_duration_ms,
-                }
-            )
+            completed_event = {
+                "node_id": node_id,
+                "status": NodeStatus.COMPLETED.value,
+                "timestamp": time.time(),
+                "duration_ms": node_duration_ms,
+            }
+            state.setdefault("node_events", []).append(completed_event)
+            if event_callback:
+                callback_result = event_callback(completed_event)
+                if asyncio.iscoroutine(callback_result):
+                    await callback_result
 
             state.setdefault("node_results", {})[node_id] = {
                 "output": result,
@@ -392,14 +403,14 @@ class Graph:
                 tasks = []
                 for edge in parallel_edges:
                     if edge.evaluate_condition(state):
-                        tasks.append(self._execute_node(edge.target, state, max_iterations))
+                        tasks.append(self._execute_node(edge.target, state, max_iterations, event_callback))
                 if tasks:
                     await asyncio.gather(*tasks)
 
             # Execute sequential edges in order
             for edge in sorted(sequential_edges, key=lambda e: e.priority):
                 if edge.evaluate_condition(state):
-                    await self._execute_node(edge.target, state, max_iterations)
+                    await self._execute_node(edge.target, state, max_iterations, event_callback)
 
         except Exception as e:
             node.status = NodeStatus.FAILED
@@ -411,15 +422,18 @@ class Graph:
                 node_id=node_id,
                 status="error",
             )
-            state.setdefault("node_events", []).append(
-                {
-                    "node_id": node_id,
-                    "status": NodeStatus.FAILED.value,
-                    "timestamp": time.time(),
-                    "error": str(e),
-                    "duration_ms": node_duration_ms,
-                }
-            )
+            failed_event = {
+                "node_id": node_id,
+                "status": NodeStatus.FAILED.value,
+                "timestamp": time.time(),
+                "error": str(e),
+                "duration_ms": node_duration_ms,
+            }
+            state.setdefault("node_events", []).append(failed_event)
+            if event_callback:
+                callback_result = event_callback(failed_event)
+                if asyncio.iscoroutine(callback_result):
+                    await callback_result
             state.setdefault("node_results", {})[node_id] = {
                 "output": None,
                 "status": NodeStatus.FAILED.value,

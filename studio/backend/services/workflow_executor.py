@@ -4,7 +4,7 @@ This module provides a thin wrapper around the core GenXAI workflow executor
 for Studio-specific concerns like database integration and API key handling.
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional
 
 # Import from core library
 from genxai.core.graph.executor import execute_workflow_async
@@ -17,6 +17,7 @@ async def execute_studio_workflow(
     openai_api_key: Optional[str] = None,
     anthropic_api_key: Optional[str] = None,
     model_override: Optional[str] = None,
+    event_callback: Optional[Callable[[Dict[str, Any]], Any]] = None,
 ) -> Dict[str, Any]:
     """Execute a workflow using the core GenXAI executor.
     
@@ -40,4 +41,5 @@ async def execute_studio_workflow(
         openai_api_key=openai_api_key,
         anthropic_api_key=anthropic_api_key,
         model_override=model_override,
+        event_callback=event_callback,
     )

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { useDownloadWorkflowCode, useExecuteWorkflow, useExportWorkflowCode, useUpdateWorkflow, useWorkflow } from '../services/workflows'
+import { createWorkflowExecutionStream, useDownloadWorkflowCode, useExportWorkflowCode, useUpdateWorkflow, useWorkflow } from '../services/workflows'
 import { useBuilderStore } from '../store/builderStore'
 import ErrorState from '../components/ErrorState'
 import LoadingState from '../components/LoadingState'
@@ -18,7 +18,6 @@ const WorkflowBuilderPage = () => {
   const { workflowId } = useParams<{ workflowId: string }>()
   const workflowQuery = useWorkflow(workflowId)
   const updateWorkflow = useUpdateWorkflow(workflowId ?? '')
-  const executeWorkflow = useExecuteWorkflow(workflowId ?? '')
   const exportWorkflow = useExportWorkflowCode()
   const downloadWorkflow = useDownloadWorkflowCode()
   const { draftNodes, draftEdges, draftMetadata, resetDrafts, setDraftNodes } = useBuilderStore()
@@ -132,6 +131,7 @@ const WorkflowBuilderPage = () => {
   const [lastEvent, setLastEvent] = useState<{ node_id: string; status: string; timestamp: number } | undefined>()
   const [executionResult, setExecutionResult] = useState<ExecutionResult | undefined>()
   const [runModelOverride, setRunModelOverride] = useState('')
+  const [isStreaming, setIsStreaming] = useState(false)
 
   useEffect(() => {
     if (workflowId) {
@@ -146,52 +146,50 @@ const WorkflowBuilderPage = () => {
     nodeIds.forEach((nodeId) => {
       statuses[nodeId] = 'pending'
     })
-
-    const incomingCounts = new Map<string, number>()
-    visualWorkflow.edges.forEach((edge) => {
-      incomingCounts.set(edge.target, (incomingCounts.get(edge.target) || 0) + 1)
-    })
-    const entryNodes = nodeIds.filter((nodeId) => (incomingCounts.get(nodeId) || 0) === 0)
-    const startNodeIds = visualWorkflow.nodes.filter((node) => node.type === 'start').map((node) => node.id)
-    const edgesBySource = new Map<string, string[]>()
-    visualWorkflow.edges.forEach((edge) => {
-      const list = edgesBySource.get(edge.source) || []
-      list.push(edge.target)
-      edgesBySource.set(edge.source, list)
-    })
-    const potentialTargets = entryNodes.flatMap((nodeId) => edgesBySource.get(nodeId) || [])
-    const agentTargets = potentialTargets.filter((targetId) => {
-      return visualWorkflow.nodes.find((node) => node.id === targetId)?.type === 'agent'
-    })
-    const nodesToRun = agentTargets.length > 0 ? agentTargets : entryNodes.filter((id) => !startNodeIds.includes(id))
-    nodesToRun.forEach((nodeId) => {
-      statuses[nodeId] = 'running'
-    })
-
     setNodeStatuses(statuses)
-    if (nodesToRun.length > 0) {
-      setLastEvent({ node_id: nodesToRun[0], status: 'running', timestamp: Date.now() })
-    } else {
-      setLastEvent(undefined)
-    }
+    setLastEvent(undefined)
     setExecutionResult(undefined)
+    setIsStreaming(true)
 
-    const result = await executeWorkflow.mutateAsync({
-      input: 'demo payload',
-      model_override: runModelOverride || undefined,
-    })
-    setExecutionResult(result)
-    if (result?.node_events) {
-      const nextStatuses: Record<string, 'running' | 'completed' | 'failed' | 'pending'> = {}
-      result.node_events.forEach((event) => {
-        if (event.status === 'running' || event.status === 'completed' || event.status === 'failed') {
-          nextStatuses[event.node_id] = event.status
+    const stream = createWorkflowExecutionStream(
+      workflowId,
+      {
+        input: 'demo payload',
+        model_override: runModelOverride || undefined,
+      },
+      (message) => {
+        if (message.type === 'node_event') {
+          const event = message.payload as { node_id: string; status: string; timestamp: number }
+          if (event.status !== 'running' && event.status !== 'completed' && event.status !== 'failed') {
+            return
+          }
+          setNodeStatuses((prev) => ({
+            ...prev,
+            [event.node_id]: event.status as 'running' | 'completed' | 'failed',
+          }))
           setLastEvent({ node_id: event.node_id, status: event.status, timestamp: event.timestamp })
         }
-      })
-      setNodeStatuses({ ...statuses, ...nextStatuses })
-    }
-  }, [workflowId, executeWorkflow, runModelOverride, visualWorkflow.nodes, visualWorkflow.edges])
+
+        if (message.type === 'result') {
+          setExecutionResult(message.payload as ExecutionResult)
+        }
+
+        if (message.type === 'error') {
+          setIsStreaming(false)
+          stream.close()
+        }
+
+        if (message.type === 'done') {
+          setIsStreaming(false)
+          stream.close()
+        }
+      },
+      () => {
+        setIsStreaming(false)
+        stream.close()
+      }
+    )
+  }, [workflowId, runModelOverride, visualWorkflow.nodes, visualWorkflow.edges])
 
   const nodeLabels = useMemo(() => {
     const labels: Record<string, string> = {}
@@ -247,7 +245,7 @@ const WorkflowBuilderPage = () => {
         onSave={handleSave}
         onExport={handleDownloadCode}
         onRun={handleExecute}
-        isRunning={executeWorkflow.isPending}
+        isRunning={isStreaming}
         modelOverride={runModelOverride}
         onModelOverrideChange={(value) => {
           setRunModelOverride(value)

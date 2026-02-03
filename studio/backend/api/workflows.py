@@ -2,9 +2,10 @@
 
 from datetime import datetime
 from fastapi import APIRouter, HTTPException, Request
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, StreamingResponse
 from typing import List, Dict, Any
 from pydantic import BaseModel
+import asyncio
 import uuid
 
 try:
@@ -282,6 +283,123 @@ async def execute_workflow(
         "started_at": started_at,
         "completed_at": datetime.utcnow().isoformat(),
     }
+
+
+@router.get("/{workflow_id}/execute-stream")
+async def execute_workflow_stream(
+    workflow_id: str,
+    request: Request,
+) -> StreamingResponse:
+    """Execute a workflow and stream node events over SSE."""
+    workflow_data = fetch_one("SELECT * FROM workflows WHERE id = ?", (workflow_id,))
+    if not workflow_data:
+        raise HTTPException(status_code=404, detail="Workflow not found")
+
+    openai_api_key = request.query_params.get('openai_api_key') or getattr(request.state, 'openai_api_key', None)
+    anthropic_api_key = request.query_params.get('anthropic_api_key') or getattr(request.state, 'anthropic_api_key', None)
+
+    nodes = json_loads(workflow_data["nodes"], [])
+    edges = json_loads(workflow_data["edges"], [])
+
+    input_param = request.query_params.get("input")
+    execution_input: Any = {}
+    if input_param:
+        execution_input = json_loads(input_param, input_param)
+
+    model_override = request.query_params.get("model_override") or None
+    node_models = {}
+    for node in nodes:
+        if node.get("type") == "agent":
+            config = node.get("config", {})
+            node_models[node.get("id")] = model_override or config.get("llm_model", "gpt-4")
+
+    execution_id = f"exec_{uuid.uuid4().hex[:8]}"
+    started_at = datetime.utcnow().isoformat()
+
+    async def event_generator():
+        queue: asyncio.Queue[Dict[str, Any]] = asyncio.Queue()
+
+        async def handle_event(event: Dict[str, Any]) -> None:
+            await queue.put({"type": "node_event", "payload": event})
+
+        async def run_execution():
+            try:
+                try:
+                    from services.workflow_executor import execute_studio_workflow
+                except ModuleNotFoundError:
+                    from studio.backend.services.workflow_executor import execute_studio_workflow
+
+                execution_result = await execute_studio_workflow(
+                    nodes=nodes,
+                    edges=edges,
+                    input_data=execution_input,
+                    openai_api_key=openai_api_key,
+                    anthropic_api_key=anthropic_api_key,
+                    model_override=model_override,
+                    event_callback=handle_event,
+                )
+                execution_result["node_models"] = node_models
+                execution_result.setdefault(
+                    "node_events",
+                    execution_result.get("result", {}).get("node_events", []),
+                )
+                execution_result.setdefault(
+                    "node_results",
+                    execution_result.get("result", {}).get("node_results", {}),
+                )
+                status = execution_result.get("status", "completed")
+                logs = [execution_result.get("message", "Execution completed")]
+                if status == "error":
+                    logs.append(f"Error: {execution_result.get('error', 'Unknown error')}")
+
+                response_payload = {
+                    "id": execution_id,
+                    "workflow_id": workflow_id,
+                    "status": status,
+                    "logs": logs,
+                    "result": execution_result,
+                    "node_events": execution_result.get("node_events", []),
+                    "node_results": execution_result.get("node_results", {}),
+                    "node_models": node_models,
+                    "started_at": started_at,
+                    "completed_at": datetime.utcnow().isoformat(),
+                }
+                await queue.put({"type": "result", "payload": response_payload})
+
+                try:
+                    execute(
+                        """
+                        INSERT INTO executions (id, workflow_id, status, logs, result, started_at, completed_at)
+                        VALUES (?, ?, ?, ?, ?, ?, ?)
+                        """,
+                        (
+                            execution_id,
+                            workflow_id,
+                            status,
+                            json_dumps(logs),
+                            json_dumps(execution_result),
+                            started_at,
+                            datetime.utcnow().isoformat(),
+                        ),
+                    )
+                except Exception as exc:
+                    await queue.put({"type": "error", "payload": {"message": str(exc)}})
+            except Exception as exc:
+                await queue.put({"type": "error", "payload": {"message": str(exc)}})
+            finally:
+                await queue.put({"type": "done", "payload": {}})
+
+        execution_task = asyncio.create_task(run_execution())
+        try:
+            while True:
+                event = await queue.get()
+                yield f"data: {json_dumps(event)}\n\n"
+                if event.get("type") == "done":
+                    break
+        finally:
+            execution_task.cancel()
+
+    return StreamingResponse(event_generator(), media_type="text/event-stream")
 
 
 @router.post("/{workflow_id}/export-code")

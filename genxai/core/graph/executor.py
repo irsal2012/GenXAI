@@ -2,7 +2,7 @@
 
 import asyncio
 import copy
-from typing import Any, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional
 import logging
 from pathlib import Path
 
@@ -366,6 +366,7 @@ class WorkflowExecutor:
         checkpoint_dir: Optional[str] = None,
         resume_from: Optional[str] = None,
         model_override: Optional[str] = None,
+        event_callback: Optional[Callable[[Dict[str, Any]], Any]] = None,
     ) -> Dict[str, Any]:
         """Execute a workflow.
 
@@ -416,7 +417,11 @@ class WorkflowExecutor:
                         status="allowed",
                     )
                 )
-            result = await graph.run(input_data=input_data, resume_from=checkpoint)
+            result = await graph.run(
+                input_data=input_data,
+                resume_from=checkpoint,
+                event_callback=event_callback,
+            )
 
             logger.info("Workflow execution completed successfully")
 
@@ -551,6 +556,7 @@ async def execute_workflow_async(
     openai_api_key: Optional[str] = None,
     anthropic_api_key: Optional[str] = None,
     model_override: Optional[str] = None,
+    event_callback: Optional[Callable[[Dict[str, Any]], Any]] = None,
 ) -> Dict[str, Any]:
     """Async convenience function for workflow execution.
 
@@ -571,4 +577,11 @@ async def execute_workflow_async(
         openai_api_key=openai_api_key,
         anthropic_api_key=anthropic_api_key,
     )
-    return await executor.execute(nodes, edges, input_data, model_override=model_override)
+    return await executor.execute(
+        nodes,
+        edges,
+        input_data,
+        model_override=model_override,
+        event_callback=event_callback,
+    )
+    

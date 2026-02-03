@@ -73,6 +73,43 @@ export const useExecuteWorkflow = (workflowId: string) => {
   })
 }
 
+export const createWorkflowExecutionStream = (
+  workflowId: string,
+  payload: WorkflowExecuteInput,
+  onMessage: (event: { type: string; payload: any }) => void,
+  onError?: (error: Event) => void,
+) => {
+  const params = new URLSearchParams()
+  const inputValue = typeof payload.input === 'string' ? payload.input : JSON.stringify(payload.input)
+  params.set('input', inputValue)
+  if (payload.model_override) {
+    params.set('model_override', payload.model_override)
+  }
+  const openaiKey = localStorage.getItem('genxai_openai_api_key')
+  const anthropicKey = localStorage.getItem('genxai_anthropic_api_key')
+  if (openaiKey) {
+    params.set('openai_api_key', openaiKey)
+  }
+  if (anthropicKey) {
+    params.set('anthropic_api_key', anthropicKey)
+  }
+
+  const source = new EventSource(`/api/workflows/${workflowId}/execute-stream?${params.toString()}`)
+  source.onmessage = (event) => {
+    try {
+      const data = JSON.parse(event.data)
+      onMessage(data)
+    } catch (err) {
+      console.error('Failed to parse workflow stream message', err)
+    }
+  }
+  source.onerror = (event) => {
+    onError?.(event)
+  }
+
+  return source
+}
+
 export const useExportWorkflowCode = () => {
   return useMutation({
     mutationFn: async (workflowId: string) => {
