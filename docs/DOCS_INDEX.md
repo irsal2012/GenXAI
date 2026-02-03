@@ -73,7 +73,7 @@ Complete guide to GenXAI framework documentation.
 |----------|-------------|
 | [RELEASE_CHECKLIST](./RELEASE_CHECKLIST.md) | Pre-release checklist |
 | [PUBLISHING](./PUBLISHING.md) | PyPI publishing guide |
-| [LAUNCH_PLAN](./LAUNCH_PLAN.md) | 4-week go-to-market plan |
+| [LAUNCH_PLAN](../LAUNCH_PLAN.md) | 4-week go-to-market plan |
 
 ---
 
@@ -82,7 +82,7 @@ Complete guide to GenXAI framework documentation.
 | Document | Description |
 |----------|-------------|
 | [COMPETITIVE_MATRIX](./COMPETITIVE_MATRIX.md) | Comparison vs CrewAI, AutoGen, BeeAI, LangGraph |
-| [ENTERPRISE_ROADMAP_BACKLOG](./ENTERPRISE_ROADMAP_BACKLOG.md) | Enterprise feature backlog |
+| [ENTERPRISE_ROADMAP_BACKLOG](../ENTERPRISE_ROADMAP_BACKLOG.md) | Enterprise feature backlog |
 
 ---
 
@@ -162,7 +162,7 @@ Complete guide to GenXAI framework documentation.
 - ✅ CLI_USAGE.md
 - ✅ BENCHMARKING.md
 - ✅ GOVERNANCE_POLICY.md
-- ✅ LAUNCH_PLAN.md
+- 📋 LAUNCH_PLAN.md
 - ✅ RELEASE_CHECKLIST.md
 - ✅ SECURITY_CHECKLIST.md
 - ✅ CONNECTOR_SDK.md
@@ -180,4 +180,4 @@ Complete guide to GenXAI framework documentation.
 
 ---
 
-**Last Updated**: February 1, 2026
+**Last Updated**: February 3, 2026

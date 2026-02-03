@@ -40,8 +40,8 @@ Thank you for your interest in contributing to GenXAI! This document provides gu
 
 ```bash
 # Clone the repository
-git clone https://github.com/genxai/genxai.git
-cd genxai
+git clone https://github.com/irsal2012/GenXAI.git
+cd GenXAI
 
 # Create virtual environment
 python3 -m venv venv

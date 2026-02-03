@@ -1,8 +1,8 @@
 # GenXAI - Advanced Agentic AI Framework
 
-**Version:** 1.0.0 (Design Phase)  
-**Status:** Planning & Architecture  
-**License:** MIT (Planned)
+**Version:** 1.0.0  
+**Status:** Active Development  
+**License:** MIT
 
 ---
 
@@ -74,7 +74,7 @@ Comprehensive documentation is available in the following files:
 
 - **[ARCHITECTURE.md](./ARCHITECTURE.md)** - Complete system architecture and design principles
 - **[REQUIREMENTS.md](./REQUIREMENTS.md)** - Detailed functional and non-functional requirements
-- **[IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md)** - 20-week development roadmap
+- **[IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md)** - Development roadmap
 - **[TOOLS_DESIGN.md](./TOOLS_DESIGN.md)** - Tool system architecture and 50+ built-in tools
 - **[MEMORY_DESIGN.md](./MEMORY_DESIGN.md)** - Multi-layered memory system design
 
@@ -148,7 +148,7 @@ See [ARCHITECTURE.md](./ARCHITECTURE.md) for complete details.
 - Beta testing
 - Official launch 🚀
 
-See [IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md) for detailed timeline.
+See [IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md) for the timeline.
 
 ---
 
@@ -414,10 +414,9 @@ See no-code templates (including a shared memory example) in:
 
 ## 🤝 Contributing
 
-We welcome contributions! This project is currently in the design phase. Once implementation begins, we'll provide:
+We welcome contributions! This project is in active development. We provide:
 
 - Contributing guidelines
-- Code of conduct
 - Development setup instructions
 - Issue templates
 - Pull request templates
@@ -426,7 +425,7 @@ We welcome contributions! This project is currently in the design phase. Once im
 
 ## 📜 License
 
-MIT License (Planned)
+MIT License
 
 ---
 
@@ -457,9 +456,9 @@ Inspired by:
 
 ## 📈 Project Status
 
-**Current Phase**: Design & Planning  
-**Next Milestone**: Begin Phase 1 implementation  
-**Expected Launch**: Week 20 (approximately 5 months from start)
+**Current Phase**: Active Development  
+**Next Milestone**: Complete visual editor + studio polish  
+**Expected Launch**: TBD
 
 ---
 
