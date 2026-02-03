@@ -32,8 +32,9 @@ def run_workflow(workflow_path: Path, input_payload: str) -> None:
 
     executor = WorkflowExecutor()
     input_data = json.loads(input_payload)
+    shared_memory = workflow.get("memory", {}).get("shared", False)
 
-    result = _run_executor(executor, nodes, edges, input_data)
+    result = _run_executor(executor, nodes, edges, input_data, shared_memory=shared_memory)
     click.echo(json.dumps(result, indent=2))
 
 
@@ -64,10 +65,16 @@ def _run_executor(
     nodes,
     edges,
     input_data,
+    shared_memory: bool = False,
 ):
     import asyncio
 
     async def _execute():
-        return await executor.execute(nodes=nodes, edges=edges, input_data=input_data)
+        return await executor.execute(
+            nodes=nodes,
+            edges=edges,
+            input_data=input_data,
+            shared_memory=shared_memory,
+        )
 
     return asyncio.run(_execute())

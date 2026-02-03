@@ -311,6 +311,16 @@ workflow:
         condition: "category == 'technical'"
 ```
 
+Shared memory template:
+
+```bash
+genxai workflow run examples/nocode/shared_memory_workflow.yaml \
+  --input '{"task": "Draft a short response"}'
+```
+
+See no-code templates (including a shared memory example) in:
+- `examples/nocode/README.md`
+
 ---
 
 ## 🛠️ Technology Stack

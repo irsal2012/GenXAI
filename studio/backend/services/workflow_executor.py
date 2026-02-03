@@ -18,6 +18,7 @@ async def execute_studio_workflow(
     anthropic_api_key: Optional[str] = None,
     model_override: Optional[str] = None,
     event_callback: Optional[Callable[[Dict[str, Any]], Any]] = None,
+    shared_memory: bool = False,
 ) -> Dict[str, Any]:
     """Execute a workflow using the core GenXAI executor.
     
@@ -42,4 +43,5 @@ async def execute_studio_workflow(
         anthropic_api_key=anthropic_api_key,
         model_override=model_override,
         event_callback=event_callback,
+        shared_memory=shared_memory,
     )

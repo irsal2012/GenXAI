@@ -17,6 +17,7 @@ from genxai.observability.tracing import span, add_event, record_exception
 from genxai.security.rbac import get_current_user, Permission
 from genxai.security.policy_engine import get_policy_engine
 from genxai.security.audit import get_audit_log, AuditEvent
+from genxai.core.memory.shared import SharedMemoryBus
 
 logger = logging.getLogger(__name__)
 
@@ -38,6 +39,7 @@ class AgentRuntime:
         openai_api_key: Optional[str] = None,
         anthropic_api_key: Optional[str] = None,
         enable_memory: bool = True,
+        shared_memory: Optional[SharedMemoryBus] = None,
     ) -> None:
         """Initialize agent runtime.
 
@@ -52,6 +54,7 @@ class AgentRuntime:
         self.agent = agent
         self._tools: Dict[str, Any] = {}
         self._memory: Optional[Any] = None
+        self._shared_memory = shared_memory
 
         # Initialize LLM provider
         if llm_provider:
@@ -198,7 +201,13 @@ class AgentRuntime:
             memory_context = await self.get_memory_context(limit=5)
         
         # Build prompt (without memory context, as it's handled in _get_llm_response)
-        prompt = self._build_prompt(task, context, "")
+        prompt_context = dict(context)
+        if self._shared_memory is not None:
+            prompt_context["shared_memory"] = {
+                key: self._shared_memory.get(key)
+                for key in self._shared_memory.list_keys()
+            }
+        prompt = self._build_prompt(task, prompt_context, "")
         
         # Get LLM response with retry logic and memory context
         if self.agent.config.tools and self._tools and self._provider_supports_tools():
@@ -220,6 +229,7 @@ class AgentRuntime:
         except Exception:
             safe_context = dict(context)
         safe_context.pop("llm_provider", None)
+        safe_context.pop("shared_memory", None)
         result = {
             "agent_id": self.agent.id,
             "task": task,

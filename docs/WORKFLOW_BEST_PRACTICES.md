@@ -337,6 +337,41 @@ engine = create_engine(
 
 ## Memory Management
 
+### Shared Memory (Workflow Level)
+
+You can enable a shared memory bus for all agents in a workflow. This lets agents
+read/write a shared state during execution. See the no-code example at
+`examples/nocode/shared_memory_workflow.yaml`.
+
+**Workflow YAML example:**
+
+```yaml
+workflow:
+  name: "Shared Memory Example"
+  memory:
+    shared: true
+  agents:
+    - id: "agent_one"
+      role: "Agent One"
+      goal: "Collaborate"
+  graph:
+    nodes:
+      - id: "start"
+        type: "input"
+      - id: "agent_one"
+        type: "agent"
+      - id: "end"
+        type: "output"
+    edges:
+      - from: "start"
+        to: "agent_one"
+      - from: "agent_one"
+        to: "end"
+```
+
+When enabled, the shared memory contents are injected into the agent prompt and
+can also be accessed in runtime context.
+
 ### 1. Choose Appropriate Memory Types
 
 Use the right memory type for each use case.

@@ -21,11 +21,21 @@ Reusable agent templates are available in `examples/nocode/agents/`. Each file d
 4. **User Proxy Workflow** (`user_proxy_workflow.yaml`)
    - Collect human input via a tool step before the assistant agent runs
 
+5. **Shared Memory Workflow** (`shared_memory_workflow.yaml`)
+   - Demonstrates shared memory enabled across agents
+
 ## How to Use
 
 ```bash
 genxai workflow run examples/nocode/customer_support.yaml \
   --input '{"message": "My billing failed"}'
+```
+
+Shared memory example:
+
+```bash
+genxai workflow run examples/nocode/shared_memory_workflow.yaml \
+  --input '{"task": "Draft a short response"}'
 ```
 
 > Note: CLI support may require the Studio API or workflow runner integration.

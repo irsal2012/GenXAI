@@ -7,6 +7,7 @@ import logging
 from pathlib import Path
 
 from genxai.core.graph.engine import Graph
+from genxai.core.memory.shared import SharedMemoryBus
 from genxai.core.graph.nodes import (
     InputNode,
     OutputNode,
@@ -110,9 +111,11 @@ class EnhancedGraph(Graph):
         # Pass both API keys to runtime so it can select the correct one based on model
         runtime = AgentRuntime(
             agent=agent,
+            llm_provider=getattr(self, "llm_provider", None),
             openai_api_key=getattr(self, "openai_api_key", None),
             anthropic_api_key=getattr(self, "anthropic_api_key", None),
-            enable_memory=True
+            enable_memory=True,
+            shared_memory=getattr(self, "shared_memory", None),
         )
         
         # Load tools from registry
@@ -126,7 +129,10 @@ class EnhancedGraph(Graph):
             logger.debug(f"Loaded {len(tools)} tools for agent")
         
         # Execute agent with full runtime support
-        result = await runtime.execute(task, context=state)
+        context = dict(state)
+        if getattr(self, "shared_memory", None) is not None:
+            context["shared_memory"] = getattr(self, "shared_memory")
+        result = await runtime.execute(task, context=context)
         
         return result
 
@@ -367,6 +373,8 @@ class WorkflowExecutor:
         resume_from: Optional[str] = None,
         model_override: Optional[str] = None,
         event_callback: Optional[Callable[[Dict[str, Any]], Any]] = None,
+        shared_memory: bool = False,
+        llm_provider: Optional[Any] = None,
     ) -> Dict[str, Any]:
         """Execute a workflow.
 
@@ -396,6 +404,11 @@ class WorkflowExecutor:
 
             # Build graph
             graph = self._build_graph(nodes, edges)
+            graph.llm_provider = llm_provider
+            if shared_memory:
+                graph.set_shared_memory(SharedMemoryBus())
+                graph.shared_memory = graph.shared_memory
+                graph.shared_memory_enabled = True
 
             # Validate graph
             graph.validate()
@@ -516,6 +529,7 @@ def execute_workflow_sync(
     openai_api_key: Optional[str] = None,
     anthropic_api_key: Optional[str] = None,
     model_override: Optional[str] = None,
+    shared_memory: bool = False,
 ) -> Dict[str, Any]:
     """Synchronous wrapper for workflow execution.
     
@@ -542,7 +556,13 @@ def execute_workflow_sync(
     asyncio.set_event_loop(loop)
     try:
         result = loop.run_until_complete(
-            executor.execute(nodes, edges, input_data, model_override=model_override)
+            executor.execute(
+                nodes,
+                edges,
+                input_data,
+                model_override=model_override,
+                shared_memory=shared_memory,
+            )
         )
         return result
     finally:
@@ -557,6 +577,7 @@ async def execute_workflow_async(
     anthropic_api_key: Optional[str] = None,
     model_override: Optional[str] = None,
     event_callback: Optional[Callable[[Dict[str, Any]], Any]] = None,
+    shared_memory: bool = False,
 ) -> Dict[str, Any]:
     """Async convenience function for workflow execution.
 
@@ -583,5 +604,6 @@ async def execute_workflow_async(
         input_data,
         model_override=model_override,
         event_callback=event_callback,
+        shared_memory=shared_memory,
     )
     

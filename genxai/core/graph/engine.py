@@ -13,6 +13,7 @@ from genxai.core.agent.registry import AgentRegistry
 from genxai.core.agent.runtime import AgentRuntime
 from genxai.tools.registry import ToolRegistry
 from genxai.core.graph.edges import Edge
+from genxai.core.memory.shared import SharedMemoryBus
 from genxai.core.graph.checkpoints import (
     WorkflowCheckpoint,
     WorkflowCheckpointManager,
@@ -47,6 +48,7 @@ class Graph:
         self.edges: List[Edge] = []
         self._adjacency_list: Dict[str, List[Edge]] = defaultdict(list)
         self._reverse_adjacency: Dict[str, List[str]] = defaultdict(list)
+        self.shared_memory: Optional[SharedMemoryBus] = None
 
     def add_node(self, node: Node) -> None:
         """Add a node to the graph.
@@ -81,6 +83,10 @@ class Graph:
         self._adjacency_list[edge.source].append(edge)
         self._reverse_adjacency[edge.target].append(edge.source)
         logger.debug(f"Added edge: {edge.source} -> {edge.target}")
+
+    def set_shared_memory(self, shared_memory: Optional[SharedMemoryBus]) -> None:
+        """Attach a shared memory bus to the graph for agent execution."""
+        self.shared_memory = shared_memory
 
     def get_node(self, node_id: str) -> Optional[Node]:
         """Get a node by ID.
@@ -498,7 +504,12 @@ class Graph:
         task = node.config.data.get("task") or state.get("task") or "Process input"
 
         llm_provider = state.get("llm_provider")
-        runtime = AgentRuntime(agent=agent, llm_provider=llm_provider, enable_memory=True)
+        runtime = AgentRuntime(
+            agent=agent,
+            llm_provider=llm_provider,
+            enable_memory=True,
+            shared_memory=self.shared_memory,
+        )
         if agent.config.tools:
             tools: Dict[str, Any] = {}
             for tool_name in agent.config.tools:
@@ -507,7 +518,10 @@ class Graph:
                     tools[tool_name] = tool
             runtime.set_tools(tools)
 
-        return await self._execute_with_config(runtime, task=task, context=state, state=state)
+        context = dict(state)
+        if self.shared_memory is not None:
+            context["shared_memory"] = self.shared_memory
+        return await self._execute_with_config(runtime, task=task, context=context, state=state)
 
     def _get_execution_config(self, state: Dict[str, Any]) -> Dict[str, Any]:
         config = state.get("execution_config") or {}

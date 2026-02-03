@@ -204,6 +204,13 @@ Run it:
 python multi_agent_workflow.py
 ```
 
+Shared memory no-code workflow:
+
+```bash
+genxai workflow run examples/nocode/shared_memory_workflow.yaml \
+  --input '{"task": "Draft a short response"}'
+```
+
 ---
 
 ## 🔁 Example 4: Flow Orchestrators
@@ -431,6 +438,7 @@ open htmlcov/index.html
 - Check [examples/](../examples/) for more examples
 - See [docs/](../docs/) for detailed documentation
 - Explore [no-code templates](../examples/nocode/README.md) (including shared agents in `examples/nocode/agents/`)
+- Try the shared memory template: `examples/nocode/shared_memory_workflow.yaml`
 - Run [benchmarks](./BENCHMARKING.md)
 
 ### Explore Features

@@ -84,6 +84,9 @@ def _validate_workflow_schema(workflow: Dict[str, Any]) -> None:
     if not workflow.get("name"):
         raise ValueError("workflow.name is required")
 
+    if "memory" in workflow and not isinstance(workflow.get("memory"), dict):
+        raise ValueError("workflow.memory must be a mapping when provided")
+
     graph = workflow.get("graph")
     if not isinstance(graph, dict):
         raise ValueError("workflow.graph must be a mapping")

@@ -226,14 +226,21 @@ async def execute_workflow(
         except ModuleNotFoundError:
             # When running from repo root as `studio.backend.*`
             from studio.backend.services.workflow_executor import execute_studio_workflow
-        
+        shared_memory = bool(payload.get("memory", {}).get("shared", False))
+        if not shared_memory and isinstance(execution_input, dict):
+            shared_memory = bool(execution_input.get("memory", {}).get("shared", False))
+
+        async def event_callback(event: Dict[str, Any]) -> None:
+            return None
+
         execution_result = await execute_studio_workflow(
             nodes=nodes,
             edges=edges,
             input_data=execution_input,
             openai_api_key=openai_api_key,
             anthropic_api_key=anthropic_api_key,
-            model_override=model_override,
+            event_callback=event_callback,
+            shared_memory=shared_memory,
         )
         execution_result["node_models"] = node_models
         execution_result.setdefault("node_events", execution_result.get("result", {}).get("node_events", []))
@@ -329,6 +336,9 @@ async def execute_workflow_stream(
                 except ModuleNotFoundError:
                     from studio.backend.services.workflow_executor import execute_studio_workflow
 
+                shared_memory = False
+                if isinstance(execution_input, dict):
+                    shared_memory = bool(execution_input.get("memory", {}).get("shared", False))
                 execution_result = await execute_studio_workflow(
                     nodes=nodes,
                     edges=edges,
@@ -337,6 +347,7 @@ async def execute_workflow_stream(
                     anthropic_api_key=anthropic_api_key,
                     model_override=model_override,
                     event_callback=handle_event,
+                    shared_memory=shared_memory,
                 )
                 execution_result["node_models"] = node_models
                 execution_result.setdefault(
