@@ -1,4 +1,5 @@
 import { Fragment, useState } from 'react'
+import axios from 'axios'
 import { Dialog, Transition, Tab } from '@headlessui/react'
 import { XMarkIcon, PlusIcon, TrashIcon } from '@heroicons/react/24/outline'
 import Editor from '@monaco-editor/react'
@@ -68,6 +69,26 @@ result = {
     e.preventDefault()
 
     try {
+      if (activeTab === 0) {
+        if (!code.trim()) {
+          alert('Please provide valid Python code for the tool.')
+          return
+        }
+
+        const invalidParam = parameters.find(
+          (param) => !param.name.trim() || !param.description.trim()
+        )
+        if (invalidParam) {
+          alert('Please fill out all parameter names and descriptions.')
+          return
+        }
+      }
+
+      if (activeTab === 1 && !selectedTemplate) {
+        alert('Please select a template before creating the tool.')
+        return
+      }
+
       const toolData = {
         name,
         description,
@@ -87,7 +108,14 @@ result = {
       onClose()
     } catch (error) {
       console.error('Error creating tool:', error)
-      alert(`Failed to create tool: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      let errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      if (axios.isAxiosError(error)) {
+        const detail = error.response?.data?.detail
+        if (detail) {
+          errorMessage = typeof detail === 'string' ? detail : JSON.stringify(detail)
+        }
+      }
+      alert(`Failed to create tool: ${errorMessage}`)
     }
   }
 
