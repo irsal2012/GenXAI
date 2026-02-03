@@ -48,6 +48,7 @@ class AnthropicProvider(LLMProvider):
         """
         resolved_model = self._normalize_model(model)
         super().__init__(resolved_model, temperature, max_tokens, **kwargs)
+        self.requested_model = model
         
         self.api_key = api_key or os.getenv("ANTHROPIC_API_KEY")
         if not self.api_key:

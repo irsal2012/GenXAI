@@ -26,7 +26,38 @@ def agent_to_dict(agent: Agent) -> Dict[str, Any]:
 
 def agent_from_dict(data: Dict[str, Any]) -> Agent:
     """Load Agent from a dictionary."""
-    return Agent(id=data["id"], config=agent_config_from_dict(data["config"]))
+    if "config" in data and isinstance(data.get("config"), dict):
+        config = agent_config_from_dict(data["config"])
+        return Agent(id=data["id"], config=config)
+
+    # Support flat agent definitions (no config wrapper).
+    llm_model = data.get("llm_model") or data.get("llm") or "gpt-4"
+    config = AgentConfig(
+        role=data.get("role", "Agent"),
+        goal=data.get("goal", "Process tasks"),
+        backstory=data.get("backstory", ""),
+        llm_provider=data.get("llm_provider", "openai"),
+        llm_model=llm_model,
+        llm_temperature=data.get("llm_temperature", 0.7),
+        tools=data.get("tools", []),
+        enable_memory=data.get("memory", {}).get("enabled", True)
+        if isinstance(data.get("memory"), dict)
+        else data.get("enable_memory", True),
+        memory_type=data.get("memory", {}).get("type", "short_term")
+        if isinstance(data.get("memory"), dict)
+        else data.get("memory_type", "short_term"),
+        agent_type=data.get("behavior", {}).get("agent_type", "reactive")
+        if isinstance(data.get("behavior"), dict)
+        else data.get("agent_type", "reactive"),
+        max_iterations=data.get("behavior", {}).get("max_iterations", 10)
+        if isinstance(data.get("behavior"), dict)
+        else data.get("max_iterations", 10),
+        verbose=data.get("behavior", {}).get("verbose", False)
+        if isinstance(data.get("behavior"), dict)
+        else data.get("verbose", False),
+        metadata=data.get("metadata", {}),
+    )
+    return Agent(id=data["id"], config=config)
 
 
 def export_agent_config_yaml(agent: Agent, path: Path) -> None:

@@ -114,7 +114,7 @@ def test_anthropic_provider_initialization():
 def test_anthropic_provider_with_model():
     """Test Anthropic provider with specific model."""
     provider = AnthropicProvider(api_key="test_key", model="claude-3-opus")
-    assert provider.model == "claude-3-opus"
+    assert provider.requested_model == "claude-3-opus"
 
 
 def test_anthropic_provider_with_max_tokens():

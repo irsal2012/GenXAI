@@ -42,7 +42,7 @@ class EnhancedGraph(Graph):
     """
 
     async def _execute_node_logic(
-        self, node: Any, state: Dict[str, Any], max_iterations: int
+        self, node: Any, state: Dict[str, Any], max_iterations: int = 100
     ) -> Any:
         """Execute node logic with actual agent execution.
 

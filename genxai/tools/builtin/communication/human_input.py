@@ -9,6 +9,7 @@ class HumanInputTool(Tool):
     """Collect input from a human (stdin)."""
 
     def __init__(self) -> None:
+        from genxai.tools.registry import ToolRegistry
         super().__init__(
             metadata=ToolMetadata(
                 name="human_input",
@@ -23,6 +24,8 @@ class HumanInputTool(Tool):
                 )
             ],
         )
+        if ToolRegistry.get(self.metadata.name) is None:
+            ToolRegistry.register(self)
 
     async def _execute(self, **kwargs: Any) -> Dict[str, Any]:
         prompt = kwargs.get("prompt", "Your response:")

@@ -58,7 +58,10 @@ def _merge_agents_ref(workflow: Dict[str, Any], base_path: Path) -> None:
     agents_ref_path = (base_path / agents_ref).resolve()
     referenced = import_agents_yaml(agents_ref_path)
     referenced_dicts = [
-        {"id": agent.id, **agent.config.model_dump(mode="json")} for agent in referenced
+        {"id": agent.id, **agent.config.model_dump(mode="json")}
+        if isinstance(agent, Agent)
+        else dict(agent)
+        for agent in referenced
     ]
 
     inline_agents = workflow.get("agents", [])
@@ -118,9 +121,14 @@ def _validate_workflow_schema(workflow: Dict[str, Any]) -> None:
 
 
 def _agent_from_workflow_dict(data: Dict[str, Any]) -> Agent:
+    config_payload = data.get("config") if isinstance(data.get("config"), dict) else {}
+    merged = {
+        **config_payload,
+        **{k: v for k, v in data.items() if k not in {"config"}},
+    }
     return Agent(
         id=data["id"],
-        config=_agent_config_from_workflow_dict(data),
+        config=_agent_config_from_workflow_dict(merged),
     )
 
 

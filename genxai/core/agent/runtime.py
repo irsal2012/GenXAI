@@ -5,6 +5,7 @@ import asyncio
 import time
 import logging
 import json
+import copy
 
 from genxai.core.agent.base import Agent
 from genxai.llm.base import LLMProvider
@@ -213,13 +214,19 @@ class AgentRuntime:
             await self._update_memory(task, response)
         
         # Build result
+        safe_context: Dict[str, Any]
+        try:
+            safe_context = copy.deepcopy(context)
+        except Exception:
+            safe_context = dict(context)
+        safe_context.pop("llm_provider", None)
         result = {
             "agent_id": self.agent.id,
             "task": task,
             "status": "completed",
             "output": response,
             "tokens_used": self.agent._total_tokens,
-            "context": context,
+            "context": safe_context,
         }
         
         # Store episode in episodic memory
