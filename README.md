@@ -12,9 +12,13 @@ GenXAI is an advanced agentic AI framework designed to surpass existing solution
 
 - **Graph-Based Orchestration** (like LangGraph) for complex agent workflows
 - **Advanced Memory Systems** with multiple memory types (short-term, long-term, episodic, semantic, procedural)
-- **No-Code Interface** for visual workflow building
+- **No-Code Studio (Enterprise)** for visual workflow building
 - **50+ Built-in Tools** for web, database, file, computation, and communication tasks
 - **Enterprise Features** including observability, security, and scalability
+
+> **Open Source vs Enterprise**: This repository contains the **MIT-licensed core framework**. The
+> enterprise Studio and related enterprise features have been moved to `enterprise/` as a staging
+> area for a separate commercial repo.
 
 ---
 
@@ -43,12 +47,13 @@ GenXAI is an advanced agentic AI framework designed to surpass existing solution
 - **Working**: Active processing space
 
 ### 🎨 No-Code Studio
-- Drag-and-drop workflow builder
-- Visual agent designer
-- Tool marketplace
-- Template library
-- Real-time testing playground
-- One-click deployment
+The Studio UI and enterprise backend are now staged under:
+
+```
+enterprise/studio/
+```
+
+They are intended for the **enterprise repo** and are **not part of the MIT-licensed core**.
 
 ### ⚡ Trigger SDK (Non-Studio)
 - Webhook triggers for external events
@@ -281,6 +286,8 @@ pip install "genxai[llm,tools,observability,api]"
 # Everything included
 pip install "genxai[all]"
 ```
+
+> For the enterprise Studio, use the enterprise repository and its commercial license.
 
 ### No-Code Interface
 

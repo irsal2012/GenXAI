@@ -242,7 +242,13 @@ We welcome contributions! Please see [CONTRIBUTING.md](./CONTRIBUTING.md) for gu
 
 MIT License - see [LICENSE](./LICENSE) for details.
 
-## 🆘 Support
+## � Enterprise Edition
+
+The Studio UI and enterprise backend are staged under `enterprise/` and are
+intended for the **commercial enterprise repository**. If you need the Studio
+edition, extract `enterprise/` into a private repo and add your commercial license.
+
+## �🆘 Support
 
 - GitHub Issues: Report bugs and request features
 - Documentation: Check our comprehensive docs

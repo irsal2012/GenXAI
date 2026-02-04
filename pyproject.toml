@@ -3,9 +3,9 @@ requires = ["setuptools>=68.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "genxai-framework"
+name = "genxai"
 version = "0.1.2"
-description = "Advanced Agentic AI Framework with Graph-Based Orchestration"
+description = "GenXAI Core (MIT) - Advanced Agentic AI Framework with Graph-Based Orchestration"
 readme = "README.md"
 requires-python = ">=3.11"
 license = {text = "MIT"}
@@ -104,6 +104,7 @@ Homepage = "https://github.com/genxai/genxai"
 Documentation = "https://docs.genxai.dev"
 Repository = "https://github.com/genxai/genxai"
 Issues = "https://github.com/genxai/genxai/issues"
+Enterprise = "https://github.com/genxai/genxai-enterprise"
 
 [project.scripts]
 genxai = "cli.main:main"
