@@ -1,6 +1,6 @@
 """Unit tests for audit logging and approvals."""
 
-from genxai.security.audit import get_audit_log, get_approval_service, AuditEvent
+from genxai.enterprise.security.audit import get_audit_log, get_approval_service, AuditEvent
 
 
 def test_audit_log_records_event():

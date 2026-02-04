@@ -2,7 +2,7 @@
 
 from click.testing import CliRunner
 
-from cli.commands.approval import approval
+from enterprise.cli.commands.approval import approval
 from genxai.security.audit import get_approval_service
 
 

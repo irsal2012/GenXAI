@@ -6,11 +6,11 @@ from typing import Any, Dict, Optional
 
 import pytest
 
-from genxai.connectors.slack import SlackConnector
-from genxai.connectors.github import GitHubConnector
-from genxai.connectors.notion import NotionConnector
-from genxai.connectors.jira import JiraConnector
-from genxai.connectors.google_workspace import GoogleWorkspaceConnector
+from enterprise.genxai.connectors.slack import SlackConnector
+from enterprise.genxai.connectors.github import GitHubConnector
+from enterprise.genxai.connectors.notion import NotionConnector
+from enterprise.genxai.connectors.jira import JiraConnector
+from enterprise.genxai.connectors.google_workspace import GoogleWorkspaceConnector
 
 
 class FakeResponse:

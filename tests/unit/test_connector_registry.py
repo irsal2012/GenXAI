@@ -2,8 +2,8 @@
 
 import pytest
 
-from genxai.connectors.base import Connector
-from genxai.connectors.registry import ConnectorRegistry
+from enterprise.genxai.connectors.base import Connector
+from enterprise.genxai.connectors.registry import ConnectorRegistry
 
 
 class DummyConnector(Connector):

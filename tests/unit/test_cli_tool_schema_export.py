@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 from click.testing import CliRunner
 
-from cli.commands.tool import tool
+from enterprise.cli.commands.tool import tool
 from genxai.tools.registry import ToolRegistry
 
 

@@ -8,12 +8,12 @@ import sys
 import tempfile
 import pytest
 
-from genxai.triggers.webhook import WebhookTrigger
-from genxai.triggers.queue import QueueTrigger
+from enterprise.genxai.triggers.webhook import WebhookTrigger
+from enterprise.genxai.triggers.queue import QueueTrigger
 from genxai.core.graph.trigger_runner import TriggerWorkflowRunner
-from genxai.triggers.schedule import ScheduleTrigger
-from genxai.triggers.registry import TriggerRegistry
-from genxai.triggers.file_watcher import FileWatcherTrigger
+from enterprise.genxai.triggers.schedule import ScheduleTrigger
+from enterprise.genxai.triggers.registry import TriggerRegistry
+from enterprise.genxai.triggers.file_watcher import FileWatcherTrigger
 from genxai.llm.factory import LLMProviderFactory
 
 ROOT_DIR = Path(__file__).resolve().parents[2]

@@ -6,7 +6,7 @@ import sys
 from types import SimpleNamespace
 from pathlib import Path
 
-from genxai.connectors.config_store import ConnectorConfigEntry, ConnectorConfigStore
+from enterprise.genxai.connectors.config_store import ConnectorConfigEntry, ConnectorConfigStore
 
 
 class FakeFernet:
