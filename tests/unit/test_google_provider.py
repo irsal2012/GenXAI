@@ -39,6 +39,7 @@ def test_google_provider_init():
     assert provider.api_key == "test-key"
     assert provider.temperature == 0.8
     assert provider.max_tokens == 1000
+    provider.close()
 
 
 def test_google_provider_init_with_env_var():
@@ -46,6 +47,7 @@ def test_google_provider_init_with_env_var():
     with patch.dict("os.environ", {"GOOGLE_API_KEY": "env-test-key"}):
         provider = GoogleProvider(model="gemini-pro")
         assert provider.api_key == "env-test-key"
+        provider.close()
 
 
 def test_google_provider_init_no_api_key():
@@ -53,6 +55,7 @@ def test_google_provider_init_no_api_key():
     with patch.dict("os.environ", {}, clear=True):
         provider = GoogleProvider(model="gemini-ultra")
         assert provider.api_key is None
+        provider.close()
 
 
 @pytest.mark.asyncio
@@ -88,6 +91,7 @@ async def test_generate_success(mock_google_genai):
     assert result.usage["prompt_tokens"] == 10
     assert result.usage["completion_tokens"] == 5
     assert result.usage["total_tokens"] == 15
+    await provider.aclose()
 
 
 @pytest.mark.asyncio
@@ -115,6 +119,7 @@ async def test_generate_without_system_prompt(mock_google_genai):
     # Verify prompt was called without system prompt prepended
     call_args = mock_model.generate_content_async.call_args
     assert call_args[0][0] == "Test"
+    await provider.aclose()
 
 
 @pytest.mark.asyncio
@@ -125,6 +130,7 @@ async def test_generate_no_model():
     
     with pytest.raises(RuntimeError, match="Google Gemini client not initialized"):
         await provider.generate(prompt="Test")
+    await provider.aclose()
 
 
 @pytest.mark.asyncio
@@ -156,6 +162,7 @@ async def test_generate_stream(mock_google_genai):
         chunks.append(chunk)
     
     assert chunks == ["Hello ", "from ", "Gemini!"]
+    await provider.aclose()
 
 
 @pytest.mark.asyncio
@@ -191,6 +198,7 @@ async def test_generate_chat(mock_google_genai):
     
     assert result.content == "Chat response"
     assert result.usage["total_tokens"] == 30
+    await provider.aclose()
 
 
 def test_provider_stats():
@@ -216,6 +224,7 @@ def test_provider_stats():
     stats = provider.get_stats()
     assert stats["total_tokens"] == 0
     assert stats["request_count"] == 0
+    provider.close()
 
 
 def test_provider_repr():
@@ -223,6 +232,7 @@ def test_provider_repr():
     provider = GoogleProvider(model="gemini-pro", api_key="test-key")
     assert "GoogleProvider" in repr(provider)
     assert "gemini-pro" in repr(provider)
+    provider.close()
 
 
 @pytest.mark.asyncio
@@ -257,6 +267,7 @@ async def test_generate_with_additional_params(mock_google_genai):
     assert gen_config["top_p"] == 0.9
     assert gen_config["top_k"] == 40
     assert gen_config["stop_sequences"] == ["END"]
+    await provider.aclose()
 
 
 @pytest.mark.asyncio
@@ -292,6 +303,7 @@ async def test_generate_with_safety_settings(mock_google_genai):
     
     assert result.content == "Safe response"
     assert "safety_ratings" in result.metadata
+    await provider.aclose()
 
 
 @pytest.mark.asyncio
@@ -308,6 +320,7 @@ async def test_generate_api_error(mock_google_genai):
     
     with pytest.raises(Exception, match="API Error"):
         await provider.generate(prompt="Test")
+    await provider.aclose()
 
 
 @pytest.mark.asyncio
@@ -332,3 +345,4 @@ async def test_generate_without_usage_metadata(mock_google_genai):
     assert result.usage["total_tokens"] == 0
     assert result.usage["prompt_tokens"] == 0
     assert result.usage["completion_tokens"] == 0
+    await provider.aclose()

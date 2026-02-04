@@ -1,8 +1,8 @@
 """Default policy setup with explicit approval request IDs."""
 
-from genxai.security.audit import get_approval_service
-from genxai.security.policy_engine import AccessRule, get_policy_engine
-from genxai.security.rbac import Permission
+from enterprise.genxai.security.audit import get_approval_service
+from enterprise.genxai.security.policy_engine import AccessRule, get_policy_engine
+from enterprise.genxai.security.rbac import Permission
 
 
 def register_default_policies() -> None:

@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Dict, List, Optional
 import logging
 
-from genxai.triggers.base import BaseTrigger, TriggerStatus
+from enterprise.genxai.triggers.base import BaseTrigger, TriggerStatus
 
 logger = logging.getLogger(__name__)
 

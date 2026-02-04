@@ -7,7 +7,7 @@ import hmac
 import hashlib
 import logging
 
-from genxai.connectors.base import Connector
+from enterprise.genxai.connectors.base import Connector
 
 logger = logging.getLogger(__name__)
 

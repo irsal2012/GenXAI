@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from studio.backend.services import db
+from enterprise.studio.backend.services import db
 
 
 def test_user_proxy_template_seeded(tmp_path: Path) -> None:

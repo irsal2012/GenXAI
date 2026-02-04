@@ -141,12 +141,12 @@ class URLValidatorTool(Tool):
                 })
             except httpx.RequestError as e:
                 result.update({
-                    "accessible": False,
+                    "accessible": None,
                     "error": f"Request error: {str(e)}",
                 })
             except Exception as e:
                 result.update({
-                    "accessible": False,
+                    "accessible": None,
                     "error": f"Unexpected error: {str(e)}",
                 })
 

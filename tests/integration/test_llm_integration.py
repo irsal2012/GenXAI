@@ -57,6 +57,8 @@ async def test_agent_with_real_llm():
     
     # Verify token usage was tracked (mock increments total_tokens too)
     assert agent._total_tokens > 0
+    if runtime._llm_provider:
+        await runtime._llm_provider.aclose()
 
 
 @pytest.mark.asyncio
@@ -79,6 +81,8 @@ async def test_agent_with_mock_llm():
     assert result["agent_id"] == "mock_agent"
     assert "output" in result
     assert result["output"].startswith("Mock response for testing purposes")
+    if runtime._llm_provider:
+        await runtime._llm_provider.aclose()
 
 
 @pytest.mark.asyncio
@@ -112,6 +116,8 @@ async def test_agent_with_backstory():
     assert len(result["output"]) > 0
     # Pirate-themed response should be longer than a simple greeting
     assert len(result["output"]) > 20
+    if runtime._llm_provider:
+        await runtime._llm_provider.aclose()
 
 
 @pytest.mark.asyncio
@@ -199,6 +205,8 @@ async def test_agent_deliberative_type():
     
     assert result["status"] == "completed"
     assert len(result["output"]) > 50  # Should be a detailed response
+    if runtime._llm_provider:
+        await runtime._llm_provider.aclose()
 
 
 @pytest.mark.asyncio
@@ -233,3 +241,5 @@ async def test_batch_execution():
         assert "error" not in result or result.get("status") == "completed"
         if "output" in result:
             assert len(result["output"]) > 0
+    if runtime._llm_provider:
+        await runtime._llm_provider.aclose()

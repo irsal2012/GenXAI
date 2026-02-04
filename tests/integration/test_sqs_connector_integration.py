@@ -8,6 +8,7 @@ import pytest
 @pytest.mark.asyncio
 async def test_sqs_connector_emits_messages(monkeypatch):
     emitted = []
+    done = asyncio.Event()
 
     class FakeClient:
         async def __aenter__(self):
@@ -31,16 +32,17 @@ async def test_sqs_connector_emits_messages(monkeypatch):
             return FakeSession()
 
     sys.modules["aioboto3"] = FakeBoto()
-    from genxai.connectors.sqs import SQSConnector
+    from enterprise.genxai.connectors.sqs import SQSConnector
 
     connector = SQSConnector(connector_id="s1", queue_url="url", poll_interval=0)
     async def _on_event(event):
         emitted.append(event.payload)
-        await connector.stop()
+        done.set()
 
     connector.on_event(_on_event)
 
     await connector.start()
-    await asyncio.sleep(0.05)
+    await asyncio.wait_for(done.wait(), timeout=2)
+    await connector.stop()
 
     assert emitted and emitted[0] == {"ok": True}

@@ -27,21 +27,44 @@ load_dotenv()
 
 # ==================== LLM Provider Fixtures ====================
 
+def _close_provider(provider: Any) -> None:
+    """Close LLM providers using a dedicated event loop."""
+    if not hasattr(provider, "aclose"):
+        return
+    loop = asyncio.new_event_loop()
+    try:
+        asyncio.set_event_loop(loop)
+        try:
+            loop.run_until_complete(provider.aclose())
+        except RuntimeError as exc:
+            if "Event loop is closed" not in str(exc):
+                raise
+    finally:
+        try:
+            loop.run_until_complete(asyncio.sleep(0))
+        except RuntimeError:
+            pass
+        loop.close()
+        asyncio.set_event_loop(None)
+
 @pytest.fixture(scope="session")
 def openai_provider():
     """Create OpenAI provider for integration tests (fallback to mock)."""
     if not importlib.util.find_spec("openai"):
-        return MockLLMProvider()
+        provider = MockLLMProvider()
+    else:
+        api_key = os.getenv("OPENAI_API_KEY")
+        if not api_key:
+            provider = MockLLMProvider()
+        else:
+            model = os.getenv("OPENAI_MODEL", "gpt-4")
+            try:
+                provider = LLMProviderFactory.create_provider(model=model, api_key=api_key)
+            except Exception:
+                provider = MockLLMProvider()
 
-    api_key = os.getenv("OPENAI_API_KEY")
-    if not api_key:
-        return MockLLMProvider()
-
-    model = os.getenv("OPENAI_MODEL", "gpt-4")
-    try:
-        return LLMProviderFactory.create_provider(model=model, api_key=api_key)
-    except Exception:
-        return MockLLMProvider()
+    yield provider
+    _close_provider(provider)
 
 
 @pytest.fixture(scope="session")
@@ -50,7 +73,9 @@ def anthropic_provider():
     api_key = os.getenv("ANTHROPIC_API_KEY")
     if not api_key:
         pytest.skip("ANTHROPIC_API_KEY not set")
-    return LLMProviderFactory.create_provider("anthropic", api_key=api_key)
+    provider = LLMProviderFactory.create_provider("anthropic", api_key=api_key)
+    yield provider
+    _close_provider(provider)
 
 
 @pytest.fixture(scope="session")
@@ -59,7 +84,9 @@ def google_provider():
     api_key = os.getenv("GOOGLE_API_KEY")
     if not api_key:
         pytest.skip("GOOGLE_API_KEY not set")
-    return LLMProviderFactory.create_provider("google", api_key=api_key)
+    provider = LLMProviderFactory.create_provider("google", api_key=api_key)
+    yield provider
+    _close_provider(provider)
 
 
 @pytest.fixture(scope="session")
@@ -68,7 +95,9 @@ def cohere_provider():
     api_key = os.getenv("COHERE_API_KEY")
     if not api_key:
         pytest.skip("COHERE_API_KEY not set")
-    return LLMProviderFactory.create_provider("cohere", api_key=api_key)
+    provider = LLMProviderFactory.create_provider("cohere", api_key=api_key)
+    yield provider
+    _close_provider(provider)
 
 
 @pytest.fixture(scope="session")

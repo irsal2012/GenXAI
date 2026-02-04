@@ -30,6 +30,14 @@ class RoutedLLMProvider(LLMProvider):
     def providers(self) -> List[LLMProvider]:
         return [self._primary, *self._fallbacks]
 
+    async def aclose(self) -> None:
+        """Close all underlying providers."""
+        for provider in self.providers:
+            if hasattr(provider, "aclose"):
+                await provider.aclose()
+            elif hasattr(provider, "close"):
+                provider.close()
+
     async def generate(
         self,
         prompt: str,

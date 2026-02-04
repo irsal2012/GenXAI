@@ -4,7 +4,7 @@ import click
 from rich.console import Console
 from rich.table import Table
 
-from genxai.security.audit import get_approval_service
+from enterprise.genxai.security.audit import get_approval_service
 
 console = Console()
 

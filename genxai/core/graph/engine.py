@@ -19,11 +19,11 @@ from genxai.core.graph.checkpoints import (
     WorkflowCheckpointManager,
     create_checkpoint,
 )
-from genxai.observability.metrics import (
+from enterprise.genxai.observability.metrics import (
     record_workflow_execution,
     record_workflow_node_execution,
 )
-from genxai.observability.tracing import span, record_exception
+from enterprise.genxai.observability.tracing import span, record_exception
 
 logger = logging.getLogger(__name__)
 

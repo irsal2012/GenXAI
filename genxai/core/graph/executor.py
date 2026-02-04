@@ -27,9 +27,10 @@ from genxai.tools.registry import ToolRegistry
 from genxai.core.execution import WorkerQueueEngine, ExecutionStore
 from genxai.tools.builtin.computation.calculator import CalculatorTool
 from genxai.tools.builtin.file.file_reader import FileReaderTool
-from genxai.security.rbac import get_current_user, Permission
-from genxai.security.policy_engine import get_policy_engine
-from genxai.security.audit import get_audit_log, AuditEvent
+from enterprise.genxai.security.rbac import get_current_user, Permission
+from enterprise.genxai.security.policy_engine import get_policy_engine
+
+from enterprise.genxai.security.audit import get_audit_log, AuditEvent
 
 logger = logging.getLogger(__name__)
 

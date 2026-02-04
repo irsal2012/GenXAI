@@ -7,12 +7,12 @@ from abc import ABC, abstractmethod
 import time
 import logging
 
-from genxai.observability.metrics import record_tool_execution
-from genxai.observability.tracing import span, record_exception
+from enterprise.genxai.observability.metrics import record_tool_execution
+from enterprise.genxai.observability.tracing import span, record_exception
 from genxai.tools.security.policy import is_tool_allowed
-from genxai.security.rbac import get_current_user, Permission
-from genxai.security.policy_engine import get_policy_engine
-from genxai.security.audit import get_audit_log, AuditEvent
+from enterprise.genxai.security.rbac import get_current_user, Permission
+from enterprise.genxai.security.policy_engine import get_policy_engine
+from enterprise.genxai.security.audit import get_audit_log, AuditEvent
 
 logger = logging.getLogger(__name__)
 

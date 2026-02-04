@@ -2,8 +2,8 @@
 
 import pytest
 
-from genxai.security.policy_engine import AccessRule, get_policy_engine
-from genxai.security.rbac import Permission, User, Role, PermissionDenied
+from enterprise.genxai.security.policy_engine import AccessRule, get_policy_engine
+from enterprise.genxai.security.rbac import Permission, User, Role, PermissionDenied
 
 
 def test_policy_engine_allows_rbac():

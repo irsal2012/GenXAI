@@ -4,6 +4,8 @@ from typing import Any, Dict, List, Optional, AsyncIterator
 from pydantic import BaseModel, Field, ConfigDict
 from abc import ABC, abstractmethod
 import logging
+import asyncio
+import inspect
 
 logger = logging.getLogger(__name__)
 
@@ -136,6 +138,40 @@ class LLMProvider(ABC):
         self._total_tokens = 0
         self._request_count = 0
 
+    async def aclose(self) -> None:
+        """Close any underlying async client resources."""
+        client = getattr(self, "_client", None)
+        if not client:
+            return
+
+        close_fn = getattr(client, "aclose", None)
+        if close_fn:
+            if inspect.iscoroutinefunction(close_fn):
+                await close_fn()
+            else:
+                close_fn()
+        else:
+            close_fn = getattr(client, "close", None)
+            if close_fn:
+                if inspect.iscoroutinefunction(close_fn):
+                    await close_fn()
+                else:
+                    close_fn()
+
+        self._client = None
+
+    def close(self) -> None:
+        """Synchronously close any underlying async client resources."""
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            asyncio.run(self.aclose())
+            return
+
+        if loop.is_closed():
+            return
+        loop.create_task(self.aclose())
+
     def _update_stats(self, usage: Dict[str, int]) -> None:
         """Update provider statistics.
 
@@ -148,3 +184,10 @@ class LLMProvider(ABC):
     def __repr__(self) -> str:
         """String representation."""
         return f"{self.__class__.__name__}(model={self.model})"
+
+    def __del__(self) -> None:
+        """Ensure clients are closed if possible."""
+        try:
+            self.close()
+        except Exception:
+            pass

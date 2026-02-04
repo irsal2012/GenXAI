@@ -6,7 +6,7 @@ from typing import Any, Dict, List, Optional
 import logging
 
 from genxai.core.graph.executor import WorkflowExecutor
-from genxai.triggers.base import TriggerEvent
+from enterprise.genxai.triggers.base import TriggerEvent
 
 logger = logging.getLogger(__name__)
 

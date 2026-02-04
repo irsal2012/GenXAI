@@ -9,7 +9,7 @@ import click
 from rich.console import Console
 from rich.table import Table
 
-from genxai.security.audit import get_audit_log
+from enterprise.genxai.security.audit import get_audit_log
 
 console = Console()
 

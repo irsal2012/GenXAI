@@ -2,7 +2,7 @@
 
 from fastapi import FastAPI, Response
 
-from genxai.observability.metrics import get_prometheus_metrics
+from enterprise.genxai.observability.metrics import get_prometheus_metrics
 
 
 def create_app() -> FastAPI:

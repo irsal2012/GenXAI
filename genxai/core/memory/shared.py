@@ -3,13 +3,13 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Callable, Awaitable
 import asyncio
 import logging
 
-from genxai.security.rbac import get_current_user, Permission
-from genxai.security.policy_engine import get_policy_engine
+from enterprise.genxai.security.rbac import get_current_user, Permission
+from enterprise.genxai.security.policy_engine import get_policy_engine
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 class SharedMemoryEntry:
     key: str
     value: Any
-    updated_at: datetime = field(default_factory=datetime.utcnow)
+    updated_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     metadata: Dict[str, Any] = field(default_factory=dict)
 
 

@@ -6,7 +6,7 @@ from datetime import datetime, UTC
 from typing import Any, Dict, Optional
 import logging
 
-from genxai.triggers.base import BaseTrigger
+from enterprise.genxai.triggers.base import BaseTrigger
 
 logger = logging.getLogger(__name__)
 

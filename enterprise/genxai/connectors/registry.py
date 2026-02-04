@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Dict, List, Optional
 import logging
 
-from genxai.connectors.base import Connector
+from enterprise.genxai.connectors.base import Connector
 
 logger = logging.getLogger(__name__)
 

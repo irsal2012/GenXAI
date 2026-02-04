@@ -10,7 +10,7 @@ import click
 from rich.console import Console
 from rich.table import Table
 
-from genxai.connectors import (
+from enterprise.genxai.connectors import (
     Connector,
     KafkaConnector,
     SQSConnector,
@@ -22,7 +22,7 @@ from genxai.connectors import (
     JiraConnector,
     GoogleWorkspaceConnector,
 )
-from genxai.connectors.config_store import ConnectorConfigEntry, ConnectorConfigStore
+from enterprise.genxai.connectors.config_store import ConnectorConfigEntry, ConnectorConfigStore
 
 console = Console()
 

@@ -5,9 +5,9 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Dict, Optional, Set
+from enterprise.genxai.security.rbac import Permission, User, PermissionDenied
 
-from genxai.security.rbac import Permission, User, PermissionDenied
-from genxai.security.audit import get_approval_service
+from enterprise.genxai.security.audit import get_approval_service
 
 
 class ResourceType(str, Enum):

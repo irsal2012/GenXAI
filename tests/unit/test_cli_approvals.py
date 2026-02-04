@@ -3,7 +3,7 @@
 from click.testing import CliRunner
 
 from enterprise.cli.commands.approval import approval
-from genxai.security.audit import get_approval_service
+from enterprise.genxai.security.audit import get_approval_service
 
 
 def test_cli_submit_and_approve():

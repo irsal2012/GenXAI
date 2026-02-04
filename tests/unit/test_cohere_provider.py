@@ -26,6 +26,7 @@ def test_cohere_provider_init():
     assert provider.api_key == "test-key"
     assert provider.temperature == 0.8
     assert provider.max_tokens == 1000
+    provider.close()
 
 
 def test_cohere_provider_init_with_env_var():
@@ -33,6 +34,7 @@ def test_cohere_provider_init_with_env_var():
     with patch.dict("os.environ", {"COHERE_API_KEY": "env-test-key"}):
         provider = CohereProvider(model="command-r")
         assert provider.api_key == "env-test-key"
+        provider.close()
 
 
 def test_cohere_provider_init_no_api_key():
@@ -40,6 +42,7 @@ def test_cohere_provider_init_no_api_key():
     with patch.dict("os.environ", {}, clear=True):
         provider = CohereProvider(model="command-light")
         assert provider.api_key is None
+        provider.close()
 
 
 @pytest.mark.asyncio
@@ -80,6 +83,7 @@ async def test_generate_success(mock_cohere_client):
     assert result.usage["completion_tokens"] == 5
     assert result.usage["total_tokens"] == 15
     assert result.finish_reason == "COMPLETE"
+    provider.close()
 
 
 @pytest.mark.asyncio
@@ -108,6 +112,7 @@ async def test_generate_without_system_prompt(mock_cohere_client):
     # Verify prompt was called without system prompt prepended
     call_args = mock_client_instance.generate.call_args
     assert call_args.kwargs["prompt"] == "Test"
+    provider.close()
 
 
 @pytest.mark.asyncio
@@ -118,6 +123,7 @@ async def test_generate_no_client():
     
     with pytest.raises(RuntimeError, match="Cohere client not initialized"):
         await provider.generate(prompt="Test")
+    provider.close()
 
 
 @pytest.mark.asyncio
@@ -152,6 +158,7 @@ async def test_generate_stream(mock_cohere_client):
         chunks.append(chunk)
     
     assert chunks == ["Hello ", "from ", "Cohere!"]
+    provider.close()
 
 
 @pytest.mark.asyncio
@@ -187,6 +194,7 @@ async def test_generate_chat(mock_cohere_client):
     call_args = mock_client_instance.chat.call_args
     assert "chat_history" in call_args.kwargs
     assert "preamble" in call_args.kwargs  # System prompt as preamble
+    provider.close()
 
 
 def test_provider_stats():
@@ -212,6 +220,7 @@ def test_provider_stats():
     stats = provider.get_stats()
     assert stats["total_tokens"] == 0
     assert stats["request_count"] == 0
+    provider.close()
 
 
 def test_provider_repr():
@@ -219,6 +228,7 @@ def test_provider_repr():
     provider = CohereProvider(model="command", api_key="test-key")
     assert "CohereProvider" in repr(provider)
     assert "command" in repr(provider)
+    provider.close()
 
 
 @pytest.mark.asyncio
@@ -257,6 +267,7 @@ async def test_generate_with_additional_params(mock_cohere_client):
     assert call_args.kwargs["frequency_penalty"] == 0.5
     assert call_args.kwargs["presence_penalty"] == 0.3
     assert call_args.kwargs["stop_sequences"] == ["END"]
+    provider.close()
 
 
 @pytest.mark.asyncio
@@ -273,6 +284,7 @@ async def test_generate_api_error(mock_cohere_client):
     
     with pytest.raises(Exception, match="API Error"):
         await provider.generate(prompt="Test")
+    provider.close()
 
 
 @pytest.mark.asyncio
@@ -300,6 +312,7 @@ async def test_generate_without_usage_metadata(mock_cohere_client):
     assert result.usage["total_tokens"] == 0
     assert result.usage["prompt_tokens"] == 0
     assert result.usage["completion_tokens"] == 0
+    provider.close()
 
 
 @pytest.mark.asyncio
@@ -330,3 +343,4 @@ async def test_chat_with_empty_history(mock_cohere_client):
     # Verify no chat_history was passed (empty history)
     call_args = mock_client_instance.chat.call_args
     assert "chat_history" not in call_args.kwargs or not call_args.kwargs.get("chat_history")
+    provider.close()

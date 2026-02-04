@@ -9,6 +9,7 @@ import pytest
 @pytest.mark.asyncio
 async def test_postgres_cdc_connector_emits_changes(monkeypatch):
     emitted = []
+    done = asyncio.Event()
 
     class FakeConn:
         async def execute(self, *args, **kwargs):
@@ -25,7 +26,7 @@ async def test_postgres_cdc_connector_emits_changes(monkeypatch):
 
     fake_module = types.SimpleNamespace(connect=fake_connect)
     sys.modules["asyncpg"] = fake_module
-    from genxai.connectors.postgres_cdc import PostgresCDCConnector
+    from enterprise.genxai.connectors.postgres_cdc import PostgresCDCConnector
 
     connector = PostgresCDCConnector(
         connector_id="p1",
@@ -36,11 +37,12 @@ async def test_postgres_cdc_connector_emits_changes(monkeypatch):
     )
     async def _on_event(event):
         emitted.append(event.payload)
-        await connector.stop()
+        done.set()
 
     connector.on_event(_on_event)
 
     await connector.start()
-    await asyncio.sleep(0.05)
+    await asyncio.wait_for(done.wait(), timeout=2)
+    await connector.stop()
 
     assert emitted and emitted[0] == {"change": True}

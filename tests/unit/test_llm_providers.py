@@ -37,6 +37,7 @@ def test_llm_factory_create_openai():
     provider = LLMProviderFactory.create_provider("openai", api_key="test_key")
     assert provider is not None
     assert isinstance(provider, OpenAIProvider)
+    provider.close()
 
 
 def test_llm_factory_create_anthropic():
@@ -44,6 +45,7 @@ def test_llm_factory_create_anthropic():
     provider = LLMProviderFactory.create_provider("anthropic", api_key="test_key")
     assert provider is not None
     assert isinstance(provider, AnthropicProvider)
+    provider.close()
 
 
 def test_llm_factory_create_google():
@@ -51,6 +53,7 @@ def test_llm_factory_create_google():
     provider = LLMProviderFactory.create_provider("google", api_key="test_key")
     assert provider is not None
     assert isinstance(provider, GoogleProvider)
+    provider.close()
 
 
 def test_llm_factory_create_cohere():
@@ -58,6 +61,7 @@ def test_llm_factory_create_cohere():
     provider = LLMProviderFactory.create_provider("cohere", api_key="test_key")
     assert provider is not None
     assert isinstance(provider, CohereProvider)
+    provider.close()
 
 
 def test_llm_factory_invalid_provider():
@@ -83,18 +87,21 @@ def test_openai_provider_initialization():
     provider = OpenAIProvider(api_key="test_key")
     assert provider.api_key == "test_key"
     assert provider.model is not None
+    provider.close()
 
 
 def test_openai_provider_with_model():
     """Test OpenAI provider with specific model."""
     provider = OpenAIProvider(api_key="test_key", model="gpt-4")
     assert provider.model == "gpt-4"
+    provider.close()
 
 
 def test_openai_provider_with_temperature():
     """Test OpenAI provider with temperature."""
     provider = OpenAIProvider(api_key="test_key", temperature=0.5)
     assert provider.temperature == 0.5
+    provider.close()
 
 
 def test_openai_provider_missing_api_key():
@@ -109,18 +116,21 @@ def test_anthropic_provider_initialization():
     """Test Anthropic provider initialization."""
     provider = AnthropicProvider(api_key="test_key")
     assert provider.api_key == "test_key"
+    provider.close()
 
 
 def test_anthropic_provider_with_model():
     """Test Anthropic provider with specific model."""
     provider = AnthropicProvider(api_key="test_key", model="claude-3-opus")
     assert provider.requested_model == "claude-3-opus"
+    provider.close()
 
 
 def test_anthropic_provider_with_max_tokens():
     """Test Anthropic provider with max tokens."""
     provider = AnthropicProvider(api_key="test_key", max_tokens=2000)
     assert provider.max_tokens == 2000
+    provider.close()
 
 
 # ==================== Google Provider Tests ====================
@@ -129,12 +139,14 @@ def test_google_provider_initialization():
     """Test Google provider initialization."""
     provider = GoogleProvider(api_key="test_key")
     assert provider.api_key == "test_key"
+    provider.close()
 
 
 def test_google_provider_with_model():
     """Test Google provider with specific model."""
     provider = GoogleProvider(api_key="test_key", model="gemini-pro")
     assert provider.model == "gemini-pro"
+    provider.close()
 
 
 # ==================== Cohere Provider Tests ====================
@@ -143,12 +155,14 @@ def test_cohere_provider_initialization():
     """Test Cohere provider initialization."""
     provider = CohereProvider(api_key="test_key")
     assert provider.api_key == "test_key"
+    provider.close()
 
 
 def test_cohere_provider_with_model():
     """Test Cohere provider with specific model."""
     provider = CohereProvider(api_key="test_key", model="command")
     assert provider.model == "command"
+    provider.close()
 
 
 # ==================== Provider Comparison Tests ====================
@@ -165,6 +179,8 @@ def test_all_providers_have_generate_method():
     
     for provider in providers:
         assert hasattr(provider, "generate")
+        if hasattr(provider, "close"):
+            provider.close()
 
 
 def test_all_providers_have_api_key():
@@ -179,6 +195,8 @@ def test_all_providers_have_api_key():
     
     for provider in providers:
         assert provider.api_key == "test_key"
+        if hasattr(provider, "close"):
+            provider.close()
 
 
 def test_all_providers_have_model():
@@ -194,3 +212,5 @@ def test_all_providers_have_model():
     for provider in providers:
         assert hasattr(provider, "model")
         assert provider.model is not None
+        if hasattr(provider, "close"):
+            provider.close()
