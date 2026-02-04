@@ -22,8 +22,8 @@ cd GenXAI
 python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 
-# Install dependencies
-pip install -e ".[llm,tools,observability]"
+# Install dependencies (core)
+pip install -e ".[llm,tools]"
 ```
 
 ---
@@ -203,10 +203,10 @@ Run it:
 ```bash
 python multi_agent_workflow.py
 ```
-
-Shared memory no-code workflow:
+Shared memory no-code workflow (enterprise CLI):
 
 ```bash
+# In the enterprise repo
 genxai workflow run examples/nocode/shared_memory_workflow.yaml \
   --input '{"task": "Draft a short response"}'
 ```
@@ -348,7 +348,9 @@ python list_tools.py
 
 ---
 
-## ⏰ Example 7: Trigger a Workflow
+## ⏰ Example 7: Trigger a Workflow (Enterprise)
+
+> This example requires the enterprise repository.
 
 ```python
 import asyncio
@@ -368,7 +370,9 @@ await trigger.start()
 
 ---
 
-## 🔌 Example 8: Connector Event Handler
+## 🔌 Example 8: Connector Event Handler (Enterprise)
+
+> This example requires the enterprise repository.
 
 ```python
 from genxai.connectors import WebhookConnector
@@ -472,7 +476,7 @@ from genxai.tools.builtin import *
 ### Issue: "Module not found"
 **Solution**: Install with dependencies:
 ```bash
-pip install -e ".[llm,tools,observability]"
+pip install -e ".[llm,tools]"
 ```
 
 ### Issue: Tests failing

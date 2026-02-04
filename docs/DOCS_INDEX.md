@@ -11,9 +11,9 @@ Complete guide to GenXAI framework documentation.
 | [README](../README.md) | Project overview and quick start |
 | [GETTING_STARTED](../GETTING_STARTED.md) | Installation and first workflow |
 | [QUICK_START_TUTORIAL](./QUICK_START_TUTORIAL.md) | Step-by-step tutorial with examples |
-| [Studio Guide](../studio/README.md#-studio-walkthrough-userproxy-workflow) | UserProxy walkthrough in Studio |
-| [Studio JSON Defaults](../studio/README.md#canvas-json-defaults-userproxy-template) | Copy-paste canvas starter JSON |
-| [Studio Template JSON](../studio/exports/user_proxy_template.json) | Importable UserProxy template |
+| [Studio Guide (Enterprise)](../enterprise/studio/README.md#-studio-walkthrough-userproxy-workflow) | UserProxy walkthrough in Studio |
+| [Studio JSON Defaults (Enterprise)](../enterprise/studio/README.md#canvas-json-defaults-userproxy-template) | Copy-paste canvas starter JSON |
+| [Studio Template JSON (Enterprise)](../enterprise/studio/exports/user_proxy_template.json) | Importable UserProxy template |
 
 ---
 
@@ -33,7 +33,7 @@ Complete guide to GenXAI framework documentation.
 | Document | Description |
 |----------|-------------|
 | [API_REFERENCE](./API_REFERENCE.md) | Complete API reference with examples |
-| [CONNECTOR_SDK](./CONNECTOR_SDK.md) | Connector SDK for external integrations |
+| [CONNECTOR_SDK (Enterprise)](./CONNECTOR_SDK.md) | Connector SDK for external integrations |
 | [LLM_INTEGRATION](./LLM_INTEGRATION.md) | LLM provider integration guide |
 
 ---
@@ -42,8 +42,8 @@ Complete guide to GenXAI framework documentation.
 
 | Document | Description |
 |----------|-------------|
-| [CLI_USAGE](./CLI_USAGE.md) | CLI commands for tool, approval, audit, metrics |
-| [MCP_SETUP](./MCP_SETUP.md) | Model Context Protocol server setup |
+| [CLI_USAGE (Enterprise)](./CLI_USAGE.md) | CLI commands for tool, approval, audit, metrics |
+| [MCP_SETUP (Enterprise)](./MCP_SETUP.md) | Model Context Protocol server setup |
 
 ---
 
@@ -51,9 +51,9 @@ Complete guide to GenXAI framework documentation.
 
 | Document | Description |
 |----------|-------------|
-| [GOVERNANCE_POLICY](./GOVERNANCE_POLICY.md) | Policy engine and ACL configuration |
-| [AUDIT_LOGGING](./AUDIT_LOGGING.md) | Audit logging and compliance |
-| [SECURITY_CHECKLIST](./SECURITY_CHECKLIST.md) | Pre-release security checklist |
+| [GOVERNANCE_POLICY (Enterprise)](./GOVERNANCE_POLICY.md) | Policy engine and ACL configuration |
+| [AUDIT_LOGGING (Enterprise)](./AUDIT_LOGGING.md) | Audit logging and compliance |
+| [SECURITY_CHECKLIST (Enterprise)](./SECURITY_CHECKLIST.md) | Pre-release security checklist |
 
 ---
 
@@ -61,7 +61,7 @@ Complete guide to GenXAI framework documentation.
 
 | Document | Description |
 |----------|-------------|
-| [WORKER_QUEUE_ENGINE](./WORKER_QUEUE_ENGINE.md) | Worker queue and task distribution |
+| [WORKER_QUEUE_ENGINE (Enterprise)](./WORKER_QUEUE_ENGINE.md) | Worker queue and task distribution |
 | [BENCHMARKING](./BENCHMARKING.md) | Performance benchmarking guide |
 | [GRAPH_VISUALIZATION](./GRAPH_VISUALIZATION.md) | Workflow graph visualization |
 
@@ -110,8 +110,8 @@ Complete guide to GenXAI framework documentation.
 - [examples/patterns/](../examples/patterns/) - Common workflow patterns
 
 ### Studio (Visual Workflow Builder)
-- [studio/README.md](../studio/README.md) - GenXAI Studio overview
-- [studio/IMPLEMENTATION_SUMMARY.md](../studio/IMPLEMENTATION_SUMMARY.md) - Studio implementation details
+- [enterprise/studio/README.md](../enterprise/studio/README.md) - GenXAI Studio overview
+- [enterprise/studio/IMPLEMENTATION_SUMMARY.md](../enterprise/studio/IMPLEMENTATION_SUMMARY.md) - Studio implementation details
 
 ---
 
@@ -125,19 +125,19 @@ Complete guide to GenXAI framework documentation.
 3. [WORKFLOW_BEST_PRACTICES](./WORKFLOW_BEST_PRACTICES.md)
 
 **Integrating External Systems**
-1. [CONNECTOR_SDK](./CONNECTOR_SDK.md)
-2. [API_REFERENCE](./API_REFERENCE.md) (Triggers & Connectors section)
+1. [CONNECTOR_SDK (Enterprise)](./CONNECTOR_SDK.md)
+2. [API_REFERENCE](./API_REFERENCE.md) (Enterprise Triggers & Connectors section)
 3. [LLM_INTEGRATION](./LLM_INTEGRATION.md)
 
 **Enterprise Deployment**
-1. [WORKER_QUEUE_ENGINE](./WORKER_QUEUE_ENGINE.md)
-2. [GOVERNANCE_POLICY](./GOVERNANCE_POLICY.md)
-3. [AUDIT_LOGGING](./AUDIT_LOGGING.md)
-4. [SECURITY_CHECKLIST](./SECURITY_CHECKLIST.md)
+1. [WORKER_QUEUE_ENGINE (Enterprise)](./WORKER_QUEUE_ENGINE.md)
+2. [GOVERNANCE_POLICY (Enterprise)](./GOVERNANCE_POLICY.md)
+3. [AUDIT_LOGGING (Enterprise)](./AUDIT_LOGGING.md)
+4. [SECURITY_CHECKLIST (Enterprise)](./SECURITY_CHECKLIST.md)
 
 **CLI & Automation**
-1. [CLI_USAGE](./CLI_USAGE.md)
-2. [MCP_SETUP](./MCP_SETUP.md)
+1. [CLI_USAGE (Enterprise)](./CLI_USAGE.md)
+2. [MCP_SETUP (Enterprise)](./MCP_SETUP.md)
 
 **Performance & Monitoring**
 1. [BENCHMARKING](./BENCHMARKING.md)

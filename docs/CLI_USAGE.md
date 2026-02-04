@@ -1,18 +1,18 @@
-# GenXAI CLI - Tool Management
+# GenXAI CLI - Tool Management (Enterprise)
 
-The GenXAI CLI provides powerful command-line tools for managing your GenXAI tools without needing the Studio UI.
+The GenXAI CLI is part of the enterprise edition and lives under `enterprise/`.
 
 ## Installation
 
 ```bash
-# Install GenXAI with CLI dependencies
+# Install GenXAI (core only)
 pip install -e .
 
 # Or install from PyPI (when published)
 pip install genxai
 
-# Full install with providers/tools/observability/API
-pip install "genxai[llm,tools,observability,api]"
+# Full install with providers/tools/API (core)
+pip install "genxai[llm,tools,api]"
 
 # Everything included
 pip install "genxai[all]"
@@ -163,6 +163,7 @@ genxai tool import-tool ./tool.json
 Start the metrics API server (non-Studio) to expose Prometheus metrics:
 
 ```bash
+Enterprise metrics command (enterprise repo):
 genxai metrics serve --host 0.0.0.0 --port 8001
 ```
 

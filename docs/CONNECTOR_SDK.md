@@ -1,6 +1,6 @@
-# Connector SDK
+# Connector SDK (Enterprise)
 
-The Connector SDK provides a standardized integration surface for external event sources.
+The Connector SDK is part of the enterprise edition and lives under `enterprise/`.
 
 ## Key Concepts
 - **Connector**: A long‑lived integration that emits events.

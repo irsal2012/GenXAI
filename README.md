@@ -20,6 +20,15 @@ GenXAI is an advanced agentic AI framework designed to surpass existing solution
 > enterprise Studio and related enterprise features have been moved to `enterprise/` as a staging
 > area for a separate commercial repo.
 
+## ✅ OSS vs Enterprise
+
+**Open-source (MIT) core** — use these for OSS releases:
+- `genxai/` (agents, graph engine, flows, tools, LLM providers)
+- `examples/`, `docs/`, `tests/`, `scripts/`
+
+**Enterprise (commercial) features** — keep in the enterprise repo:
+- `enterprise/` (Studio UI/backend, CLI, connectors, triggers, security, observability, metrics)
+
 ---
 
 ## ✨ Key Features
@@ -55,21 +64,17 @@ enterprise/studio/
 
 They are intended for the **enterprise repo** and are **not part of the MIT-licensed core**.
 
-### ⚡ Trigger SDK (Non-Studio)
-- Webhook triggers for external events
-- Cron/interval schedule triggers
-- Async queue triggers for message-driven workflows
-- Lightweight registry to start/stop triggers programmatically
+### ⚡ Trigger SDK (Enterprise)
+Trigger SDKs are part of the enterprise edition and live under `enterprise/`.
 
-### 🏢 Enterprise-Ready
+### 🏢 Enterprise-Ready (Enterprise Edition)
 - **Observability**: Logging, metrics, tracing
 - **Security**: RBAC, encryption, guardrails
 - **Scalability**: Horizontal scaling, distributed execution
 - **Reliability**: 99.9% uptime target
 
-### 📈 Metrics API
-- **Prometheus endpoint** at `/metrics` (non-Studio FastAPI app)
-- **CLI launch**: `genxai metrics serve --host 0.0.0.0 --port 8001`
+### 📈 Metrics API (Enterprise)
+Observability endpoints are part of the enterprise edition and live under `enterprise/`.
 
 ---
 
@@ -252,7 +257,9 @@ See runnable examples in:
 
 Full flow documentation: [docs/FLOWS.md](./docs/FLOWS.md)
 
-### Trigger SDK Quick Start
+### Trigger SDK Quick Start (Enterprise)
+
+> This example requires the enterprise repository.
 
 ```python
 from genxai.triggers import WebhookTrigger
@@ -280,53 +287,14 @@ await trigger.start()
 # Core install
 pip install genxai
 
-# Full install with providers/tools/observability/API
-pip install "genxai[llm,tools,observability,api]"
+# Full install with providers/tools/API (core)
+pip install "genxai[llm,tools,api]"
 
 # Everything included
 pip install "genxai[all]"
 ```
 
 > For the enterprise Studio, use the enterprise repository and its commercial license.
-
-### No-Code Interface
-
-```yaml
-workflow:
-  name: "Customer Support"
-  agents:
-    - id: "classifier"
-      role: "Classifier"
-      llm: "gpt-4"
-    - id: "support"
-      role: "Support Agent"
-      llm: "claude-3-opus"
-  
-  graph:
-    nodes:
-      - id: "start"
-        type: "input"
-      - id: "classify"
-        agent: "classifier"
-      - id: "support"
-        agent: "support"
-    edges:
-      - from: "start"
-        to: "classify"
-      - from: "classify"
-        to: "support"
-        condition: "category == 'technical'"
-```
-
-Shared memory template:
-
-```bash
-genxai workflow run examples/nocode/shared_memory_workflow.yaml \
-  --input '{"task": "Draft a short response"}'
-```
-
-See no-code templates (including a shared memory example) in:
-- `examples/nocode/README.md`
 
 ---
 

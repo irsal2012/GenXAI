@@ -50,6 +50,21 @@ password = pypi-YOUR_TESTPYPI_API_TOKEN_HERE
 
 ## Publishing Process
 
+## OSS vs Enterprise Packaging
+
+PyPI releases are **OSS-only**. The packaging config in `pyproject.toml` includes only
+`genxai*` and explicitly excludes `tests*`, `docs*`, `examples*`, `studio*`, and anything
+under `enterprise/`. That means a `pip install genxai` publishes/installs the open-source
+core only.
+
+To verify locally:
+
+```bash
+python -m build
+python -c "import zipfile, glob; z=glob.glob('dist/*.whl')[0];\
+print('\n'.join(sorted({p.split('/')[0] for p in zipfile.ZipFile(z).namelist()})))"
+```
+
 ### Step 1: Update Version
 
 Update version in `pyproject.toml`:
@@ -110,9 +125,10 @@ python -m twine upload dist/*
 # Install from PyPI
 pip install genxai
 
-# Test the CLI
-genxai --version
-genxai tool list
+# Test the core install
+python -c "import genxai; print(genxai.__version__)"
+
+# CLI is enterprise-only and published separately
 ```
 
 ## Automated Publishing with GitHub Actions

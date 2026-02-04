@@ -36,9 +36,6 @@ dependencies = [
     "click>=8.1.0",
     "rich>=13.0.0",
     "sqlalchemy>=2.0.23",
-    "aiokafka>=0.10.0",
-    "aioboto3>=12.0.0",
-    "asyncpg>=0.29.0",
 ]
 
 [project.optional-dependencies]
@@ -68,6 +65,7 @@ storage = [
     "redis>=5.0.1",
     "psycopg2-binary>=2.9.9",
     "sqlalchemy>=2.0.23",
+    "asyncpg>=0.29.0",
 ]
 
 tools = [
@@ -88,6 +86,11 @@ observability = [
     "prometheus-client>=0.19.0",
 ]
 
+connectors = [
+    "aiokafka>=0.10.0",
+    "aioboto3>=12.0.0",
+]
+
 api = [
     "fastapi>=0.108.0",
     "uvicorn[standard]>=0.25.0",
@@ -96,7 +99,7 @@ api = [
 ]
 
 all = [
-    "genxai[dev,llm,storage,tools,observability,api]",
+    "genxai[dev,llm,storage,tools,api]",
 ]
 
 [project.urls]
@@ -106,12 +109,9 @@ Repository = "https://github.com/genxai/genxai"
 Issues = "https://github.com/genxai/genxai/issues"
 Enterprise = "https://github.com/genxai/genxai-enterprise"
 
-[project.scripts]
-genxai = "cli.main:main"
-
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["genxai*", "cli*"]
+include = ["genxai*"]
 exclude = ["tests*", "docs*", "examples*", "studio*"]
 
 [tool.pytest.ini_options]

@@ -20,6 +20,7 @@ from genxai.core.graph.executor import EnhancedGraph, WorkflowExecutor
 from genxai.core.graph.nodes import InputNode, OutputNode, AgentNode
 from genxai.core.graph.edges import Edge
 from genxai.core.agent.base import AgentFactory
+from genxai.core.agent.base import Agent
 from genxai.core.agent.registry import AgentRegistry
 from genxai.tools.registry import ToolRegistry
 from genxai.tools.builtin.computation.calculator import CalculatorTool
@@ -32,7 +33,9 @@ from genxai.tools.builtin.file.file_reader import FileReaderTool
 class _LegacyEnhancedGraph(EnhancedGraph):
     """Enhanced graph with agent execution support."""
 
-    async def _execute_node_logic(self, node: Any, state: Dict[str, Any]) -> Any:
+    async def _execute_node_logic(
+        self, node: Any, state: Dict[str, Any], max_iterations: int = 50
+    ) -> Any:
         """Execute node logic with actual agent execution.
 
         Args:
@@ -102,8 +105,15 @@ class _LegacyEnhancedGraph(EnhancedGraph):
                     if tool_result:
                         tool_results[tool_name] = tool_result
         
-        # Execute agent (placeholder for now, would use LLM with API key)
-        agent_result = await agent.execute(task, context=state)
+        # Execute agent (skip LLM call when API key is missing)
+        if not os.getenv("OPENAI_API_KEY"):
+            agent_result = {
+                "agent_id": agent.id,
+                "status": "simulated",
+                "output": "Simulated response (no API key provided)",
+            }
+        else:
+            agent_result = await agent.execute(task, context=state)
         
         # Combine agent result with tool results
         agent_result["tool_results"] = tool_results
@@ -197,7 +207,7 @@ async def scenario_1_calculator_workflow():
     print("Step 3: Building Graph")
     print("-" * 70)
     
-    graph = EnhancedGraph(name="calculator_workflow")
+    graph = _LegacyEnhancedGraph(name="calculator_workflow")
     
     graph.add_node(InputNode())
     graph.add_node(AgentNode(id="math_node", agent_id="math_agent"))
@@ -276,7 +286,7 @@ async def scenario_2_file_processing_workflow():
     print("Step 3: Building Graph")
     print("-" * 70)
     
-    graph = EnhancedGraph(name="file_processing_workflow")
+    graph = _LegacyEnhancedGraph(name="file_processing_workflow")
     
     graph.add_node(InputNode())
     graph.add_node(AgentNode(id="file_node", agent_id="file_agent"))
@@ -377,7 +387,7 @@ async def scenario_3_multi_agent_workflow():
     print("Step 3: Building Sequential Graph")
     print("-" * 70)
     
-    graph = EnhancedGraph(name="multi_agent_workflow")
+    graph = _LegacyEnhancedGraph(name="multi_agent_workflow")
     
     graph.add_node(InputNode())
     graph.add_node(AgentNode(id="collector_node", agent_id="collector"))

@@ -47,8 +47,8 @@ cd GenXAI
 python3 -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 
-# Install dependencies
-pip install -e ".[dev,llm,storage,tools,observability,api]"
+# Install dependencies (core)
+pip install -e ".[dev,llm,storage,tools,api]"
 
 # Install pre-commit hooks
 pre-commit install
@@ -162,8 +162,8 @@ genxai/
 │   ├── core/           # Core components
 │   ├── tools/          # Tool system
 │   ├── llm/            # LLM providers
-│   └── observability/  # Logging & metrics
-├── studio/             # No-code interface
+│   ├── observability/  # Logging & metrics (enterprise)
+├── enterprise/         # Enterprise modules (studio, cli, connectors, triggers)
 │   ├── backend/        # FastAPI backend
 │   └── frontend/       # React frontend
 ├── tests/              # Tests

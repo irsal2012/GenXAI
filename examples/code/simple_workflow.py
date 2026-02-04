@@ -1,6 +1,8 @@
 """Simple workflow example demonstrating basic graph execution."""
 
 import asyncio
+from genxai.core.agent.base import AgentFactory
+from genxai.core.agent.registry import AgentRegistry
 from genxai.core.graph.engine import Graph
 from genxai.core.graph.nodes import InputNode, OutputNode, AgentNode
 from genxai.core.graph.edges import Edge, ConditionalEdge
@@ -10,6 +12,14 @@ async def main() -> None:
     """Run a simple workflow example."""
     # Create a new graph
     graph = Graph(name="simple_workflow")
+
+    # Register agent used by the workflow
+    processing_agent = AgentFactory.create_agent(
+        id="processing_agent",
+        role="Processor",
+        goal="Process input and return a response",
+    )
+    AgentRegistry.register(processing_agent)
 
     # Add nodes
     input_node = InputNode()
@@ -36,6 +46,26 @@ async def conditional_workflow() -> None:
     """Run a workflow with conditional edges."""
     # Create graph
     graph = Graph(name="conditional_workflow")
+
+    # Register agents used by the workflow
+    classifier_agent = AgentFactory.create_agent(
+        id="classifier_agent",
+        role="Classifier",
+        goal="Classify input into categories",
+    )
+    agent_a = AgentFactory.create_agent(
+        id="agent_a",
+        role="Agent A",
+        goal="Handle category A",
+    )
+    agent_b = AgentFactory.create_agent(
+        id="agent_b",
+        role="Agent B",
+        goal="Handle category B",
+    )
+    AgentRegistry.register(classifier_agent)
+    AgentRegistry.register(agent_a)
+    AgentRegistry.register(agent_b)
 
     # Add nodes
     input_node = InputNode()

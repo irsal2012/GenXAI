@@ -465,9 +465,10 @@ AuctionFlow(
 
 ---
 
-## Triggers
+## Triggers (Enterprise)
 
-Triggers emit workflow events for schedules, webhooks, and queues.
+Triggers emit workflow events for schedules, webhooks, and queues and are part
+of the enterprise edition.
 
 ```python
 from genxai.triggers import WebhookTrigger, ScheduleTrigger
@@ -492,9 +493,10 @@ await schedule.start()
 
 ---
 
-## Connectors
+## Connectors (Enterprise)
 
-Connectors integrate external systems (Kafka, SQS, Postgres CDC, Webhooks).
+Connectors integrate external systems (Kafka, SQS, Postgres CDC, Webhooks) and
+are part of the enterprise edition.
 
 ```python
 from genxai.connectors import WebhookConnector, ConnectorRegistry
@@ -615,7 +617,7 @@ ToolRegistry.register(MyTool())
 
 ---
 
-## Observability
+## Observability (Enterprise)
 
 ### Metrics
 
