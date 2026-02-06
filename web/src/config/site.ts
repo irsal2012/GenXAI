@@ -4,9 +4,9 @@ export const site = {
   description:
     'GenXAI is an advanced agentic AI framework with graph-based orchestration, multi-layer memory, extensible tools, and an enterprise-grade path to production.',
   links: {
-    github: 'https://github.com/irsal2012/GenXAI',
+    github: 'https://github.com/genexsus-ai/genxai',
     docsIndexInRepo:
-      'https://github.com/irsal2012/GenXAI/blob/main/docs/DOCS_INDEX.md',
+      'https://github.com/genexsus-ai/genxai/blob/main/docs/DOCS_INDEX.md',
   },
 } as const;
 
