@@ -5,6 +5,10 @@ from unittest.mock import patch, MagicMock, AsyncMock
 from genxai.llm.providers.cohere import CohereProvider
 from genxai.llm.base import LLMResponse
 
+# These provider tests require the optional `cohere` SDK.
+# Skip the entire module cleanly when it isn't installed.
+pytest.importorskip("cohere")
+
 
 @pytest.fixture
 def mock_cohere_client():
