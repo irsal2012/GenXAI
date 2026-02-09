@@ -5,7 +5,7 @@ from pathlib import Path
 
 from click.testing import CliRunner
 
-from enterprise.cli.commands.workflow import workflow
+from genxai.cli.commands.workflow import workflow
 from genxai.core.agent.registry import AgentRegistry
 from genxai.core.graph.workflow_io import load_workflow_yaml, register_workflow_agents
 

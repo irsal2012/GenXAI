@@ -11,12 +11,20 @@ from genxai.core.agent.base import Agent
 from genxai.llm.base import LLMProvider
 from genxai.llm.factory import LLMProviderFactory
 from genxai.utils.tokens import manage_context_window
-from enterprise.genxai.observability.logging import set_log_context, clear_log_context
-from enterprise.genxai.observability.metrics import record_agent_execution, record_llm_request
-from enterprise.genxai.observability.tracing import span, add_event, record_exception
-from enterprise.genxai.security.rbac import get_current_user, Permission
-from enterprise.genxai.security.policy_engine import get_policy_engine
-from enterprise.genxai.security.audit import get_audit_log, AuditEvent
+from genxai.utils.enterprise_compat import (
+    add_event,
+    clear_log_context,
+    get_audit_log,
+    get_current_user,
+    get_policy_engine,
+    record_agent_execution,
+    record_exception,
+    record_llm_request,
+    set_log_context,
+    span,
+    AuditEvent,
+    Permission,
+)
 from genxai.core.memory.shared import SharedMemoryBus
 
 logger = logging.getLogger(__name__)

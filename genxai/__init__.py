@@ -5,7 +5,15 @@ A powerful framework for building multi-agent AI systems with graph-based orches
 advanced memory systems, and enterprise-grade features.
 """
 
-__version__ = "0.1.0"
+from importlib.metadata import PackageNotFoundError, version
+
+
+try:
+    # Prefer the installed distribution version (matches pyproject.toml).
+    __version__ = version("genxai")
+except PackageNotFoundError:  # pragma: no cover
+    # Source checkout without an installed distribution.
+    __version__ = "0.0.0"
 __author__ = "GenXAI Team"
 __license__ = "MIT"
 

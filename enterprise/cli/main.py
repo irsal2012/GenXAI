@@ -1,9 +1,23 @@
-"""GenXAI CLI - Main entry point."""
+"""GenXAI CLI - Enterprise entry point.
+
+In the OSS/Enterprise split model, the primary CLI is provided by the OSS
+package:
+
+- Console script: `genxai` -> `genxai.cli.main:main`
+- OSS commands: `tool`, `workflow`
+
+Enterprise-only command groups can be added to that same executable via the
+plugin mechanism (see `enterprise.cli.plugin`).
+
+This module remains a convenience entry point for running the enterprise CLI
+directly from within the enterprise codebase.
+"""
 
 import click
-from cli.commands import tool, metrics, connector, workflow
-from cli.commands.approval import approval
-from cli.commands.audit import audit
+
+from enterprise.cli.commands import connector, metrics, tool, workflow
+from enterprise.cli.commands.approval import approval
+from enterprise.cli.commands.audit import audit
 
 
 @click.group()

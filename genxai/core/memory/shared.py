@@ -8,8 +8,7 @@ from typing import Any, Dict, List, Optional, Callable, Awaitable
 import asyncio
 import logging
 
-from enterprise.genxai.security.rbac import get_current_user, Permission
-from enterprise.genxai.security.policy_engine import get_policy_engine
+from genxai.utils.enterprise_compat import get_current_user, get_policy_engine, Permission
 
 logger = logging.getLogger(__name__)
 

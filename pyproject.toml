@@ -8,7 +8,10 @@ version = "0.1.3"
 description = "GenXAI Core (MIT) - Advanced Agentic AI Framework with Graph-Based Orchestration"
 readme = "README.md"
 requires-python = ">=3.11"
-license = {text = "MIT"}
+# Use an SPDX license expression (setuptools deprecates the TOML table form).
+license = "MIT"
+# Explicitly include license files in the built distributions.
+license-files = ["LICENSE", "LICENSES.md"]
 authors = [
     {name = "GenXAI Team", email = "team@genxai.dev"}
 ]
@@ -16,7 +19,6 @@ keywords = ["ai", "agents", "llm", "graph", "orchestration", "multi-agent"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
@@ -37,6 +39,11 @@ dependencies = [
     "rich>=13.0.0",
     "sqlalchemy>=2.0.23",
 ]
+
+[project.scripts]
+# OSS CLI entry point. Enterprise editions can extend this CLI via
+# `genxai.cli_plugins` entry points.
+genxai = "genxai.cli.main:main"
 
 [project.optional-dependencies]
 dev = [
