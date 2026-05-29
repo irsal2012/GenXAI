@@ -285,13 +285,13 @@ await trigger.start()
 
 ```bash
 # Core install
-pip install genxai
+pip install genxai-framework
 
 # Full install with providers/tools/API (core)
-pip install "genxai[llm,tools,api]"
+pip install "genxai-framework[llm,tools,api]"
 
 # Everything included
-pip install "genxai[all]"
+pip install "genxai-framework[all]"
 ```
 
 > For the enterprise Studio, use the enterprise repository and its commercial license.
